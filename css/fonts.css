@@ -1,0 +1,7 @@
+/* 添加字体加载策略 */
+@font-face{
+  font-family:'HYTangMeiRen';
+  src:url('/fonts/HYTangMeiRenW.woff2') format('woff2'),
+      url('/fonts/HYTangMeiRenW.woff') format('woff');
+  font-display: swap;
+}
