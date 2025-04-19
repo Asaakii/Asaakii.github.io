@@ -1,0 +1,128 @@
+/* 404页面start */
+#error-wrap {
+    top: 40%;
+    position: absolute;
+    right: 0;
+    left: 0;
+    margin: 0 auto;
+    padding: 0 1rem;
+    max-width: 1000px;
+    transform: translate(0, -50%);
+}
+
+#error-wrap .error-content {
+    display: flex;
+    -webkit-box-orient: horizontal;
+    flex-direction: row;
+    -webkit-box-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    align-items: center;
+    margin: 0 1rem;
+    height: 18rem;
+    transition: all .3s ease 0s;
+    box-shadow: none !important;
+    border-radius: 12px;
+    background: #fff !important;
+}
+
+#error-wrap .error-content .error-img {
+    -webkit-box-flex: 1;
+    flex: 1 1 0%;
+    height: 100%;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    background-color: #307af6;
+    background-position: center center;
+    background-size: cover;
+}
+
+#error-wrap .error-content .error-info {
+    -webkit-box-flex: 1;
+    flex: 1 1 0%;
+    padding: .5rem;
+    text-align: center;
+    font-size: 14px;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+#error-wrap .error-content .error-info .error_title {
+    margin-top: -3rem !important;
+    font-size: 9em;
+    padding-top: 0;
+    padding-left: 0 !important;
+}
+
+#error-wrap .error-content .error-info .error_subtitle {
+    margin-top: -3.5rem;
+    word-break: break-word;
+    font-size: 1.6em;
+    -webkit-line-clamp: 2;
+}
+
+#error-wrap .error-content .error-info a {
+    display: inline-block;
+    margin-top: .5rem;
+    padding: .3rem 1.5rem;
+    background: #3f3f3f;
+    color: #fff;
+}
+
+#error-wrap .error-content .error-info a i {
+    padding-right: .3rem;
+}
+
+#body-wrap.error .aside-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    bottom: 0px;
+    position: absolute;
+    padding: 1rem;
+    width: 100%;
+    overflow: scroll;
+}
+
+#body-wrap.error .aside-list .aside-list-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#body-wrap.error .aside-list .aside-list-item {
+    padding: 0.5rem;
+}
+
+#body-wrap.error .aside-list .aside-list-item img {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+#body-wrap.error .aside-list .aside-list-item .thumbnail {
+    overflow: hidden;
+    width: 230px;
+    height: 143px;
+    background: #fff;
+    display: flex;
+}
+
+#body-wrap.error .aside-list .aside-list-item .content .title {
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    line-height: 1.5;
+    justify-content: center;
+    align-items: flex-end;
+    align-content: center;
+    padding-top: 0.5rem;
+}
+
+#body-wrap.error .aside-list .aside-list-item .content time {
+    display: none;
+}
+
+/* 404页面end */
