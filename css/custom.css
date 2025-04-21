@@ -1,0 +1,45 @@
+/* 瀑布流图片样式 */
+.gallery-container[data-type="data"] {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.gallery-container[data-type="data"] .gallery-items {
+  column-count: 1 !important;
+  column-gap: 15px;
+  width: 100%;
+}
+
+.gallery-container[data-type="data"] .gallery-items .item {
+  break-inside: avoid;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gallery-container[data-type="data"] .gallery-items .item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.gallery-container[data-type="data"] .gallery-items .item:hover img {
+  transform: scale(1.02);
+}
+
+@media screen and (min-width: 768px) {
+  .gallery-container[data-type="data"] .gallery-items {
+    column-count: 2;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  .gallery-container[data-type="data"] .gallery-items {
+    column-count: 3;
+  }
+}
