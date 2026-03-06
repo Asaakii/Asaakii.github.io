@@ -1,0 +1,33 @@
+backend:
+  name: github
+  repo: Asaakii/Blog-Anzhiyu
+  branch: main
+  base_url: https://api.netlify.com
+  site_id: dancing-beijinho-04692f.netlify.app
+
+# 图片上传到仓库（如果图片多建议继续用 OSS，这里只做备用）
+media_folder: source/img/uploads
+public_folder: /img/uploads
+
+# 界面语言
+locale: zh_Hans
+
+# 文章集合
+collections:
+  # 博客文章
+  - name: posts
+    label: "📝 博客文章"
+    folder: source/_posts
+    create: true
+    slug: "{{slug}}"
+    extension: md
+    fields:
+      - { name: title, label: 标题, widget: string }
+      - { name: date, label: 发布日期, widget: datetime, format: "YYYY-MM-DD HH:mm:ss" }
+      - { name: tags, label: 标签, widget: string, required: false }
+      - { name: categories, label: 分类, widget: string, required: false }
+      - { name: cover, label: 封面图链接, widget: string, required: false }
+      - { name: top_img, label: 顶部图片链接, widget: string, required: false }
+      - { name: aplayer, label: 启用音乐播放器, widget: boolean, default: false, required: false }
+      - { name: hide, label: 首页隐藏, widget: boolean, default: false, required: false }
+      - { name: body, label: 正文, widget: markdown }
