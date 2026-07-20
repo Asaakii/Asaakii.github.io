@@ -1,0 +1,788 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>RAG 检索系统深度解析：先修语料，再谈算法 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,RAG,检索,知识库"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="RAG 检索系统深度解析：先修语料，再谈算法"><meta name="application-name" content="RAG 检索系统深度解析：先修语料，再谈算法"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="RAG 检索系统深度解析：先修语料，再谈算法"><meta property="og:url" content="https://blog.asaakii.com/posts/41836/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="面向初学者的 RAG 排障笔记：先分清什么该用 SQL、什么适合语义检索，再用三个真实案例说明，元数据、文档结构和可解释的评测往往应排在换模型、调参数之前。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/rag-retrieval.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/rag-retrieval.webp"><meta name="description" content="面向初学者的 RAG 排障笔记：先分清什么该用 SQL、什么适合语义检索，再用三个真实案例说明，元数据、文档结构和可解释的评测往往应排在换模型、调参数之前。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/41836/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'RAG 检索系统深度解析：先修语料，再谈算法',
+  postAI: '',
+  pageFillDescription: '一、搜什么都搜不到, 初学者先记住两条分工, 二、先补地基：几个绕不开的词, 2.1 embedding：把一句话变成一串坐标, 2.2 向量检索：靠离得近找东西, 2.3 分块（chunking）：你检索的不是文档是片段, 2.4 两个后备选手：BM25 与 rerank, 2.5 为什么需要记忆和 RAG, 2.6 分层记忆, 2.7 高级检索策略, 三、落地第一课：先分清什么根本不该检索, 四、落地第二课：元数据过滤比高级策略更实用, 五、落地第三课：真正的瓶颈在文档结构, 5.1 政府工作报告：没有标题分块就退化成硬切, 5.2 会议纪要：把语料重建一遍, 5.3 表结构库：用索引文档做语义桥接（这里和 HyDE 撞上了）, 六、落地第四课：被实测推翻的两个直觉, 6.1 混合检索：收益为零, 6.2 分数阈值：两个分数不是一回事, 七、记忆这一侧：我没有做四层记忆, 八、几点总结一搜什么都搜不到会议纪要库上线那天我搜什么都搜不到不是结果不准是一条都没有命中这个库里躺着五份会议记录十几万字向量索引建好了检索接口通了然后无论我问什么它都告诉我没有如果你还不清楚向量索引这些词别急第二节会从零讲起这一节先跟着故事走你只需要知道一件事我建了一个号称能按意思来搜索的知识库结果它一条都搜不出来我的第一反应是模型不行大概是对口语化的文本不敏感吧我甚至开始琢磨要不要换个模型要不要试试混合检索要不要把和加上毕竟这些是我刚学完的东西正手痒后来我做了一件当时觉得很笨现在觉得最该先做的事我打开了源文件里面是这样的发言人嗯那个我们先说一下这个情况啊发言人哈哈哈发言人就是发言人这个数据吧它是这样的说话人标签时间戳嗯那个哈哈哈短句碎成一行一行整份转写是一个两千字的单一向量模型看到的是一坨噪音它当然什么都匹配不上问题从头到尾都不在检索这一侧这件事之后我回头复盘发现一个挺让我意外的规律在这个项目的三个知识库案例里最大的检索质量提升都来自修文档本身而不是换算法或调参数我测过的一项混合检索优化在当前语料与实现下没有带来额外收益但这不代表它在其他数据集里也无效这篇就是这三次修文档的记录初学者先记住两条分工擅长回答确定的结构化事实例如年增速是多少擅长找解释性材料例如这项政策为什么这样规定报告如何描述某个问题后文先解释常见概念再给出三个排障案例案例里的分数来自当前系统的检索服务只用于定位问题不能直接当成不同系统之间的通用排名关于曾出现在标题中的它是表结构库中一个典型自然语言查询在加入索引文档后得到的语义相关性分不是准确率或全库平均成绩本文没有做完整的离线评测因此保留它作为案例证据而不把它包装成通用性能指标二先补地基几个绕不开的词这一节把后面反复出现的词从零讲清楚如果你已经熟悉向量检索分块可以直接跳到第三节如果不熟这几段是理解全文的钥匙尤其是开头那句向量模型看到的是一坨噪音读完这节你就会明白它到底在说什么把一句话变成一串坐标计算机不认识文字只认识数字嵌入模型做的事就是把一段文本变成一串固定长度的数字比如个小数写出来像你可以把这串数字理解成这段文本在一个高维空间里的坐标这个空间有一个关键性质语义相近的文本坐标离得近小猫和猫咪会挨得很近小猫和利率会离得很远这就是语义空间这个说法的由来模型比的不是字面而是意思能按意思而不是关键词找东西全靠这一步现在回头看开头那份会议转写发言人嗯那个我们先说一下这个情况啊发言人哈哈哈当模型给整整两千字这样的内容算一个坐标时发言人嗯那个哈哈哈这些没有信息量的噪音会和真正重要的那一两句业务内容被平均进同一串坐标里结果这段文本的坐标既不靠近任何一个正常问题也不代表任何清晰的语义落在空间里一个谁都够不着的角落这就是一坨噪音的字面含义不是模型不行是你喂给它的那串坐标本身就是糊的向量检索靠离得近找东西有了坐标检索就很直白了把用户的问题也用同一个模型算成坐标然后在库里找坐标离它最近的那些片段最近通常用余弦相似度来衡量你只要知道它输出一个到之间的分数越大越像就够了全文那些就是这么来的它们是问题坐标和片段坐标的接近程度检索时一般还会设两个旋钮只返回最接近的前个片段比如前个因为你不可能把全库都塞给模型分数阈值低于某个分数就算不够像直接丢掉于是命中这件事就有了精确的含义不是库是空的而是库里没有任何一个片段的相似度分数高到能越过那道阈值开头那个会议库正因为所有片段的坐标都是糊的没有一个能跟问题足够接近才会搜什么都搜不到分块你检索的不是文档是片段还有一个容易被忽略却贯穿全文的前提和检索都不是以整份文档为单位而是以片段为单位上传文档时系统先把它切成一段一段分别算坐标分别入库检索时命中的也是某一段而不是整份文件为什么要切因为一份文档往往讲很多事整份算一个坐标等于把所有话题平均成一个模糊的点又回到了一坨噪音切成片段后每段主题更集中坐标更干净才搜得准但怎么切很讲究这正是第五节整节要展开的切得太大一个片段里塞了十个话题你问其中一个它甩给你一大段相关内容被稀释切得太小一句话被拦腰截断丢了上下文模型看不懂比较理想的做法是顺着文档本来的结构切按章节按小标题记住这一点第五节那三个修文档的案例本质上都是在帮系统找到正确的切割点两个后备选手与还有两个词会在第六节出现先打个照面是一种关键词检索算法它不管语义只看你问的词有没有原样出现在文档里出现了几次是搜索引擎用了几十年的经典方法它和向量检索是两条不同的思路向量懂意思相近懂字面命中把两者的结果合起来就是常说的混合检索重排序精排是检索的第二道关向量检索快但粗先捞回个候选再用一个更精细也更慢的模型把这个候选和问题逐一放在一起重新打分重新排序它更准但因为要一对一比较只适合用在少量候选上这里先埋一个第六节会踩的坑打出来的分和的相似度分根本不是一回事尺度差很多节会专门说这个为什么需要记忆和有两个根本局限无状态导致遗忘每次调用都是独立计算模型不会自动记住上一次对话长对话里早期信息会因上下文窗口丢失也无法跨会话保留用户偏好内置知识静态且有限训练数据有截止点垂直领域深度不足还容易产生幻觉记忆解决第一个解决第二个分层记忆记忆系统的设计通常借鉴认知心理学对人类记忆的分层工作记忆当前会话的临时信息容量有限比如条存活时间到点自动删过期纯内存重启即丢这正符合它的定位情景记忆具体事件和经历带时间序列通常结构化查询向量库语义检索混合存储语义记忆一般性知识和概念比如公司财年从月开始这类不依附于某次具体对话的事实程序性记忆技能和习惯比如生成报告时固定先出摘要再出图表这类固化下来的流程工作记忆的检索通常是混合评分比如也就是相似度时间衰减重要性把语义时效重要性三者加权到一起高级检索策略两个最常被提到的技巧多查询扩展同一个问题有多种表述用把原始查询扩展成多个语义等价的查询并行检索再合并去重提高召回假设文档嵌入核心是用答案找答案问题是疑问句文档是陈述句两者在语义空间里分布本就有差异先让生成一段假设性的答案再拿这段答案去检索真实文档从而缩小和的语义鸿沟根据用户问题先写一段可能的答案性段落用于向量检索的查询文档问题请直接写一段中等长度客观包含关键术语的段落这两个策略都很聪明记住解决的问题也就是查询和文档之间的语义鸿沟后面会回来找它三落地第一课先分清什么根本不该检索我最早犯的错误是想把所有东西都塞进向量库指标数据不该走向量检索年增速是多少这种问题答案是数据库里一个确定的数字用向量检索去找它你会得到一堆语义上很像的片段然后指望模型从里面读出正确的数这既慢又不准而且错了都不知道所以系统里定了一条分工原则硬数据走软知识走分析任务要的是什么是多少数字型事实关系库精确查询结构化指标企业台账项目池为什么依据是什么解释性材料向量库语义检索政策文件规划纲要报告纪要分析节点融合有据可查的结论分析节点做的事是把两边的结果融合硬数据提供是多少软知识提供为什么依据是什么合起来才是一个有据可查的结论这条看起来朴素但它是后面一切的前提不是万能的信息入口它只适合答案是一段话的问题不适合答案是一个数的问题想清楚这个边界比调任何参数都重要四落地第二课元数据过滤比高级策略更实用真正让检索变准的第一个手段不是也不是而是给文档打标签我给知识库建了一套四维元数据字段取值示例用途综合数字经济产业发展农业农村社会治理财政金融按业务领域过滤规划文件政策文件政府工作报告统计公报经济分析按文档类型过滤十四五按时间周期过滤国家级省级市级县级按行政层级过滤核心库的标签覆盖率做到了检索时在向量召回的基础上叠加元数据筛选业务场景过滤条件数字经济专题检索数字经济查找十四五规划文件规划文件十四五检索某年政府工作报告政府工作报告省级产业政策产业发展省级为什么这个比管用因为它砍掉的是根本不该进候选集的东西当你要找十四五规划怎么说数字经济时年的一份工作简报无论语义多像都是噪音语义相似度分辨不了这个但一个字段可以而且它便宜过滤是数据库层面的事零调用零额外延迟要多调几次生成扩展查询每次查询都要先生成一段假设文档在一个要跑几十个节点的业务链里这些开销是会累积的五落地第三课真正的瓶颈在文档结构这是最反直觉也是收益最大的一课三个真实案例政府工作报告没有标题分块就退化成硬切项目主要用层级分块识别的作为分段点在标题之间的内容建立独立向量索引同时保留父子关系问题来了政府工作报告的原始文件里章节标记是中文的一二一它们不是于是层级分块识别不到任何分段点直接退化成按硬切产生个约字的巨型片段后果是检索时返回的片段又大又杂相关性被严重稀释你问一个具体问题它甩给你字里面只有两句相关解法一点也不高级写个预处理脚本用正则识别中文章节标记一二三四五六七八九十我们五年来我们这类模式插入对应的处理前段平均字处理后段平均字另一份报告是段均字段均字没有动任何检索参数只是给文档加了标题会议纪要把语料重建一遍就是开头那个命中的库诊断清楚之后重建流程一点也不高级原始转写说话人标签时间戳填充词短句碎片正则清洗合并短行成段落按段落分块目标字上限提取高频关键词排除停用词构建带标题关键词标注层级分块重新上传补元数据验证检索质量重建前命中重建后语义得分七个步骤里没有一步碰到检索算法全是在收拾语料从完全不可用到可用靠的是数据清洗表结构库用索引文档做语义桥接这里和撞上了这个案例最有意思知识库里有多份数据库表结构文档每份描述一张表的表名中文说明字段列表和示例单份文档自己的语义匹配还行但用户是拿自然语言提问的比如某县的数据在哪个表这句话和一份技术性的表结构描述之间语义距离非常远结果就是命中看到这里学过的人应该有反应了这不正是要解决的那个问题吗查询自然语言问句和文档技术性陈述之间的语义鸿沟的解法是让现场生成一段假设的技术性答案再拿去检索我的解法是另一个方向预先写好个表目录索引文档按业务域分组每个索引文档包含该领域所有相关表名中文说明典型查询场景以及常见问题表名的映射索引文档覆盖领域表目录经济人口地区生产总值人口城镇化率表目录工业企业科技工业规上企业高新技术企业专精特新表目录农业财政投资农业粮食财政收支固定资产投资表目录商贸金融民生消费进出口存贷款教育医疗就业表目录县域综合速查县域各类表速查这些索引文档本身就是用自然语言写的天然离用户的问法很近它们又包含技术表名于是成了一座桥加索引前命中加索引后同一个问题用运行时让模型生成假文档来搭桥我用预先写好真索引文档来搭桥后者的好处很直接一次性成本零运行时开销完全确定而且内容是我写的不会瞎编每查询一次就要多一次调用还得赌它生成的假设文档没跑偏这不是说不好在你没法预先组织语料的场景里比如面对用户随手上传的文档依然是好办法但当语料是你自己的可以治理的与其让模型每次现场猜不如把桥修好放在那里六落地第四课被实测推翻的两个直觉混合检索收益为零语义检索关键词的混合检索效果更好几乎是的常识我也这么以为于是测了结论在中文语料加当前向量库的环境下混合检索与纯语义检索的结果完全一致关键词索引没有提供任何额外增益所以最终采用纯语义检索重排序的两阶段策略第一阶段语义向量检索召回候选第二阶段模型精排我没有深挖为什么没生效可能和中文分词向量库的实现细节有关但这件事教会我的是别把别人环境里的结论当成自己环境里的事实测一下的成本比带着一个错误假设优化半年低得多分数阈值两个分数不是一回事一个很容易踩的坑启用之后不能再沿用原来的因为两个分数的尺度根本不同相似度分数通常落在相关性分数落在如果你按的经验设了个的阈值之后一大批本来相关的结果会被直接砍掉而且你不会收到任何报错只会觉得怎么召回变差了最后的做法是启用时干脆关掉分数阈值由控制返回数量这类坑的共同点是它们不会让系统崩溃只会让它悄悄变差而这恰恰是最难查的一类问题七记忆这一侧我没有做四层记忆说完检索说记忆这里我要诚实一点教科书那套工作记忆情景记忆语义记忆程序性记忆的分层我一层都没实现不是因为它不好而是因为我的系统不需要它不是一个陪你聊天的助手而是一个跑分析任务的流水线一次任务进来走完一条业务链产出报告任务之间基本没有记住你上次说过什么的需求真正承担记忆职责的是另外两个东西第一个是状态黑板也就是会话内的工作记忆一次任务的全部中间产物都挂在一个结构化状态对象上节点之间靠它接力这本质上就是工作记忆任务结束即释放不需要因为任务本身就有生命周期第二个是证据与缺口可追溯的长期记忆状态里有一块专门记证据证据卡来源以及最重要的证据缺口而且工具的返回值里边界是一等字段这份数据不支持什么结论不能替代部门数据核验这个字段我很喜欢一般的检索工具只告诉你我找到了什么而它还会告诉你基于这些材料哪些结论是不能下的这跟第三节那条分工原则是一脉相承的检索回来的是依据不是结论材料能支撑到哪一步必须说清楚在一个产出会影响真实决策的系统里检索到了什么和这些东西能证明什么是两件必须分开的事所以我的结论是记忆的形态应该由任务形态决定而不是照着认知科学的分类去凑认知科学那套分层解释了为什么需要不同的记忆但它不是一张必须照抄的施工图先问我的任务真的需要跨会话记住东西吗再决定要不要建八几点总结在我的案例里的第一瓶颈是语料而不是算法三次最明显的改善命中救回典型查询提升到片段从字降到字全部来自修文档加标题清洗噪音补索引算法层的混合检索在当前实现里没有额外收益结论不是算法不重要而是在调之前先打开源文件看一眼检索质量的顺序是分对类打标签修结构换算法先分清什么该走什么该走再用元数据把不该进候选集的砍掉再把文档结构修好最后才轮到检索策略我是倒着做的走了弯路能预先组织的就别让模型现场猜和表目录索引解决的是同一个语义鸿沟前者靠模型运行时生成假文档后者靠人预先写好真索引当语料可治理时后者更便宜更确定也不会瞎编这跟我在别处得到的结论是同一个确定性的东西尽量别交给模型即兴发挥别把别人的结论当自己的事实混合检索更好分数阈值设这些常识在我的环境里一个都不成立而且它们失效时不报错只是悄悄变差测一下很便宜架构要照着任务长不要照着理论长四层记忆很优美但我的任务是流水线不是聊天硬套只会增加没人用的代码理论的价值是让你理解为什么会有这些设计不是给你一张必须填满的表格回过头看这一章我学到的最有用的东西可能不是或的实现而是知道了它们在解决什么问题正因为知道是在补语义鸿沟我才能在遇到同一个问题时认出它然后选一个更适合我这个场景的解法理解原理的价值往往不是让你用上它而是让你认得出问题参考资料第八章记忆与检索',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-20 13:32:16',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/RAG/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>RAG</span></a><a class="article-meta__tags" href="/tags/%E6%A3%80%E7%B4%A2/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>检索</span></a><a class="article-meta__tags" href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>知识库</span></a></span></div></div><h1 class="post-title" itemprop="name headline">RAG 检索系统深度解析：先修语料，再谈算法</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-04-08T13:00:00.000Z" title="发表于 2026-04-08 21:00:00">2026-04-08</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-20T05:32:16.641Z" title="更新于 2026-07-20 13:32:16">2026-07-20</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">6.4k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>20分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/rag-retrieval.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/41836/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/RAG/" tabindex="-1" itemprop="url">RAG</a><a href="/tags/%E6%A3%80%E7%B4%A2/" tabindex="-1" itemprop="url">检索</a><a href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" tabindex="-1" itemprop="url">知识库</a><h1 id="CrawlerTitle" itemprop="name headline">RAG 检索系统深度解析：先修语料，再谈算法</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-04-08T13:00:00.000Z" title="发表于 2026-04-08 21:00:00">2026-04-08</time><time itemprop="dateCreated datePublished" datetime="2026-07-20T05:32:16.641Z" title="更新于 2026-07-20 13:32:16">2026-07-20</time></header><h2 id="一、搜什么都搜不到"><a href="#一、搜什么都搜不到" class="headerlink" title="一、搜什么都搜不到"></a>一、搜什么都搜不到</h2><p>会议纪要库上线那天，我搜什么都搜不到。</p>
+<p>不是结果不准，是一条都没有。0 命中。这个库里躺着五份会议记录、十几万字，向量索引建好了，检索接口通了，然后无论我问什么，它都告诉我没有。</p>
+<blockquote>
+<p>如果你还不清楚“向量索引”“embedding”“chunk”这些词，别急，第二节会从零讲起。这一节先跟着故事走，你只需要知道一件事：我建了一个号称能按“意思”来搜索的知识库，结果它一条都搜不出来。</p>
+</blockquote>
+<p>我的第一反应是模型不行，大概是 embedding 对口语化的文本不敏感吧？我甚至开始琢磨要不要换个模型、要不要试试混合检索、要不要把 MQE 和 HyDE 加上。毕竟这些是我刚学完的东西，正手痒。</p>
+<p>后来我做了一件当时觉得很笨、现在觉得最该先做的事：我打开了源文件。</p>
+<p>里面是这样的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[发言人1] 00:03:12  嗯，那个，我们先说一下这个情况啊</span><br><span class="line">[发言人2] 00:03:15  哈哈哈</span><br><span class="line">[发言人1] 00:03:16  就是</span><br><span class="line">[发言人1] 00:03:19  这个数据吧，它是这样的</span><br></pre></td></tr></table></figure>
+
+<p>说话人标签、时间戳、「嗯」「那个」「哈哈哈」，短句碎成一行一行，整份转写是一个两千字的单一 chunk。</p>
+<p>向量模型看到的是一坨噪音。它当然什么都匹配不上：问题从头到尾都不在检索这一侧。</p>
+<p>这件事之后我回头复盘，发现一个挺让我意外的规律：在这个项目的三个知识库案例里，最大的检索质量提升都来自修文档本身，而不是换算法或调参数。我测过的一项混合检索优化在当前语料与实现下没有带来额外收益，但这不代表它在其他数据集里也无效。</p>
+<p>这篇就是这三次「修文档」的记录。</p>
+<h2 id="初学者先记住两条分工"><a href="#初学者先记住两条分工" class="headerlink" title="初学者先记住两条分工"></a>初学者先记住两条分工</h2><ol>
+<li>SQL 擅长回答确定的结构化事实，例如“2024 年 GDP 增速是多少”；</li>
+<li>RAG 擅长找解释性材料，例如“这项政策为什么这样规定、报告如何描述某个问题”。</li>
+</ol>
+<p>后文先解释常见概念，再给出三个排障案例。案例里的分数来自当前系统的检索服务，只用于定位问题，不能直接当成不同 RAG 系统之间的通用排名。</p>
+<blockquote>
+<p>关于曾出现在标题中的 0.815：它是“表结构库”中一个典型自然语言查询在加入索引文档后得到的语义相关性分，不是 Recall、准确率或全库平均成绩。本文没有做完整的离线评测，因此保留它作为案例证据，而不把它包装成通用性能指标。</p>
+</blockquote>
+<h2 id="二、先补地基：几个绕不开的词"><a href="#二、先补地基：几个绕不开的词" class="headerlink" title="二、先补地基：几个绕不开的词"></a>二、先补地基：几个绕不开的词</h2><p>这一节把后面反复出现的词从零讲清楚。如果你已经熟悉 embedding、向量检索、分块、rerank，可以直接跳到第三节；如果不熟，这几段是理解全文的钥匙。尤其是开头那句“向量模型看到的是一坨噪音”，读完这节你就会明白它到底在说什么。</p>
+<h3 id="2-1-embedding：把一句话变成一串坐标"><a href="#2-1-embedding：把一句话变成一串坐标" class="headerlink" title="2.1 embedding：把一句话变成一串坐标"></a>2.1 embedding：把一句话变成一串坐标</h3><p>计算机不认识文字，只认识数字。embedding（嵌入）模型做的事，就是把一段文本变成一串固定长度的数字，比如 1024 个小数，写出来像 <code>[0.02, -0.31, 0.88, ...]</code>。你可以把这串数字理解成这段文本在一个高维空间里的坐标。</p>
+<p>这个空间有一个关键性质：语义相近的文本，坐标离得近。“小猫”和“猫咪”会挨得很近，“小猫”和“利率”会离得很远。这就是“语义空间”这个说法的由来，模型比的不是字面，而是“意思”。RAG 能按“意思”而不是“关键词”找东西，全靠这一步。</p>
+<p>现在回头看开头那份会议转写：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[发言人1] 00:03:12  嗯，那个，我们先说一下这个情况啊</span><br><span class="line">[发言人2] 00:03:15  哈哈哈</span><br></pre></td></tr></table></figure>
+
+<p>当 embedding 模型给整整两千字这样的内容算一个坐标时，“发言人1”“00:03:12”“嗯”“那个”“哈哈哈”这些没有信息量的噪音，会和真正重要的那一两句业务内容，被平均进同一串坐标里。结果这段文本的坐标既不靠近任何一个正常问题，也不代表任何清晰的语义，落在空间里一个谁都够不着的角落。这就是“一坨噪音”的字面含义：不是模型不行，是你喂给它的那串坐标本身就是糊的。</p>
+<h3 id="2-2-向量检索：靠“离得近”找东西"><a href="#2-2-向量检索：靠“离得近”找东西" class="headerlink" title="2.2 向量检索：靠“离得近”找东西"></a>2.2 向量检索：靠“离得近”找东西</h3><p>有了坐标，检索就很直白了：把用户的问题也用同一个 embedding 模型算成坐标，然后在库里找坐标离它最近的那些片段。“最近”通常用余弦相似度来衡量，你只要知道它输出一个 0 到 1 之间的分数、越大越像就够了。全文那些 0.67、0.75、0.815，就是这么来的，它们是“问题坐标”和“片段坐标”的接近程度。</p>
+<p>检索时一般还会设两个旋钮：</p>
+<ul>
+<li>top_k：只返回最接近的前 k 个片段（比如前 5 个），因为你不可能把全库都塞给模型。</li>
+<li>score_threshold（分数阈值）：低于某个分数就算“不够像”，直接丢掉。</li>
+</ul>
+<p>于是“0 命中”这件事就有了精确的含义：不是库是空的，而是库里没有任何一个片段的相似度分数，高到能越过那道阈值。开头那个会议库，正因为所有片段的坐标都是糊的，没有一个能跟问题足够接近，才会“搜什么都搜不到”。</p>
+<h3 id="2-3-分块（chunking）：你检索的不是“文档”，是“片段”"><a href="#2-3-分块（chunking）：你检索的不是“文档”，是“片段”" class="headerlink" title="2.3 分块（chunking）：你检索的不是“文档”，是“片段”"></a>2.3 分块（chunking）：你检索的不是“文档”，是“片段”</h3><p>还有一个容易被忽略、却贯穿全文的前提：embedding 和检索都不是以整份文档为单位，而是以“片段”（chunk）为单位。上传文档时，系统先把它切成一段一段，分别算坐标、分别入库；检索时命中的也是某一段，而不是整份文件。</p>
+<p>为什么要切？因为一份文档往往讲很多事，整份算一个坐标，等于把所有话题平均成一个模糊的点（又回到了“一坨噪音”）。切成片段后，每段主题更集中，坐标更干净，才搜得准。</p>
+<p>但怎么切很讲究，这正是第五节整节要展开的：</p>
+<ul>
+<li>切得太大，一个片段里塞了十个话题，你问其中一个，它甩给你一大段，相关内容被稀释；</li>
+<li>切得太小，一句话被拦腰截断，丢了上下文，模型看不懂。</li>
+</ul>
+<p>比较理想的做法是顺着文档本来的结构切，按章节、按小标题。记住这一点：第五节那三个“修文档”的案例，本质上都是在帮系统找到正确的切割点。</p>
+<h3 id="2-4-两个后备选手：BM25-与-rerank"><a href="#2-4-两个后备选手：BM25-与-rerank" class="headerlink" title="2.4 两个后备选手：BM25 与 rerank"></a>2.4 两个后备选手：BM25 与 rerank</h3><p>还有两个词会在第六节出现，先打个照面：</p>
+<ul>
+<li>BM25 是一种关键词检索算法。它不管语义，只看“你问的词有没有原样出现在文档里、出现了几次”，是搜索引擎用了几十年的经典方法。它和向量检索是两条不同的思路：向量懂“意思相近”，BM25 懂“字面命中”。把两者的结果合起来，就是常说的混合检索（hybrid search）。</li>
+<li>rerank（重排序 &#x2F; 精排）是检索的“第二道关”。向量检索快但粗，先捞回 top_k 个候选；再用一个更精细、也更慢的 rerank 模型，把这 k 个候选和问题逐一放在一起重新打分、重新排序。它更准，但因为要一对一比较，只适合用在少量候选上。</li>
+</ul>
+<p>这里先埋一个第六节会踩的坑：rerank 打出来的分，和 embedding 的相似度分根本不是一回事，尺度差很多，6.2 节会专门说这个。</p>
+<h3 id="2-5-为什么需要记忆和-RAG"><a href="#2-5-为什么需要记忆和-RAG" class="headerlink" title="2.5 为什么需要记忆和 RAG"></a>2.5 为什么需要记忆和 RAG</h3><p>LLM 有两个根本局限：</p>
+<ol>
+<li>无状态导致遗忘：每次调用都是独立计算，模型不会自动记住上一次对话。长对话里早期信息会因上下文窗口丢失，也无法跨会话保留用户偏好。</li>
+<li>内置知识静态且有限：训练数据有截止点，垂直领域深度不足，还容易产生幻觉。</li>
+</ol>
+<p>记忆解决第一个，RAG 解决第二个。</p>
+<h3 id="2-6-分层记忆"><a href="#2-6-分层记忆" class="headerlink" title="2.6 分层记忆"></a>2.6 分层记忆</h3><p>记忆系统的设计通常借鉴认知心理学对人类记忆的分层：</p>
+<ul>
+<li>工作记忆：当前会话的临时信息，容量有限（比如 50 条）+ TTL（存活时间，到点自动删）过期，纯内存，重启即丢，这正符合它的定位；</li>
+<li>情景记忆：具体事件和经历，带时间序列，通常 SQLite（结构化查询）+ 向量库（语义检索）混合存储；</li>
+<li>语义记忆：一般性知识和概念，比如“公司财年从 4 月开始”这类不依附于某次具体对话的事实；</li>
+<li>程序性记忆：技能和习惯，比如“生成报告时固定先出摘要再出图表”这类固化下来的流程。</li>
+</ul>
+<p>工作记忆的检索通常是混合评分，比如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">base_relevance = vector_score * <span class="number">0.7</span> + keyword_score * <span class="number">0.3</span></span><br><span class="line">time_decay = <span class="variable language_">self</span>._calculate_time_decay(memory.timestamp)</span><br><span class="line">importance_weight = <span class="number">0.8</span> + (memory.importance * <span class="number">0.4</span>)</span><br><span class="line"></span><br><span class="line">final_score = base_relevance * time_decay * importance_weight</span><br></pre></td></tr></table></figure>
+
+<p>也就是 <code>(相似度 × 时间衰减) × (0.8 + 重要性 × 0.4)</code>，把语义、时效、重要性三者加权到一起。</p>
+<h3 id="2-7-高级检索策略"><a href="#2-7-高级检索策略" class="headerlink" title="2.7 高级检索策略"></a>2.7 高级检索策略</h3><p>两个最常被提到的技巧：</p>
+<p>多查询扩展（MQE）：同一个问题有多种表述，用 LLM 把原始查询扩展成多个语义等价的查询并行检索，再合并去重，提高召回。</p>
+<p>假设文档嵌入（HyDE）：核心是「用答案找答案」。问题是疑问句，文档是陈述句，两者在语义空间里分布本就有差异。HyDE 先让 LLM 生成一段假设性的答案，再拿这段答案去检索真实文档，从而缩小 query 和 document 的语义鸿沟。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_prompt_hyde</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="type">Optional</span>[<span class="built_in">str</span>]:</span><br><span class="line">    prompt = [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;根据用户问题，先写一段可能的答案性段落，用于向量检索的查询文档。&quot;</span>&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">f&quot;问题：<span class="subst">&#123;query&#125;</span>\n请直接写一段中等长度、客观、包含关键术语的段落。&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">    <span class="keyword">return</span> llm.invoke(prompt)</span><br></pre></td></tr></table></figure>
+
+<p>这两个策略都很聪明。记住 HyDE 解决的问题，也就是查询和文档之间的语义鸿沟，后面会回来找它。</p>
+<h2 id="三、落地第一课：先分清什么根本不该检索"><a href="#三、落地第一课：先分清什么根本不该检索" class="headerlink" title="三、落地第一课：先分清什么根本不该检索"></a>三、落地第一课：先分清什么根本不该检索</h2><p>我最早犯的错误，是想把所有东西都塞进向量库。</p>
+<p>指标数据不该走向量检索。「2024 年 GDP 增速是多少」这种问题，答案是数据库里一个确定的数字。用向量检索去找它，你会得到一堆「语义上很像」的片段，然后指望模型从里面读出正确的数。这既慢又不准，而且错了都不知道。</p>
+<p>所以系统里定了一条分工原则：</p>
+<blockquote>
+<p><strong>硬数据走 SQL，软知识走 RAG。</strong></p>
+</blockquote>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TB
+  Q[&quot;分析任务&quot;] --&gt; Split{&quot;要的是什么&quot;}
+  Split --&gt;|&quot;是多少&lt;br&#x2F;&gt;（数字型事实）&quot;| SQL[&quot;关系库 · SQL 精确查询&lt;br&#x2F;&gt;结构化指标 &#x2F; 企业台账 &#x2F; 项目池&quot;]
+  Split --&gt;|&quot;为什么、依据是什么&lt;br&#x2F;&gt;（解释性材料）&quot;| RAG[&quot;向量库 · 语义检索&lt;br&#x2F;&gt;政策文件 &#x2F; 规划纲要 &#x2F; 报告 &#x2F; 纪要&quot;]
+  SQL --&gt; M[&quot;分析节点：融合&quot;]
+  RAG --&gt; M
+  M --&gt; R[&quot;有据可查的结论&quot;]
+  </pre></div>
+
+<p>分析节点做的事，是把两边的结果融合：硬数据提供「是多少」，软知识提供「为什么、依据是什么」，合起来才是一个有据可查的结论。</p>
+<p>这条看起来朴素，但它是后面一切的前提。RAG 不是万能的信息入口，它只适合「答案是一段话」的问题，不适合「答案是一个数」的问题。想清楚这个边界，比调任何参数都重要。</p>
+<h2 id="四、落地第二课：元数据过滤比高级策略更实用"><a href="#四、落地第二课：元数据过滤比高级策略更实用" class="headerlink" title="四、落地第二课：元数据过滤比高级策略更实用"></a>四、落地第二课：元数据过滤比高级策略更实用</h2><p>真正让检索变准的第一个手段，不是 MQE 也不是 HyDE，而是给文档打标签。</p>
+<p>我给知识库建了一套四维元数据：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>取值示例</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>domain</code></td>
+<td>综合、数字经济、产业发展、农业农村、社会治理、财政金融……</td>
+<td>按业务领域过滤</td>
+</tr>
+<tr>
+<td><code>data_type</code></td>
+<td>规划文件、政策文件、政府工作报告、统计公报、经济分析</td>
+<td>按文档类型过滤</td>
+</tr>
+<tr>
+<td><code>data_period</code></td>
+<td>2024、2025、十四五</td>
+<td>按时间周期过滤</td>
+</tr>
+<tr>
+<td><code>source_level</code></td>
+<td>国家级、省级、市级、县级</td>
+<td>按行政层级过滤</td>
+</tr>
+</tbody></table>
+<p>核心库的标签覆盖率做到了 100%。检索时在向量召回的基础上叠加元数据筛选：</p>
+<table>
+<thead>
+<tr>
+<th>业务场景</th>
+<th>过滤条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>数字经济专题检索</td>
+<td><code>domain = &quot;数字经济&quot;</code></td>
+</tr>
+<tr>
+<td>查找十四五规划文件</td>
+<td><code>data_type = &quot;规划文件&quot; AND data_period = &quot;十四五&quot;</code></td>
+</tr>
+<tr>
+<td>检索某年政府工作报告</td>
+<td><code>data_type = &quot;政府工作报告&quot; AND data_period = &quot;2025&quot;</code></td>
+</tr>
+<tr>
+<td>省级产业政策</td>
+<td><code>domain = &quot;产业发展&quot; AND source_level = &quot;省级&quot;</code></td>
+</tr>
+</tbody></table>
+<p>为什么这个比 MQE&#x2F;HyDE 管用？因为它砍掉的是「根本不该进候选集的东西」。当你要找「十四五规划怎么说数字经济」时，2019 年的一份工作简报无论语义多像，都是噪音。语义相似度分辨不了这个，但一个 <code>data_period</code> 字段可以。</p>
+<p>而且它便宜：过滤是数据库层面的事，零 LLM 调用、零额外延迟。MQE 要多调几次 LLM 生成扩展查询，HyDE 每次查询都要先生成一段假设文档，在一个要跑几十个节点的业务链里，这些开销是会累积的。</p>
+<h2 id="五、落地第三课：真正的瓶颈在文档结构"><a href="#五、落地第三课：真正的瓶颈在文档结构" class="headerlink" title="五、落地第三课：真正的瓶颈在文档结构"></a>五、落地第三课：真正的瓶颈在文档结构</h2><p>这是最反直觉、也是收益最大的一课。三个真实案例。</p>
+<h3 id="5-1-政府工作报告：没有标题，分块就退化成硬切"><a href="#5-1-政府工作报告：没有标题，分块就退化成硬切" class="headerlink" title="5.1 政府工作报告：没有标题，分块就退化成硬切"></a>5.1 政府工作报告：没有标题，分块就退化成硬切</h3><p>项目主要用层级分块（hierarchical chunking）：识别 markdown 的 <code>##</code>、<code>###</code> 作为分段点，在标题之间的内容建立独立向量索引，同时保留父子关系。</p>
+<p>问题来了：政府工作报告的原始文件里，章节标记是中文的，「一、」「二、」「（一）」，它们不是 markdown heading。于是层级分块识别不到任何分段点，直接退化成按 <code>max_tokens</code> 硬切，产生 12~13 个约 2000 字的巨型片段。</p>
+<p>后果是检索时返回的片段又大又杂，相关性被严重稀释：你问一个具体问题，它甩给你 2000 字，里面只有两句相关。</p>
+<p>解法一点也不高级：写个预处理脚本，用正则识别中文章节标记（<code>^[一二三四五六七八九十]+、</code>、<code>^——我们</code>、<code>^五年来，我们</code> 这类模式），插入对应的 <code>##</code> &#x2F; <code>###</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">处理前：12 段，平均 1,855 字</span><br><span class="line">处理后：23 段，平均 720 字</span><br></pre></td></tr></table></figure>
+
+<p>另一份报告是 13 段（均 1767 字）→ 30 段（均 639 字）。</p>
+<p>没有动任何检索参数，只是给文档加了标题。</p>
+<h3 id="5-2-会议纪要：把语料重建一遍"><a href="#5-2-会议纪要：把语料重建一遍" class="headerlink" title="5.2 会议纪要：把语料重建一遍"></a>5.2 会议纪要：把语料重建一遍</h3><p>就是开头那个 0 命中的库。诊断清楚之后，重建流程一点也不高级：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart LR
+  A[&quot;原始转写&lt;br&#x2F;&gt;说话人标签 &#x2F; 时间戳&lt;br&#x2F;&gt;填充词 &#x2F; 短句碎片&quot;] --&gt; B[&quot;正则清洗&lt;br&#x2F;&gt;合并短行成段落&quot;]
+  B --&gt; C[&quot;按段落分块&lt;br&#x2F;&gt;目标 800 字 &#x2F; 上限 1200&quot;]
+  C --&gt; D[&quot;提取高频关键词&lt;br&#x2F;&gt;排除停用词&quot;]
+  D --&gt; E[&quot;构建 markdown&lt;br&#x2F;&gt;带 ## 标题 + 关键词标注&quot;]
+  E --&gt; F[&quot;层级分块重新上传&quot;]
+  F --&gt; G[&quot;补 domain 元数据&quot;]
+  G --&gt; H[&quot;验证检索质量&quot;]
+  </pre></div>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">重建前：0 命中</span><br><span class="line">重建后：语义得分 0.67 ~ 0.75</span><br></pre></td></tr></table></figure>
+
+<p>七个步骤里，没有一步碰到检索算法，全是在收拾语料。</p>
+<p>从「完全不可用」到「可用」，靠的是数据清洗。</p>
+<h3 id="5-3-表结构库：用索引文档做语义桥接（这里和-HyDE-撞上了）"><a href="#5-3-表结构库：用索引文档做语义桥接（这里和-HyDE-撞上了）" class="headerlink" title="5.3 表结构库：用索引文档做语义桥接（这里和 HyDE 撞上了）"></a>5.3 表结构库：用索引文档做语义桥接（这里和 HyDE 撞上了）</h3><p>这个案例最有意思。</p>
+<p>知识库里有 200 多份数据库表结构文档，每份描述一张表的表名、中文说明、字段列表和示例 SQL。单份文档自己的语义匹配还行（0.55~0.74），但用户是拿自然语言提问的，比如「某县的 GDP 数据在哪个表」。</p>
+<p>这句话和一份技术性的表结构描述之间，语义距离非常远。结果就是 0 命中。</p>
+<p>看到这里，学过 HyDE 的人应该有反应了：这不正是 HyDE 要解决的那个问题吗，查询（自然语言问句）和文档（技术性陈述）之间的语义鸿沟。HyDE 的解法是让 LLM 现场生成一段假设的技术性答案，再拿去检索。</p>
+<p>我的解法是另一个方向：预先写好 5 个「表目录索引」文档，按业务域分组，每个索引文档包含该领域所有相关表名、中文说明、典型查询场景，以及「常见问题 → 表名」的映射。</p>
+<table>
+<thead>
+<tr>
+<th>索引文档</th>
+<th>覆盖领域</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>表目录-经济GDP人口</td>
+<td>GDP、地区生产总值、人口、城镇化率</td>
+</tr>
+<tr>
+<td>表目录-工业企业科技</td>
+<td>工业、规上企业、高新技术企业、专精特新</td>
+</tr>
+<tr>
+<td>表目录-农业财政投资</td>
+<td>农业、粮食、财政收支、固定资产投资</td>
+</tr>
+<tr>
+<td>表目录-商贸金融民生</td>
+<td>消费、进出口、存贷款、教育、医疗、就业</td>
+</tr>
+<tr>
+<td>表目录-县域综合速查</td>
+<td>县域各类表速查</td>
+</tr>
+</tbody></table>
+<p>这些索引文档本身就是用自然语言写的，天然离用户的问法很近；它们又包含技术表名，于是成了一座桥。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">加索引前：0 命中</span><br><span class="line">加索引后：0.815</span><br></pre></td></tr></table></figure>
+
+<p>同一个问题，HyDE 用「运行时让模型生成假文档」来搭桥，我用「预先写好真索引文档」来搭桥。后者的好处很直接：一次性成本、零运行时开销、完全确定，而且内容是我写的，不会瞎编。HyDE 每查询一次就要多一次 LLM 调用，还得赌它生成的假设文档没跑偏。</p>
+<p>这不是说 HyDE 不好。在你没法预先组织语料的场景里（比如面对用户随手上传的文档），HyDE 依然是好办法。但当语料是你自己的、可以治理的，与其让模型每次现场猜，不如把桥修好放在那里。</p>
+<h2 id="六、落地第四课：被实测推翻的两个直觉"><a href="#六、落地第四课：被实测推翻的两个直觉" class="headerlink" title="六、落地第四课：被实测推翻的两个直觉"></a>六、落地第四课：被实测推翻的两个直觉</h2><h3 id="6-1-混合检索：收益为零"><a href="#6-1-混合检索：收益为零" class="headerlink" title="6.1 混合检索：收益为零"></a>6.1 混合检索：收益为零</h3><p>「语义检索 + BM25 关键词的混合检索效果更好」几乎是 RAG 的常识。我也这么以为，于是测了。</p>
+<p>结论：在中文语料加当前向量库的环境下，混合检索与纯语义检索的结果完全一致，BM25 关键词索引没有提供任何额外增益。</p>
+<p>所以最终采用纯语义检索 + 重排序的两阶段策略：</p>
+<ul>
+<li>第一阶段：语义向量检索，召回 top_k 候选；</li>
+<li>第二阶段：rerank 模型精排。</li>
+</ul>
+<p>我没有深挖 BM25 为什么没生效（可能和中文分词、向量库的实现细节有关）。但这件事教会我的是：别把别人环境里的结论当成自己环境里的事实。测一下的成本，比带着一个错误假设优化半年低得多。</p>
+<h3 id="6-2-分数阈值：两个分数不是一回事"><a href="#6-2-分数阈值：两个分数不是一回事" class="headerlink" title="6.2 分数阈值：两个分数不是一回事"></a>6.2 分数阈值：两个分数不是一回事</h3><p>一个很容易踩的坑：启用 rerank 之后，不能再沿用原来的 <code>score_threshold</code>。</p>
+<p>因为两个分数的尺度根本不同：</p>
+<ul>
+<li>embedding 相似度分数通常落在 0.5 ~ 0.9；</li>
+<li>rerank 相关性分数落在 0.15 ~ 0.95。</li>
+</ul>
+<p>如果你按 embedding 的经验设了个 0.5 的阈值，rerank 之后一大批本来相关的结果会被直接砍掉，而且你不会收到任何报错，只会觉得「怎么召回变差了」。</p>
+<p>最后的做法是：启用 rerank 时干脆关掉分数阈值，由 <code>top_k</code> 控制返回数量。</p>
+<p>这类坑的共同点是，它们不会让系统崩溃，只会让它悄悄变差。而这恰恰是最难查的一类问题。</p>
+<h2 id="七、记忆这一侧：我没有做四层记忆"><a href="#七、记忆这一侧：我没有做四层记忆" class="headerlink" title="七、记忆这一侧：我没有做四层记忆"></a>七、记忆这一侧：我没有做四层记忆</h2><p>说完检索，说记忆。这里我要诚实一点：</p>
+<blockquote>
+<p><strong>教科书那套「工作记忆 &#x2F; 情景记忆 &#x2F; 语义记忆 &#x2F; 程序性记忆」的分层，我一层都没实现。</strong></p>
+</blockquote>
+<p>不是因为它不好，而是因为我的系统不需要。它不是一个陪你聊天的助手，而是一个跑分析任务的流水线：一次任务进来，走完一条业务链，产出报告。任务之间基本没有「记住你上次说过什么」的需求。</p>
+<p>真正承担「记忆」职责的是另外两个东西。</p>
+<p>第一个是状态黑板，也就是会话内的工作记忆。一次任务的全部中间产物都挂在一个结构化状态对象上，节点之间靠它接力。这本质上就是工作记忆，任务结束即释放，不需要 TTL，因为任务本身就有生命周期。</p>
+<p>第二个是证据与缺口，可追溯的长期记忆。状态里有一块专门记证据：证据卡、来源，以及最重要的证据缺口。</p>
+<p>而且工具的返回值里，「边界」是一等字段：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> &#123;</span><br><span class="line">    <span class="string">&quot;ok&quot;</span>: result.get(<span class="string">&quot;status&quot;</span>) == <span class="string">&quot;ok&quot;</span>,</span><br><span class="line">    <span class="string">&quot;summary&quot;</span>: result.get(<span class="string">&quot;summary&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">    <span class="string">&quot;data_gaps&quot;</span>: result.get(<span class="string">&quot;data_gaps&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">    <span class="string">&quot;supports&quot;</span>: result.get(<span class="string">&quot;supports&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">    <span class="string">&quot;does_not_support&quot;</span>: result.get(<span class="string">&quot;does_not_support&quot;</span>, <span class="string">&quot;&quot;</span>),   <span class="comment"># 这份数据不支持什么结论</span></span><br><span class="line">    <span class="string">&quot;boundary&quot;</span>: result.get(<span class="string">&quot;does_not_support&quot;</span>, <span class="string">&quot;不能替代部门数据核验。&quot;</span>),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>does_not_support</code> 这个字段我很喜欢。一般的检索工具只告诉你「我找到了什么」，而它还会告诉你「基于这些材料，哪些结论是不能下的」。</p>
+<p>这跟第三节那条分工原则是一脉相承的：RAG 检索回来的是「依据」，不是「结论」。材料能支撑到哪一步，必须说清楚。在一个产出会影响真实决策的系统里，「检索到了什么」和「这些东西能证明什么」是两件必须分开的事。</p>
+<p>所以我的结论是：记忆的形态应该由任务形态决定，而不是照着认知科学的分类去凑。认知科学那套分层解释了「为什么需要不同的记忆」，但它不是一张必须照抄的施工图。先问「我的任务真的需要跨会话记住东西吗」，再决定要不要建。</p>
+<h2 id="八、几点总结"><a href="#八、几点总结" class="headerlink" title="八、几点总结"></a>八、几点总结</h2><ol>
+<li><p>在我的案例里，RAG 的第一瓶颈是语料而不是算法。三次最明显的改善（0 命中救回 0.75、典型查询提升到 0.815、片段从 1855 字降到 720 字）全部来自修文档：加标题、清洗噪音、补索引。算法层的混合检索在当前实现里没有额外收益。结论不是“算法不重要”，而是在调 top_k 之前，先打开源文件看一眼。</p>
+</li>
+<li><p>检索质量的顺序是：分对类 &gt; 打标签 &gt; 修结构 &gt; 换算法。先分清什么该走 SQL、什么该走 RAG；再用元数据把不该进候选集的砍掉；再把文档结构修好；最后才轮到检索策略。我是倒着做的，走了弯路。</p>
+</li>
+<li><p>能预先组织的，就别让模型现场猜。HyDE 和「表目录索引」解决的是同一个语义鸿沟，前者靠模型运行时生成假文档，后者靠人预先写好真索引。当语料可治理时，后者更便宜、更确定、也不会瞎编。这跟我在别处得到的结论是同一个：确定性的东西，尽量别交给模型即兴发挥。</p>
+</li>
+<li><p>别把别人的结论当自己的事实。混合检索更好、分数阈值设 0.5，这些「常识」在我的环境里一个都不成立。而且它们失效时不报错，只是悄悄变差。测一下很便宜。</p>
+</li>
+<li><p>架构要照着任务长，不要照着理论长。四层记忆很优美，但我的任务是流水线不是聊天，硬套只会增加没人用的代码。理论的价值是让你理解「为什么会有这些设计」，不是给你一张必须填满的表格。</p>
+</li>
+</ol>
+<hr>
+<p>回过头看，这一章我学到的最有用的东西，可能不是 MQE 或 HyDE 的实现，而是知道了它们在解决什么问题。正因为知道 HyDE 是在补语义鸿沟，我才能在遇到同一个问题时认出它，然后选一个更适合我这个场景的解法。</p>
+<p>理解原理的价值，往往不是让你用上它，而是让你认得出问题。</p>
+<hr>
+<p><strong>参考资料</strong></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://hello-agents.datawhale.cc/#/./chapter8/%E7%AC%AC%E5%85%AB%E7%AB%A0%20%E8%AE%B0%E5%BF%86%E4%B8%8E%E6%A3%80%E7%B4%A2">Hello-Agents 第八章：记忆与检索</a> - Datawhale</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2212.10496">HyDE: Precise Zero-Shot Dense Retrieval without Relevance Labels</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/41836/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/41836/')">RAG 检索系统深度解析：先修语料，再谈算法</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/41836/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/RAG/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>RAG<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/%E6%A3%80%E7%B4%A2/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>检索<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>知识库<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/58149/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&amp;h=630&amp;fit=crop" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">职业规划与学习路径</div></div></a></div><div class="next-post pull-right"><a href="/posts/27350/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/context-engineering.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">上下文工程深度解析：如何让 Agent 只看必要信息</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/63952/" title="OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/skills-layers-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-18</div><div class="title">OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享</div></div></a></div><div><a href="/posts/63871/" title="OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/control-plane-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-05</div><div class="title">OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端</div></div></a></div><div><a href="/posts/63844/" title="OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div><a href="/posts/63898/" title="OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-06</div><div class="title">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div><div><a href="/posts/63820/" title="OpenClaw 技术架构深度解析"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/openclaw-official-banner.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-03</div><div class="title">OpenClaw 技术架构深度解析</div></div></a></div><div><a href="/posts/64738/" title="Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%90%9C%E4%BB%80%E4%B9%88%E9%83%BD%E6%90%9C%E4%B8%8D%E5%88%B0"><span class="toc-number">1.</span> <span class="toc-text">一、搜什么都搜不到</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E5%AD%A6%E8%80%85%E5%85%88%E8%AE%B0%E4%BD%8F%E4%B8%A4%E6%9D%A1%E5%88%86%E5%B7%A5"><span class="toc-number">2.</span> <span class="toc-text">初学者先记住两条分工</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E8%A1%A5%E5%9C%B0%E5%9F%BA%EF%BC%9A%E5%87%A0%E4%B8%AA%E7%BB%95%E4%B8%8D%E5%BC%80%E7%9A%84%E8%AF%8D"><span class="toc-number">3.</span> <span class="toc-text">二、先补地基：几个绕不开的词</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-embedding%EF%BC%9A%E6%8A%8A%E4%B8%80%E5%8F%A5%E8%AF%9D%E5%8F%98%E6%88%90%E4%B8%80%E4%B8%B2%E5%9D%90%E6%A0%87"><span class="toc-number">3.1.</span> <span class="toc-text">2.1 embedding：把一句话变成一串坐标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2%EF%BC%9A%E9%9D%A0%E2%80%9C%E7%A6%BB%E5%BE%97%E8%BF%91%E2%80%9D%E6%89%BE%E4%B8%9C%E8%A5%BF"><span class="toc-number">3.2.</span> <span class="toc-text">2.2 向量检索：靠“离得近”找东西</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E5%88%86%E5%9D%97%EF%BC%88chunking%EF%BC%89%EF%BC%9A%E4%BD%A0%E6%A3%80%E7%B4%A2%E7%9A%84%E4%B8%8D%E6%98%AF%E2%80%9C%E6%96%87%E6%A1%A3%E2%80%9D%EF%BC%8C%E6%98%AF%E2%80%9C%E7%89%87%E6%AE%B5%E2%80%9D"><span class="toc-number">3.3.</span> <span class="toc-text">2.3 分块（chunking）：你检索的不是“文档”，是“片段”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-%E4%B8%A4%E4%B8%AA%E5%90%8E%E5%A4%87%E9%80%89%E6%89%8B%EF%BC%9ABM25-%E4%B8%8E-rerank"><span class="toc-number">3.4.</span> <span class="toc-text">2.4 两个后备选手：BM25 与 rerank</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-5-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E8%AE%B0%E5%BF%86%E5%92%8C-RAG"><span class="toc-number">3.5.</span> <span class="toc-text">2.5 为什么需要记忆和 RAG</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-6-%E5%88%86%E5%B1%82%E8%AE%B0%E5%BF%86"><span class="toc-number">3.6.</span> <span class="toc-text">2.6 分层记忆</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-7-%E9%AB%98%E7%BA%A7%E6%A3%80%E7%B4%A2%E7%AD%96%E7%95%A5"><span class="toc-number">3.7.</span> <span class="toc-text">2.7 高级检索策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%90%BD%E5%9C%B0%E7%AC%AC%E4%B8%80%E8%AF%BE%EF%BC%9A%E5%85%88%E5%88%86%E6%B8%85%E4%BB%80%E4%B9%88%E6%A0%B9%E6%9C%AC%E4%B8%8D%E8%AF%A5%E6%A3%80%E7%B4%A2"><span class="toc-number">4.</span> <span class="toc-text">三、落地第一课：先分清什么根本不该检索</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E8%90%BD%E5%9C%B0%E7%AC%AC%E4%BA%8C%E8%AF%BE%EF%BC%9A%E5%85%83%E6%95%B0%E6%8D%AE%E8%BF%87%E6%BB%A4%E6%AF%94%E9%AB%98%E7%BA%A7%E7%AD%96%E7%95%A5%E6%9B%B4%E5%AE%9E%E7%94%A8"><span class="toc-number">5.</span> <span class="toc-text">四、落地第二课：元数据过滤比高级策略更实用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%90%BD%E5%9C%B0%E7%AC%AC%E4%B8%89%E8%AF%BE%EF%BC%9A%E7%9C%9F%E6%AD%A3%E7%9A%84%E7%93%B6%E9%A2%88%E5%9C%A8%E6%96%87%E6%A1%A3%E7%BB%93%E6%9E%84"><span class="toc-number">6.</span> <span class="toc-text">五、落地第三课：真正的瓶颈在文档结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E6%94%BF%E5%BA%9C%E5%B7%A5%E4%BD%9C%E6%8A%A5%E5%91%8A%EF%BC%9A%E6%B2%A1%E6%9C%89%E6%A0%87%E9%A2%98%EF%BC%8C%E5%88%86%E5%9D%97%E5%B0%B1%E9%80%80%E5%8C%96%E6%88%90%E7%A1%AC%E5%88%87"><span class="toc-number">6.1.</span> <span class="toc-text">5.1 政府工作报告：没有标题，分块就退化成硬切</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E4%BC%9A%E8%AE%AE%E7%BA%AA%E8%A6%81%EF%BC%9A%E6%8A%8A%E8%AF%AD%E6%96%99%E9%87%8D%E5%BB%BA%E4%B8%80%E9%81%8D"><span class="toc-number">6.2.</span> <span class="toc-text">5.2 会议纪要：把语料重建一遍</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E8%A1%A8%E7%BB%93%E6%9E%84%E5%BA%93%EF%BC%9A%E7%94%A8%E7%B4%A2%E5%BC%95%E6%96%87%E6%A1%A3%E5%81%9A%E8%AF%AD%E4%B9%89%E6%A1%A5%E6%8E%A5%EF%BC%88%E8%BF%99%E9%87%8C%E5%92%8C-HyDE-%E6%92%9E%E4%B8%8A%E4%BA%86%EF%BC%89"><span class="toc-number">6.3.</span> <span class="toc-text">5.3 表结构库：用索引文档做语义桥接（这里和 HyDE 撞上了）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%90%BD%E5%9C%B0%E7%AC%AC%E5%9B%9B%E8%AF%BE%EF%BC%9A%E8%A2%AB%E5%AE%9E%E6%B5%8B%E6%8E%A8%E7%BF%BB%E7%9A%84%E4%B8%A4%E4%B8%AA%E7%9B%B4%E8%A7%89"><span class="toc-number">7.</span> <span class="toc-text">六、落地第四课：被实测推翻的两个直觉</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%B7%B7%E5%90%88%E6%A3%80%E7%B4%A2%EF%BC%9A%E6%94%B6%E7%9B%8A%E4%B8%BA%E9%9B%B6"><span class="toc-number">7.1.</span> <span class="toc-text">6.1 混合检索：收益为零</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E5%88%86%E6%95%B0%E9%98%88%E5%80%BC%EF%BC%9A%E4%B8%A4%E4%B8%AA%E5%88%86%E6%95%B0%E4%B8%8D%E6%98%AF%E4%B8%80%E5%9B%9E%E4%BA%8B"><span class="toc-number">7.2.</span> <span class="toc-text">6.2 分数阈值：两个分数不是一回事</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%AE%B0%E5%BF%86%E8%BF%99%E4%B8%80%E4%BE%A7%EF%BC%9A%E6%88%91%E6%B2%A1%E6%9C%89%E5%81%9A%E5%9B%9B%E5%B1%82%E8%AE%B0%E5%BF%86"><span class="toc-number">8.</span> <span class="toc-text">七、记忆这一侧：我没有做四层记忆</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%87%A0%E7%82%B9%E6%80%BB%E7%BB%93"><span class="toc-number">9.</span> <span class="toc-text">八、几点总结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

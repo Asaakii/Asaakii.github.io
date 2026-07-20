@@ -1,0 +1,755 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>上下文工程深度解析：如何让 Agent 只看必要信息 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,上下文工程,LLM,工程实践"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="上下文工程深度解析：如何让 Agent 只看必要信息"><meta name="application-name" content="上下文工程深度解析：如何让 Agent 只看必要信息"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="上下文工程深度解析：如何让 Agent 只看必要信息"><meta property="og:url" content="https://blog.asaakii.com/posts/27350/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="从一个真实 bug 出发讲上下文工程：先分清提示词、工具、历史、检索结果为何都占用上下文，再动手看一段被污染的上下文长什么样、怎么自查臃肿、怎么用一个 30 行的玩具复现「结构比压缩更根本」。最有效的上下文管理，往往不是事后压缩，而是提前决定每个步骤能看见什么。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/context-engineering.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/context-engineering.webp"><meta name="description" content="从一个真实 bug 出发讲上下文工程：先分清提示词、工具、历史、检索结果为何都占用上下文，再动手看一段被污染的上下文长什么样、怎么自查臃肿、怎么用一个 30 行的玩具复现「结构比压缩更根本」。最有效的上下文管理，往往不是事后压缩，而是提前决定每个步骤能看见什么。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/27350/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: '上下文工程深度解析：如何让 Agent 只看必要信息',
+  postAI: '',
+  pageFillDescription: '一、报告里出现了一句不该出现的话, 二、先分清：什么会进入上下文, 三、上下文是一种有限资源, 四、有效上下文长什么样, 五、两种拿到上下文的方式, 六、长时程任务的三件套, 七、先别急着上手段：怎么知道自己的上下文臃肿了, 八、我的项目实际怎么做的, 8.1 状态黑板：先有骨架才有分区, 8.2 不是压缩是不给, 8.3 最小可行工具集是声明出来的, 8.4 确定性压缩：一份手写的字段白名单, 8.5 干净窗口：不是清空是重开, 8.6 结构化笔记：trace, 九、动手：30 行复现「结构比压缩更根本」, 十、几点落差, 十一、小结这篇写给两类人一类是刚开始搭被上下文这个词绕晕的初学者一类是已经在用之类框架但总觉得输出不稳定模型老捡到不该看的东西的人我会尽量把每个术语第一次出现时讲清楚也会给一个不依赖任何框架行就能跑的最小例子让你自己复现文章的核心结论一报告里出现了一句不该出现的话我的项目里有一条产业诊断链跑完会输出一份诊断草稿有一次我在草稿里读到一句大意如下的话综合前述预警情况建议将该问题纳入政策议程问题是这条链根本没做过预警分析预警是运行监测链的活儿产业诊断只负责画产业画像模型不知道从哪儿捡来了预警这个词然后一本正经地把它编进了结论里我去翻了当时喂给它的上下文原因很好笑我图省事把整个状态对象一股脑塞了进去为了让你有直观感受我把当时那坨上下文的结构简化还原成下面这样省略了大量真实数据但字段结构是真的喂给产业诊断节点的上下文错误示范已选的个专家角色提示词约产业指标包约这一整块都不该在这里本季度增速回落罪魁祸首工业用电量连续两月负增长存在下行预警证据卡若干约十几个节点的执行轨迹约还有另外几个分区产业诊断节点真正需要的只有这几块可我把全塞进去了那个是上一次调试监测链时留下的残留数据它安安静静躺在状态里模型看见了就用上了它没有撒谎它只是看见了不该看见的东西我粗略数了一下这段上下文里大约有六成和产业诊断这个任务毫无关系而问题不只是浪费那六成噪声里偏偏有一条能把结论带偏的预警这件事让我意识到我一直以为的上下文管理也就是等它变长了再想办法压缩完全搞反了顺序二先分清什么会进入上下文初学者常把上下文等同于聊天记录其实对一个来说模型每次推理时能看见的信息通常包括这么几类系统提示给模型的角色设定总体指令工具定义告诉模型有哪些函数可以调参数是什么外部数据检索结果拉回来的文档数据库查询结果消息历史之前每一轮的对话和模型的回复任务状态与工具结果跑到一半时积累的中间状态上一步工具返回的东西这些全都要塞进同一个上下文窗口里也就是模型这一次调用能看见的全部文字窗口是有大小上限的比如万但更重要的是就算没到上限塞得越多模型也未必看得越清这是下一节要讲的重点开头那个就是最后一类任务状态出的问题残留的字段混在状态里跟着状态一起进了窗口三上下文是一种有限资源先补一点理论但我会尽量让它可感过去几年做应用的焦点是提示工程怎么把指令写清楚系统提示怎么组织但当开始在更长的时间跨度跨多轮推理里工作时要管的就不只是那段提示词了而是整个上下文状态系统指令工具定义外部数据消息历史检索结果所有会进入窗口的东西管理这整坨东西就是上下文工程在推理阶段策划与维护最优的集合这个说法来自的工程博客值得一读它为什么重要因为有个叫上下文腐蚀的现象随着窗口里的变多模型准确回忆信息的能力反而下降这句话有点抽象我给你一个能想象的画面研究者做过这样的实验团队的报告里有系统测量把同一句关键事实比如小明的生日是月日藏进一段长文本然后问模型这句事实当这句话埋在的文本里模型几乎百分百答对当同一句话埋在万万的文本里答对率明显往下掉哪怕那句话一字没改只是周围的干扰变多了不同模型的衰减曲线陡峭程度不同但这个趋势几乎普遍存在信息没变少但它被淹没了根源不是一条公式能完全解释的标准的全注意力计算会随序列长度呈级增长每个都要看其他所有长度翻倍计算量翻四倍而模型训练方式位置编码实际注意力如何分配也都会影响长上下文表现工程上更可靠的表述是上下文越长相关信息越容易被噪声淹没所以要把它当作有限资源来设计而不是假定模型会同等重视每个字段所以结论是上下文必须被当作一种有限资源而且边际收益递减你可以把它想成模型有一笔注意力预算每多一个就花掉一点花在噪声上的就没法花在信号上这正好解释了我那个我塞进去的字段不只是浪费了预算它还主动污染了结论模型把预算花在了一条它本不该看见的信息上四有效上下文长什么样在注意力预算有限的前提下目标就变成了用尽可能少但信号密度尽可能高的最大化拿到期望结果的概率具体到几个组件系统提示有两个极端误区一是过度硬编码在提示里写复杂脆弱的逻辑维护成本极高二是过于空泛只给宏观目标缺少对期望输出的具体信号合理的做法是分区组织背景信息指令工具指引输出描述追求能完整勾勒期望行为的最小必要信息集注意最小不等于最短该给的细节一个不能少多余的一个不要工具定义了与外部世界的契约最常见的失败模式是臃肿工具集功能边界模糊导致该选哪个工具这个决策本身就是含混的这里有句话我印象很深如果人类工程师都说不准该用哪个工具就别指望做得更好所以要精心甄别一个最小可行工具集示例则要精挑细选一组多样且典型的而不是把所有边界情况罗列进去三五个覆盖典型情况的好例子胜过二十个把提示撑爆的琐碎例子总的指导思想八个字信息充分但要紧致五两种拿到上下文的方式工程实践正在从推理前一次性检索转向即时上下文这两个词初学者容易混我用做菜打个比方预检索像出门前把可能用到的食材全买回家堆冰箱里提前把所有可能相关的数据都塞进上下文像手里只攥一张购物清单做到哪一步缺什么才去买上下文里只维护轻量引用文件路径查询语句运行时用工具动态加载真正的数据更贴近人的认知方式我们不会把所有信息背下来而是用文件系统书签收件箱这些外部索引按需提取而且引用本身的元数据就在传递信息目录层级命名约定时间戳都在隐含地表达用途和时效和给人的暗示就完全不同一个是测试代码一个可能是核心逻辑里一个叫这名字的模块模型看到路径不用打开文件就已经获得了信息这带来了渐进式披露每一步交互产生新上下文反过来指导下一步文件大小暗示复杂度命名暗示用途时间戳暗示相关性逐层构建理解只在工作记忆里保留当前必要的子集代价是运行时探索比预计算检索慢而且需要有主见的工程设计否则模型会误用工具追死胡同反而浪费上下文所以很多场景下混合策略更好前置加载少量高价值上下文保证速度再允许按需探索六长时程任务的三件套当任务长到超出上下文窗口大型代码库迁移跨小时的研究有三种手段手段做法适合压缩整合接近上限时高保真总结用摘要重启新窗口需要长对话连续性强调接力的任务结构化笔记定期把关键信息写到上下文外的持久存储按需拉回有里程碑的迭代式开发与研究子代理架构主代理规划子代理在干净窗口里深挖只回传凝练摘要复杂研究分析能从并行探索获益这三个词都比较抽象给你一个压缩整合最小画面假设一轮对话已经积累了轮问答逼近窗口上限你可以让模型把这轮总结成一段字的目前进展关键决定待办然后开一个新窗口只带着这段摘要继续旧的轮全部丢弃这就是用摘要重启新窗口压缩的调参顺序值得记先优化召回别漏关键信息再优化精确度剔冗余宁可摘要里多带点也别漏掉关键的一句一种安全的轻触式压缩是只清理深层历史里的工具调用与结果那些往往是最占地方又最没有长期价值的七先别急着上手段怎么知道自己的上下文臃肿了上面全是该怎么办但初学者更该先问一句我怎么知道自己的上下文是不是已经臃肿被污染了手段用错地方比不用还糟我自己踩坑后固定下来几个笨办法把喂进去的上下文原样打印出来这是最有用的一步却最常被跳过在真正调用模型前把即将发送的完整消息到日志或文件里自己用眼睛扫一遍开头那个我就是这样一眼看到咦产业诊断怎么带着监测的字段共字符数而不是凭感觉感觉有点长是不可靠的用分词器实际数一下你常会被吓一跳近似计数即可数完你可以进一步问这些里有多少是和当前任务真正相关的我给开头那段上下文按分区数了一遍发现约六成属于和产业诊断无关的分区这个比例本身就是一个刺眼的信号给不该出现的东西写断言观测之外还要防回归既然产业诊断节点不该看到监测数据那就在测试里把这条规矩写死产业诊断不该带监测数据字段泄漏了这条断言如果早写半年我开头那个根本活不过一次先能看见和量出问题再谈用哪种手段顺序不能反八我的项目实际怎么做的理论讲完回到我那个先交代一下背景不然后面的代码会显得突兀我做的是一个县域经济分析系统给定一个地区和一个时间周期它要产出正式的经济分析报告整个流程不是一次问答而是多条业务链接力监测链先算宏观形势和预警产业诊断链画产业画像归因链找原因规划链出政策建议每条链内部又是多个节点串起来的一个节点约等于一次带特定职责的模型调用或数据处理系统跑在上你可以把它理解成一个带状态的流程图框架节点是图上的点它们共享同一个状态对象一个节点跑完把结果写回状态下一个节点接着读理论上它是典型的长时程任务该上压缩笔记子代理三件套但实际做下来我用的几乎全是另一条路下面逐个拆状态黑板先有骨架才有分区整个系统围绕一个状态对象流转它有固定的分区用户请求周期问题当前业务链与步骤已选专家角色指标产业政策规划输入包证据卡来源缺口各类分析结果草稿正文与章节质量门禁结果节点轨迹警告工具调用产物路径是里给字典标注有哪些字段每个字段是什么类型的方式表示这些字段都可选你不必熟悉它只要知道这是一张固定的分区表所有数据必须落进某个已命名的抽屉里这其实就是教科书里那个固定骨架的分区模板的翻版只不过它不是一段提示词模板而是一个数据结构分区固定带来的好处是一样的好调试好断言好评估你永远知道监测结果在永远知道产物路径在不会满世界找但真正的关键在下一步不是压缩是不给我最早的错误就是状态里有个分区我把个都喂给了模型就是第一节那坨上下文现在的做法是每个节点只读它该读的那两三个分区产业诊断节点读压根不去碰那个预警字段就算躺在状态里也进不了它的上下文具体到代码就是每个节点在拼上下文时显式地只投影自己声明的分区白名单式投影只取这几块其余一律不进这个转变的心智模型是这样的我最早的做法把整个塞进去上下文很长注意力被摊薄模型捡到不该看的字段事后再想办法压缩现在的做法节点只读它声明的分区上下文天然就短不该看的从未进入无需压缩教科书里的压缩整合解决的是上下文已经太长了怎么办而结构化的状态让这个问题在很多节点上根本不会发生这不是说压缩没用长对话场景里它是刚需只是在我这种多节点接力每个节点职责明确的系统里结构比压缩更根本最小可行工具集是声明出来的第四节说要精心甄别一个最小可行工具集还引了那句人类都说不准用哪个工具别指望我的处理方式是根本不让模型面对这个选择题每条业务链在注册表里自己声明它能用哪些工具模型分析链只看得见这三个工具它不知道政策检索工具的存在自然也不会误用最小可行工具集不是模型选出来的是声明出来的角色提示词也一样节点匹配到业务链后只加载这条链声明的那几个角色的没被选中的角色提示词一个字都不会进上下文这就是第五节说的渐进式披露只不过触发它的是注册表不是模型的自主探索确定性压缩一份手写的字段白名单链与链之间要交接监测诊断归因规划这就是第六节说的压缩整合场景把上游一大堆结果浓缩成下游需要的那部分教科书的做法是让模型高保真总结我的做法是写一个函数这里要停一下回答一个你可能已经发现的矛盾开头那个害我出的怎么这里又被我主动放进白名单了因为该不该看一个字段取决于节点的职责而不是字段本身是监测链的产出它本就该流进规划链规划政策时当然要参考预警它不该出现的地方是产业诊断链那是画产业画像的跟预警无关同一个字段在这条交接里是必需品在那条节点里是污染源白名单的意义正在于此它逼我为每一次交接单独回答这一步到底需要什么而不是大概都带上吧这份白名单和压缩的差别很实在压缩字段白名单关键信息会不会丢可能要调召回不会字段是写死的结果稳不稳定每次可能不同完全确定能不能测难得断言语义纯函数直接断言成本一次调用零缺点无加字段容易忘得手工维护最后那条是真代价加了新分析字段却忘了往包里加下游就拿不到这种不会报错只会让报告少一段我是靠交接流程的测试兜住的就是第七节那种断言选择标准我总结成一句上游结构已知就用白名单上游是自由文本才用压缩我的上游是结构化分析结果所以白名单更合适如果你的上游是一大段用户自由输入的会议纪要那还是得靠模型去压干净窗口不是清空是重开链之间交接时我没有清理上一条链的状态而是从头建一个新的全新的干净状态只搬该搬的前缀白名单起一个空白状态然后按白名单往里搬默认是什么都不带带什么要显式写出来这跟清空不需要的是两种相反的默认值而默认值决定了出错时会往哪边倒默认全带手动删忘了删脏数据泄漏到下游就是我开头那个默认不带手动加忘了加下游少一段内容测试能抓到同样是忘了后者的后果轻得多一个是静默的错误结论一个是显眼的内容缺失工程上我们永远愿意让错误往吵闹且可测的那边倒结构化笔记记录每个节点的执行轨迹哪个节点什么状态什么时候附带元数据它不参与模型推理纯粹是给人看的这算教科书里的结构化笔记但我的用法更窄不是给模型跨窗口拉回的记忆而是排查问题时的现场记录开头那个预警就是靠才定位到是哪个节点在什么状态下捡走了那个字段可以说第七节那套先看见问题的能力一半是靠这份撑起来的九动手行复现结构比压缩更根本前面全在说我的真实项目但它依赖又是特定业务你没法照着跑所以这一节给一个不依赖任何框架能直接粘进跑的玩具把核心结论亲手复现一遍场景简化成一个状态里有两块数据天气链算出来的含一条预警和产业数据现在有一个产业诊断节点它只该看产业数据我们对比两种喂法一个玩具状态本月降水偏多发布暴雨橙色预警产业诊断不该看到它规上工业增加值假装这是模型它会注意到上下文里任何抢眼的词预警诊断结论综合预警情况建议纳入政策议程被污染诊断结论工业保持温和增长正常做法图省事整个塞进去诊断结论综合预警情况建议纳入政策议程捡到了做法只投影产业诊断该看的那一块白名单只有诊断结论工业保持温和增长从未进入是我用一个预警硬编码来模拟模型会被上下文里抢眼的词带跑做法把整个塞进去里的预警被捡到结论被污染做法只投影那个词从一开始就不在上下文里也就没有任何东西需要压缩或过滤你可以在做法之后再想象一个事后压缩的补丁让另一个模型去删掉结论里的预警二字它可能有效但你多花了一次调用多了一处可能出错的环节而这一切只是因为那个词一开始就不该进来这就是全文那句话的可运行版本最好的压缩是那些压根没进来十几点落差方法讲完也得诚实说说我和教科书那套的差距免得你以为照书全做才对我只做了前三个教科书那套上下文处理流水线叫获取选择结构化压缩我的实现里压缩那步基本是空的因为前三步做扎实之后节点上下文本来就不长没什么可压的压缩是兜底不是主力子代理我没用教科书推荐子代理架构来隔离上下文的节点本身不会自动替我隔离输入是我在节点里显式投影的少数分区后才获得了类似干净窗口的效果对子问题需要独立探索时子代理仍然有价值只是我的业务是固定流水线用不上并行深挖我用得很保守我没让模型自主用去探索而是让节点按固定路径去取这牺牲了灵活性换来了可预测性对一个要出正式分析报告的系统来说这笔买卖划算第五节也说了运行时探索需要有主见的工程设计否则模型会追死胡同我选择把主见写进代码而不是写进提示词最大的收获是把顺序摆正了我原来以为上下文工程是等它变长了怎么办是个优化问题现在我认为它首先是个结构问题先想清楚每个环节该看见什么再去谈压缩顺序反了你会一直在给自己制造需要压缩的上下文十一小结上下文是有限资源会腐蚀有注意力预算这是前提想验证它是否臃肿先把上下文打印出来数一遍给不该出现的字段写上断言教科书给的手段是压缩整合结构化笔记子代理都很有用但在我的项目里真正解决问题的是另一件事让每个节点从一开始就只看得见它该看见的状态分区固定节点只读自己那几块工具在注册表里声明模型不面对选哪个角色提示词按需加载链间交接用手写的字段白名单确定性压缩且逼你逐次回答这一步到底需要什么新链从空白状态重开默认什么都不带回到开头那句综合前述预警情况我最后没有靠优化提示词来解决它也没有靠压缩上下文只是让产业诊断节点不再读得到那个字段最好的压缩是那些压根没进来参考资料本文上下文工程定义与三件套手段的主要来源第三节上下文腐蚀实验的出处第九章上下文工程流水线与整体框架',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-20 13:32:16',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>上下文工程</span></a><a class="article-meta__tags" href="/tags/LLM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>LLM</span></a><a class="article-meta__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>工程实践</span></a></span></div></div><h1 class="post-title" itemprop="name headline">上下文工程深度解析：如何让 Agent 只看必要信息</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-04-16T12:30:00.000Z" title="发表于 2026-04-16 20:30:00">2026-04-16</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-20T05:32:16.641Z" title="更新于 2026-07-20 13:32:16">2026-07-20</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">7.2k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>23分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/context-engineering.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/27350/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url">上下文工程</a><a href="/tags/LLM/" tabindex="-1" itemprop="url">LLM</a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" tabindex="-1" itemprop="url">工程实践</a><h1 id="CrawlerTitle" itemprop="name headline">上下文工程深度解析：如何让 Agent 只看必要信息</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-04-16T12:30:00.000Z" title="发表于 2026-04-16 20:30:00">2026-04-16</time><time itemprop="dateCreated datePublished" datetime="2026-07-20T05:32:16.641Z" title="更新于 2026-07-20 13:32:16">2026-07-20</time></header><blockquote>
+<p>这篇写给两类人：一类是刚开始搭 Agent、被「上下文」这个词绕晕的初学者；一类是已经在用 LangGraph &#x2F; LlamaIndex 之类框架，但总觉得「输出不稳定、模型老捡到不该看的东西」的人。我会尽量把每个术语第一次出现时讲清楚，也会给一个不依赖任何框架、30 行就能跑的最小例子，让你自己复现文章的核心结论。</p>
+</blockquote>
+<h2 id="一、报告里出现了一句不该出现的话"><a href="#一、报告里出现了一句不该出现的话" class="headerlink" title="一、报告里出现了一句不该出现的话"></a>一、报告里出现了一句不该出现的话</h2><p>我的项目里有一条产业诊断链，跑完会输出一份诊断草稿。有一次我在草稿里读到一句大意如下的话：</p>
+<blockquote>
+<p>综合前述预警情况，建议将该问题纳入政策议程。</p>
+</blockquote>
+<p>问题是，这条链根本没做过预警分析。预警是运行监测链的活儿，产业诊断只负责画产业画像。模型不知道从哪儿捡来了「预警」这个词，然后一本正经地把它编进了结论里。</p>
+<p>我去翻了当时喂给它的上下文，原因很好笑：我图省事，把整个状态对象一股脑塞了进去。为了让你有直观感受，我把当时那坨上下文的结构简化还原成下面这样（省略了大量真实数据，但字段结构是真的）：</p>
+<figure class="highlight jsonc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 喂给「产业诊断」节点的上下文（错误示范）</span></span><br><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;request&quot;</span><span class="punctuation">:</span>  <span class="punctuation">&#123;</span> <span class="attr">&quot;period&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2025Q3&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;question&quot;</span><span class="punctuation">:</span> <span class="string">&quot;...&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;workflow&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;workflow_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;industry_diagnosis&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;step&quot;</span><span class="punctuation">:</span> <span class="number">2</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;roles&quot;</span><span class="punctuation">:</span>    <span class="punctuation">&#123;</span> <span class="attr">&quot;...&quot;</span><span class="punctuation">:</span> <span class="string">&quot;已选的 3 个专家角色提示词，约 1200 token&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span>     <span class="punctuation">&#123;</span> <span class="attr">&quot;industry&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;...&quot;</span><span class="punctuation">:</span> <span class="string">&quot;产业指标包，约 900 token&quot;</span> <span class="punctuation">&#125;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;analysis&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;monitoring&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span>                       <span class="comment">// ← 这一整块都不该在这里</span></span><br><span class="line">      <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span>  <span class="string">&quot;本季度 GDP 增速回落……&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;warnings&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span>                        <span class="comment">// ← 罪魁祸首</span></span><br><span class="line">        <span class="string">&quot;工业用电量连续两月负增长，存在下行预警&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="string">&quot;...&quot;</span></span><br><span class="line">      <span class="punctuation">]</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;evidence&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;...&quot;</span><span class="punctuation">:</span> <span class="string">&quot;证据卡若干，约 1500 token&quot;</span> <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;trace&quot;</span><span class="punctuation">:</span>    <span class="punctuation">&#123;</span> <span class="attr">&quot;...&quot;</span><span class="punctuation">:</span> <span class="string">&quot;十几个节点的执行轨迹，约 2000 token&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="comment">// ……还有另外几个分区</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>产业诊断节点真正需要的，只有 <code>request</code>、<code>workflow</code>、<code>roles</code>、<code>data.industry</code> 这几块。可我把 <code>analysis.monitoring</code>、<code>evidence</code>、<code>trace</code> 全塞进去了。那个 <code>analysis.monitoring.warnings</code> 是上一次调试监测链时留下的残留数据，它安安静静躺在状态里，模型看见了，就用上了。</p>
+<p>它没有撒谎，它只是看见了不该看见的东西。</p>
+<p>我粗略数了一下，这段上下文里大约有六成 token 和「产业诊断」这个任务毫无关系。而问题不只是浪费：那六成噪声里，偏偏有一条能把结论带偏的「预警」。</p>
+<p>这件事让我意识到，我一直以为的「上下文管理」，也就是等它变长了再想办法压缩，完全搞反了顺序。</p>
+<h2 id="二、先分清：什么会进入上下文"><a href="#二、先分清：什么会进入上下文" class="headerlink" title="二、先分清：什么会进入上下文"></a>二、先分清：什么会进入上下文</h2><p>初学者常把「上下文」等同于「聊天记录」。其实对一个 Agent 来说，模型每次推理时能看见的信息，通常包括这么几类：</p>
+<ul>
+<li>系统提示（system prompt）：给模型的角色设定、总体指令。</li>
+<li>工具定义（tool definitions）：告诉模型有哪些函数可以调、参数是什么。</li>
+<li>外部数据 &#x2F; 检索结果：RAG 拉回来的文档、数据库查询结果。</li>
+<li>消息历史（message history）：之前每一轮的对话和模型的回复。</li>
+<li>任务状态与工具结果：Agent 跑到一半时积累的中间状态、上一步工具返回的东西。</li>
+</ul>
+<p>这些全都要塞进同一个「上下文窗口」里，也就是模型这一次调用能看见的全部文字。窗口是有大小上限的（比如 20 万 token），但更重要的是：就算没到上限，塞得越多，模型也未必看得越清。这是下一节要讲的重点。</p>
+<p>开头那个 bug 就是最后一类（任务状态）出的问题：残留的 <code>warnings</code> 字段混在状态里，跟着状态一起进了窗口。</p>
+<h2 id="三、上下文是一种有限资源"><a href="#三、上下文是一种有限资源" class="headerlink" title="三、上下文是一种有限资源"></a>三、上下文是一种有限资源</h2><p>先补一点理论，但我会尽量让它可感。</p>
+<p>过去几年，做 LLM 应用的焦点是提示工程（prompt engineering）：怎么把指令写清楚、系统提示怎么组织。但当 Agent 开始在更长的时间跨度、跨多轮推理里工作时，要管的就不只是那段提示词了，而是整个上下文状态：系统指令、工具定义、外部数据、消息历史、检索结果，所有会进入窗口的东西。</p>
+<p>管理这整坨东西，就是上下文工程（context engineering）：在推理阶段，策划与维护「最优的 token 集合」。（这个说法来自 Anthropic 的工程博客 <em>Effective context engineering for AI agents</em>，值得一读。）</p>
+<p>它为什么重要？因为有个叫上下文腐蚀（context rot）的现象：随着窗口里的 token 变多，模型准确回忆信息的能力反而下降。</p>
+<p>这句话有点抽象，我给你一个能想象的画面。研究者做过这样的实验（Chroma 团队的 <em>Context Rot</em> 报告里有系统测量）：把同一句关键事实（比如「小明的生日是 3 月 7 日」）藏进一段长文本，然后问模型这句事实。</p>
+<ul>
+<li>当这句话埋在 2000 token 的文本里，模型几乎百分百答对；</li>
+<li>当同一句话埋在 5 万、10 万 token 的文本里，答对率明显往下掉，哪怕那句话一字没改，只是周围的「干扰」变多了。</li>
+</ul>
+<p>不同模型的衰减曲线陡峭程度不同，但这个趋势几乎普遍存在。信息没变少，但它被淹没了。</p>
+<p>根源不是一条公式能完全解释的。标准的全注意力计算会随序列长度呈 <code>n²</code> 级增长（每个 token 都要「看」其他所有 token，长度翻倍，计算量翻四倍），而模型训练方式、位置编码、实际注意力如何分配，也都会影响长上下文表现。工程上更可靠的表述是：上下文越长，相关信息越容易被噪声淹没。所以要把它当作有限资源来设计，而不是假定模型会同等重视每个字段。</p>
+<p>所以结论是：上下文必须被当作一种有限资源，而且边际收益递减。你可以把它想成模型有一笔「注意力预算」，每多一个 token 就花掉一点；花在噪声上的，就没法花在信号上。</p>
+<p>这正好解释了我那个 bug：我塞进去的 <code>warnings</code> 字段，不只是浪费了预算，它还主动污染了结论，模型把预算花在了一条它本不该看见的信息上。</p>
+<h2 id="四、有效上下文长什么样"><a href="#四、有效上下文长什么样" class="headerlink" title="四、有效上下文长什么样"></a>四、有效上下文长什么样</h2><p>在「注意力预算有限」的前提下，目标就变成了：用尽可能少、但信号密度尽可能高的 token，最大化拿到期望结果的概率。</p>
+<p>具体到几个组件：</p>
+<p>系统提示有两个极端误区。一是过度硬编码，在提示里写复杂脆弱的 if-else 逻辑，维护成本极高；二是过于空泛，只给宏观目标，缺少对期望输出的具体信号。合理的做法是分区组织（背景信息、指令、工具指引、输出描述），追求能完整勾勒期望行为的「最小必要信息集」。注意，「最小」不等于「最短」。该给的细节一个不能少，多余的一个不要。</p>
+<p>工具定义了 Agent 与外部世界的契约。最常见的失败模式是「臃肿工具集」：功能边界模糊，导致「该选哪个工具」这个决策本身就是含混的。这里有句话我印象很深：</p>
+<blockquote>
+<p>如果人类工程师都说不准该用哪个工具，就别指望 Agent 做得更好。</p>
+</blockquote>
+<p>所以要精心甄别一个最小可行工具集（minimal viable toolset）。</p>
+<p>示例（few-shot）则要精挑细选一组多样且典型的，而不是把所有边界情况罗列进去。三五个覆盖典型情况的好例子，胜过二十个把提示撑爆的琐碎例子。</p>
+<p>总的指导思想八个字：信息充分，但要紧致。</p>
+<h2 id="五、两种拿到上下文的方式"><a href="#五、两种拿到上下文的方式" class="headerlink" title="五、两种拿到上下文的方式"></a>五、两种拿到上下文的方式</h2><p>工程实践正在从「推理前一次性检索」转向即时（JIT，Just-In-Time）上下文。这两个词初学者容易混，我用做菜打个比方：</p>
+<ul>
+<li>预检索（pre-retrieval）：像出门前把可能用到的食材全买回家堆冰箱里，提前把所有可能相关的数据都塞进上下文；</li>
+<li>JIT：像手里只攥一张购物清单，做到哪一步、缺什么才去买，上下文里只维护轻量引用（文件路径、查询语句、URL），运行时用工具动态加载真正的数据。</li>
+</ul>
+<p>JIT 更贴近人的认知方式：我们不会把所有信息背下来，而是用文件系统、书签、收件箱这些外部索引按需提取。</p>
+<p>而且引用本身的元数据就在传递信息：目录层级、命名约定、时间戳，都在隐含地表达用途和时效。<code>tests/test_utils.py</code> 和 <code>src/core/test_utils.py</code> 给人的暗示就完全不同，一个是测试代码，一个可能是核心逻辑里一个叫这名字的模块。模型看到路径，不用打开文件就已经获得了信息。</p>
+<p>这带来了渐进式披露（progressive disclosure）：每一步交互产生新上下文，反过来指导下一步，文件大小暗示复杂度，命名暗示用途，时间戳暗示相关性。Agent 逐层构建理解，只在「工作记忆」里保留当前必要的子集。</p>
+<p>代价是：运行时探索比预计算检索慢，而且需要有主见的工程设计，否则模型会误用工具、追死胡同，反而浪费上下文。所以很多场景下混合策略更好：前置加载少量高价值上下文保证速度，再允许按需探索。</p>
+<h2 id="六、长时程任务的三件套"><a href="#六、长时程任务的三件套" class="headerlink" title="六、长时程任务的三件套"></a>六、长时程任务的三件套</h2><p>当任务长到超出上下文窗口（大型代码库迁移、跨小时的研究），有三种手段：</p>
+<table>
+<thead>
+<tr>
+<th>手段</th>
+<th>做法</th>
+<th>适合</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>压缩整合（compaction）</td>
+<td>接近上限时高保真总结，用摘要重启新窗口</td>
+<td>需要长对话连续性、强调「接力」的任务</td>
+</tr>
+<tr>
+<td>结构化笔记（note-taking）</td>
+<td>定期把关键信息写到上下文外的持久存储，按需拉回</td>
+<td>有里程碑的迭代式开发与研究</td>
+</tr>
+<tr>
+<td>子代理架构（sub-agents）</td>
+<td>主代理规划，子代理在干净窗口里深挖，只回传凝练摘要</td>
+<td>复杂研究分析，能从并行探索获益</td>
+</tr>
+</tbody></table>
+<p>这三个词都比较抽象，给你一个「压缩整合」最小画面：假设一轮对话已经积累了 50 轮问答、逼近窗口上限，你可以让模型把这 50 轮总结成一段 500 字的「目前进展 + 关键决定 + 待办」，然后开一个新窗口，只带着这段摘要继续，旧的 50 轮全部丢弃。这就是「用摘要重启新窗口」。</p>
+<p>压缩的调参顺序值得记：先优化召回（别漏关键信息），再优化精确度（剔冗余）。宁可摘要里多带点、也别漏掉关键的一句。一种安全的轻触式压缩，是只清理深层历史里的工具调用与结果，那些往往是最占地方、又最没有长期价值的。</p>
+<h2 id="七、先别急着上手段：怎么知道自己的上下文臃肿了"><a href="#七、先别急着上手段：怎么知道自己的上下文臃肿了" class="headerlink" title="七、先别急着上手段：怎么知道自己的上下文臃肿了"></a>七、先别急着上手段：怎么知道自己的上下文臃肿了</h2><p>上面全是「该怎么办」。但初学者更该先问一句：我怎么知道自己的上下文是不是已经臃肿、被污染了？手段用错地方，比不用还糟。我自己踩坑后固定下来几个笨办法：</p>
+<ol>
+<li>把喂进去的上下文原样打印出来。这是最有用的一步，却最常被跳过。在真正调用模型前，把即将发送的完整消息 dump 到日志或文件里，自己用眼睛扫一遍。开头那个 <code>warnings</code> bug，我就是这样一眼看到「咦，产业诊断怎么带着监测的字段」。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">debug_context</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>]</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    payload = json.dumps(messages, ensure_ascii=<span class="literal">False</span>, indent=<span class="number">2</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[context] 共 <span class="subst">&#123;<span class="built_in">len</span>(payload)&#125;</span> 字符&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(payload)</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>数 token，而不是凭感觉。「感觉有点长」是不可靠的。用分词器实际数一下，你常会被吓一跳。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tiktoken</span><br><span class="line"></span><br><span class="line">enc = tiktoken.get_encoding(<span class="string">&quot;cl100k_base&quot;</span>)  <span class="comment"># 近似计数即可</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">count_tokens</span>(<span class="params">text: <span class="built_in">str</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(enc.encode(text))</span><br></pre></td></tr></table></figure>
+
+<p>数完你可以进一步问：这些 token 里，有多少是和当前任务真正相关的？我给开头那段上下文按分区数了一遍，发现约六成 token 属于「和产业诊断无关」的分区，这个比例本身就是一个刺眼的信号。</p>
+<ol start="3">
+<li>给「不该出现的东西」写断言。观测之外，还要防回归。既然产业诊断节点不该看到监测数据，那就在测试里把这条规矩写死：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">test_diagnosis_context_has_no_monitoring</span>():</span><br><span class="line">    ctx = build_diagnosis_context(sample_state)</span><br><span class="line">    <span class="keyword">assert</span> <span class="string">&quot;monitoring&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> ctx[<span class="string">&quot;analysis&quot;</span>], <span class="string">&quot;产业诊断不该带监测数据&quot;</span></span><br><span class="line">    <span class="keyword">assert</span> <span class="string">&quot;warnings&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> json.dumps(ctx), <span class="string">&quot;warnings 字段泄漏了&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>这条断言如果早写半年，我开头那个 bug 根本活不过一次 CI。</p>
+<p>先能「看见」和「量出」问题，再谈用哪种手段，顺序不能反。</p>
+<h2 id="八、我的项目实际怎么做的"><a href="#八、我的项目实际怎么做的" class="headerlink" title="八、我的项目实际怎么做的"></a>八、我的项目实际怎么做的</h2><p>理论讲完，回到我那个 bug。先交代一下背景，不然后面的代码会显得突兀。</p>
+<p>我做的是一个县域经济分析系统：给定一个地区和一个时间周期，它要产出正式的经济分析报告。整个流程不是一次问答，而是多条「业务链」接力：监测链先算宏观形势和预警，产业诊断链画产业画像，归因链找原因，规划链出政策建议。每条链内部又是多个「节点」串起来的（一个节点约等于一次带特定职责的模型调用或数据处理）。系统跑在 LangGraph 上，你可以把它理解成一个「带状态的流程图框架」：节点是图上的点，它们共享同一个状态对象，一个节点跑完把结果写回状态，下一个节点接着读。</p>
+<p>理论上它是典型的「长时程任务」，该上压缩、笔记、子代理三件套。但实际做下来，我用的几乎全是另一条路。下面逐个拆。</p>
+<h3 id="8-1-状态黑板：先有骨架，才有分区"><a href="#8-1-状态黑板：先有骨架，才有分区" class="headerlink" title="8.1 状态黑板：先有骨架，才有分区"></a>8.1 状态黑板：先有骨架，才有分区</h3><p>整个系统围绕一个状态对象流转，它有固定的分区：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CountyEconomyState</span>(TypedDict, total=<span class="literal">False</span>):</span><br><span class="line">    request: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]     <span class="comment"># 用户请求、周期、问题</span></span><br><span class="line">    workflow: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]    <span class="comment"># 当前业务链与步骤</span></span><br><span class="line">    roles: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]       <span class="comment"># 已选专家角色</span></span><br><span class="line">    data: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]        <span class="comment"># 指标、产业、政策、规划输入包</span></span><br><span class="line">    evidence: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]    <span class="comment"># 证据卡、来源、缺口</span></span><br><span class="line">    analysis: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]    <span class="comment"># 各类分析结果</span></span><br><span class="line">    draft: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]       <span class="comment"># 草稿正文与章节</span></span><br><span class="line">    review: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]      <span class="comment"># 质量门禁结果</span></span><br><span class="line">    trace: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]       <span class="comment"># 节点轨迹、警告、工具调用</span></span><br><span class="line">    outputs: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]     <span class="comment"># 产物路径</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>TypedDict</code> 是 Python 里给字典标注「有哪些字段、每个字段是什么类型」的方式，<code>total=False</code> 表示这些字段都可选。你不必熟悉它，只要知道：这是一张固定的分区表，所有数据必须落进某个已命名的抽屉里。</p>
+</blockquote>
+<p>这其实就是教科书里那个「固定骨架的分区模板」的翻版，只不过它不是一段提示词模板，而是一个数据结构。分区固定带来的好处是一样的：好调试、好断言、好评估。你永远知道监测结果在 <code>analysis.monitoring</code>，永远知道产物路径在 <code>outputs</code>，不会满世界找。</p>
+<p>但真正的关键在下一步。</p>
+<h3 id="8-2-不是压缩，是不给"><a href="#8-2-不是压缩，是不给" class="headerlink" title="8.2 不是压缩，是不给"></a>8.2 不是压缩，是不给</h3><p>我最早的错误就是：状态里有 10 个分区，我把 10 个都喂给了模型。（就是第一节那坨上下文。）</p>
+<p>现在的做法是，每个节点只读它该读的那两三个分区。产业诊断节点读 <code>data.industry</code>，压根不去碰 <code>analysis.monitoring</code>。那个「预警」字段就算躺在状态里，也进不了它的上下文。</p>
+<p>具体到代码，就是每个节点在拼上下文时，显式地只投影自己声明的分区：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">build_diagnosis_context</span>(<span class="params">state: CountyEconomyState</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">    <span class="comment"># 白名单式投影：只取这几块，其余一律不进</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;request&quot;</span>:  state[<span class="string">&quot;request&quot;</span>],</span><br><span class="line">        <span class="string">&quot;workflow&quot;</span>: state[<span class="string">&quot;workflow&quot;</span>],</span><br><span class="line">        <span class="string">&quot;roles&quot;</span>:    state[<span class="string">&quot;roles&quot;</span>],</span><br><span class="line">        <span class="string">&quot;data&quot;</span>:     &#123;<span class="string">&quot;industry&quot;</span>: state[<span class="string">&quot;data&quot;</span>][<span class="string">&quot;industry&quot;</span>]&#125;,</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个转变的心智模型是这样的：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TB
+  subgraph B[&quot;❌ 我最早的做法&quot;]
+    B1[&quot;把整个 state 塞进去&quot;] --&gt; B2[&quot;上下文很长&quot;]
+    B2 --&gt; B3[&quot;注意力被摊薄&lt;br&#x2F;&gt;模型捡到不该看的字段&quot;]
+    B3 --&gt; B4[&quot;事后再想办法压缩&quot;]
+  end
+  subgraph A[&quot;✅ 现在的做法&quot;]
+    A1[&quot;节点只读它声明的分区&quot;] --&gt; A2[&quot;上下文天然就短&quot;]
+    A2 --&gt; A3[&quot;不该看的从未进入&lt;br&#x2F;&gt;无需压缩&quot;]
+  end
+  </pre></div>
+
+<p>教科书里的压缩整合，解决的是「上下文已经太长了怎么办」。而结构化的状态让这个问题在很多节点上根本不会发生。</p>
+<p>这不是说压缩没用，长对话场景里它是刚需。只是在我这种「多节点接力、每个节点职责明确」的系统里，结构比压缩更根本。</p>
+<h3 id="8-3-最小可行工具集，是声明出来的"><a href="#8-3-最小可行工具集，是声明出来的" class="headerlink" title="8.3 最小可行工具集，是声明出来的"></a>8.3 最小可行工具集，是声明出来的</h3><p>第四节说要精心甄别一个最小可行工具集，还引了那句「人类都说不准用哪个工具，别指望 Agent」。</p>
+<p>我的处理方式是：根本不让模型面对这个选择题。每条业务链在注册表里自己声明它能用哪些工具：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;workflow_id&quot;</span>: <span class="string">&quot;model_analysis&quot;</span>,</span><br><span class="line">    <span class="string">&quot;roles&quot;</span>: [<span class="string">&quot;chief_economist&quot;</span>, <span class="string">&quot;model_analyst&quot;</span>, <span class="string">&quot;report_editor&quot;</span>],</span><br><span class="line">    <span class="string">&quot;tools&quot;</span>: [<span class="string">&quot;load_dataset&quot;</span>, <span class="string">&quot;run_model&quot;</span>, <span class="string">&quot;render_model_report&quot;</span>],</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>模型分析链只看得见这三个工具。它不知道政策检索工具的存在，自然也不会误用。最小可行工具集不是模型选出来的，是声明出来的。</p>
+<p>角色提示词也一样：<code>intake</code> 节点匹配到业务链后，只加载这条链声明的那几个角色的 markdown。没被选中的角色，提示词一个字都不会进上下文，这就是第五节说的渐进式披露，只不过触发它的是注册表，不是模型的自主探索。</p>
+<h3 id="8-4-确定性压缩：一份手写的字段白名单"><a href="#8-4-确定性压缩：一份手写的字段白名单" class="headerlink" title="8.4 确定性压缩：一份手写的字段白名单"></a>8.4 确定性压缩：一份手写的字段白名单</h3><p>链与链之间要交接（监测 → 诊断 → 归因 → 规划），这就是第六节说的「压缩整合」场景：把上游一大堆结果，浓缩成下游需要的那部分。</p>
+<p>教科书的做法是让模型高保真总结。我的做法是写一个函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">build_analysis_package</span>(<span class="params">state: CountyEconomyState</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">    monitoring = state.get(<span class="string">&quot;analysis&quot;</span>, &#123;&#125;).get(<span class="string">&quot;monitoring&quot;</span>, &#123;&#125;)</span><br><span class="line">    outputs = state.get(<span class="string">&quot;outputs&quot;</span>, &#123;&#125;)</span><br><span class="line">    evidence = state.get(<span class="string">&quot;evidence&quot;</span>, &#123;&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;period&quot;</span>: request.get(<span class="string">&quot;period&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">        <span class="string">&quot;workflow_id&quot;</span>: workflow.get(<span class="string">&quot;workflow_id&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">        <span class="string">&quot;monitoring&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;summary&quot;</span>: monitoring.get(<span class="string">&quot;summary&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">            <span class="string">&quot;pressures&quot;</span>: monitoring.get(<span class="string">&quot;pressures&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">            <span class="string">&quot;data_gaps&quot;</span>: monitoring.get(<span class="string">&quot;data_gaps&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">            <span class="string">&quot;warnings&quot;</span>: monitoring.get(<span class="string">&quot;warnings&quot;</span>, []),</span><br><span class="line">            <span class="string">&quot;boundary&quot;</span>: monitoring.get(<span class="string">&quot;boundary&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;evidence&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;sources&quot;</span>: evidence.get(<span class="string">&quot;sources&quot;</span>, []),</span><br><span class="line">            <span class="string">&quot;cards&quot;</span>: evidence.get(<span class="string">&quot;cards&quot;</span>, []),</span><br><span class="line">            <span class="string">&quot;gaps&quot;</span>: evidence.get(<span class="string">&quot;gaps&quot;</span>, []),</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;handoff&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;recommended_next_workflow&quot;</span>: <span class="string">&quot;one_county_one_policy_outline&quot;</span>,</span><br><span class="line">            <span class="string">&quot;requires_human_review&quot;</span>: ...,</span><br><span class="line">        &#125;,</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里要停一下，回答一个你可能已经发现的矛盾：开头那个害我出 bug 的 <code>warnings</code>，怎么这里又被我主动放进白名单了？</p>
+<p>因为该不该看一个字段，取决于节点的职责，而不是字段本身。<code>warnings</code> 是监测链的产出，它本就该流进「规划链」，规划政策时当然要参考预警。它不该出现的地方，是产业诊断链，那是画产业画像的，跟预警无关。同一个字段，在这条交接里是必需品，在那条节点里是污染源。白名单的意义正在于此：它逼我为每一次交接单独回答「这一步到底需要什么」，而不是「大概都带上吧」。</p>
+<p>这份白名单和 LLM 压缩的差别很实在：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM 压缩</th>
+<th>字段白名单</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>关键信息会不会丢</td>
+<td>可能（要调召回）</td>
+<td>不会，字段是写死的</td>
+</tr>
+<tr>
+<td>结果稳不稳定</td>
+<td>每次可能不同</td>
+<td>完全确定</td>
+</tr>
+<tr>
+<td>能不能测</td>
+<td>难，得断言语义</td>
+<td>纯函数，直接断言</td>
+</tr>
+<tr>
+<td>成本</td>
+<td>一次 LLM 调用</td>
+<td>零</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>无</td>
+<td>加字段容易忘，得手工维护</td>
+</tr>
+</tbody></table>
+<p>最后那条是真代价。加了新分析字段却忘了往包里加，下游就拿不到，这种 bug 不会报错，只会让报告少一段。我是靠交接流程的测试兜住的（就是第七节那种断言）。</p>
+<p>选择标准我总结成一句：上游结构已知，就用白名单；上游是自由文本，才用 LLM 压缩。我的上游是结构化分析结果，所以白名单更合适；如果你的上游是一大段用户自由输入的会议纪要，那还是得靠模型去压。</p>
+<h3 id="8-5-干净窗口：不是清空，是重开"><a href="#8-5-干净窗口：不是清空，是重开" class="headerlink" title="8.5 干净窗口：不是清空，是重开"></a>8.5 干净窗口：不是清空，是重开</h3><p>链之间交接时，我没有「清理」上一条链的状态，而是从头建一个新的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">build_planning_handoff_state</span>(<span class="params">monitoring_state, industry_state, request=<span class="literal">None</span></span>):</span><br><span class="line">    state = default_state(base_request)          <span class="comment"># 全新的干净状态</span></span><br><span class="line">    state[<span class="string">&quot;analysis&quot;</span>][<span class="string">&quot;monitoring&quot;</span>] = <span class="built_in">dict</span>(...)  <span class="comment"># 只搬该搬的</span></span><br><span class="line">    state[<span class="string">&quot;analysis&quot;</span>][<span class="string">&quot;industry_diagnosis&quot;</span>] = <span class="built_in">dict</span>(...)</span><br><span class="line">    state[<span class="string">&quot;outputs&quot;</span>].update(&#123;                    <span class="comment"># 前缀白名单</span></span><br><span class="line">        k: v <span class="keyword">for</span> k, v <span class="keyword">in</span> monitoring_state.get(<span class="string">&quot;outputs&quot;</span>, &#123;&#125;).items()</span><br><span class="line">        <span class="keyword">if</span> k.startswith(<span class="string">&quot;monitoring_&quot;</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<p><code>default_state()</code> 起一个空白状态，然后按白名单往里搬。默认是「什么都不带」，带什么要显式写出来。</p>
+<p>这跟「清空不需要的」是两种相反的默认值，而默认值决定了出错时会往哪边倒：</p>
+<ul>
+<li>默认全带、手动删 → 忘了删 &#x3D; 脏数据泄漏到下游（就是我开头那个 bug）</li>
+<li>默认不带、手动加 → 忘了加 &#x3D; 下游少一段内容，测试能抓到</li>
+</ul>
+<p>同样是「忘了」，后者的后果轻得多。一个是静默的错误结论，一个是显眼的内容缺失。工程上，我们永远愿意让错误往「吵闹且可测」的那边倒。</p>
+<h3 id="8-6-结构化笔记：trace"><a href="#8-6-结构化笔记：trace" class="headerlink" title="8.6 结构化笔记：trace"></a>8.6 结构化笔记：trace</h3><p><code>trace.steps</code> 记录每个节点的执行轨迹：哪个节点、什么状态、什么时候、附带元数据。它不参与模型推理，纯粹是给人看的。</p>
+<p>这算教科书里的「结构化笔记」，但我的用法更窄：不是给模型跨窗口拉回的记忆，而是排查问题时的现场记录。开头那个「预警」bug，就是靠 trace 才定位到是哪个节点、在什么状态下捡走了那个字段。可以说，第七节那套「先看见问题」的能力，一半是靠这份 trace 撑起来的。</p>
+<h2 id="九、动手：30-行复现「结构比压缩更根本」"><a href="#九、动手：30-行复现「结构比压缩更根本」" class="headerlink" title="九、动手：30 行复现「结构比压缩更根本」"></a>九、动手：30 行复现「结构比压缩更根本」</h2><p>前面全在说我的真实项目，但它依赖 LangGraph、又是特定业务，你没法照着跑。所以这一节给一个不依赖任何框架、能直接粘进 Python 跑的玩具，把核心结论亲手复现一遍。</p>
+<p>场景简化成：一个「状态」里有两块数据，<code>weather</code>（天气链算出来的，含一条 <code>alert</code> 预警）和 <code>industry</code>（产业数据）。现在有一个「产业诊断」节点，它只该看产业数据。我们对比两种喂法。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># --- 一个玩具状态 ---</span></span><br><span class="line">state = &#123;</span><br><span class="line">    <span class="string">&quot;weather&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;summary&quot;</span>: <span class="string">&quot;本月降水偏多&quot;</span>,</span><br><span class="line">        <span class="string">&quot;alert&quot;</span>: <span class="string">&quot;发布暴雨橙色预警&quot;</span>,     <span class="comment"># ← 产业诊断不该看到它</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;industry&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;output&quot;</span>: <span class="string">&quot;规上工业增加值 +4.2%&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假装这是模型：它会「注意到」上下文里任何抢眼的词</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">fake_llm</span>(<span class="params">context: <span class="built_in">dict</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    text = <span class="built_in">str</span>(context)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;预警&quot;</span> <span class="keyword">in</span> text:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;诊断结论：综合预警情况，建议纳入政策议程。&quot;</span>  <span class="comment"># 被污染</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;诊断结论：工业保持温和增长。&quot;</span>                    <span class="comment"># 正常</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># --- 做法 A：图省事，整个 state 塞进去 ---</span></span><br><span class="line"><span class="built_in">print</span>(fake_llm(state))</span><br><span class="line"><span class="comment"># → 诊断结论：综合预警情况，建议纳入政策议程。  ❌ 捡到了 alert</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># --- 做法 B：只投影产业诊断该看的那一块 ---</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">project_for_diagnosis</span>(<span class="params">s: <span class="built_in">dict</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;industry&quot;</span>: s[<span class="string">&quot;industry&quot;</span>]&#125;          <span class="comment"># 白名单：只有 industry</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(fake_llm(project_for_diagnosis(state)))</span><br><span class="line"><span class="comment"># → 诊断结论：工业保持温和增长。  ✅ alert 从未进入</span></span><br></pre></td></tr></table></figure>
+
+<p><code>fake_llm</code> 是我用一个 <code>if &quot;预警&quot; in text</code> 硬编码来模拟「模型会被上下文里抢眼的词带跑」。做法 A 把整个 state 塞进去，<code>alert</code> 里的「预警」被捡到，结论被污染；做法 B 只投影 <code>industry</code>，那个词从一开始就不在上下文里，也就没有任何东西需要「压缩」或「过滤」。</p>
+<p>你可以在做法 B 之后，再想象一个「事后压缩」的补丁：让另一个模型去删掉结论里的「预警」二字。它可能有效，但你多花了一次调用、多了一处可能出错的环节，而这一切，只是因为那个词一开始就不该进来。这就是全文那句话的可运行版本：最好的压缩，是那些 token 压根没进来。</p>
+<h2 id="十、几点落差"><a href="#十、几点落差" class="headerlink" title="十、几点落差"></a>十、几点落差</h2><p>方法讲完，也得诚实说说我和教科书那套的差距，免得你以为「照书全做才对」。</p>
+<ol>
+<li><p>GSSC 我只做了前三个。教科书那套上下文处理流水线叫 GSSC：获取（Get）、选择（Select）、结构化（Structure）、压缩（Compress）。我的实现里压缩那步基本是空的，因为前三步做扎实之后，节点上下文本来就不长，没什么可压的。压缩是兜底，不是主力。</p>
+</li>
+<li><p>子代理我没用。教科书推荐子代理架构来隔离上下文。LangGraph 的节点本身不会自动替我隔离输入；是我在节点里显式投影 State 的少数分区后，才获得了类似「干净窗口」的效果。对子问题需要独立探索时，子代理仍然有价值，只是我的业务是固定流水线，用不上并行深挖。</p>
+</li>
+<li><p>JIT 我用得很保守。我没让模型自主用 <code>glob</code>&#x2F;<code>grep</code> 去探索，而是让节点按固定路径去取。这牺牲了灵活性，换来了可预测性。对一个要出正式分析报告的系统来说，这笔买卖划算。第五节也说了，运行时探索需要「有主见的工程设计」，否则模型会追死胡同。我选择把主见写进代码，而不是写进提示词。</p>
+</li>
+<li><p>最大的收获是把顺序摆正了。我原来以为上下文工程是「等它变长了怎么办」，是个优化问题。现在我认为它首先是个结构问题：先想清楚每个环节该看见什么，再去谈压缩。顺序反了，你会一直在给自己制造需要压缩的上下文。</p>
+</li>
+</ol>
+<h2 id="十一、小结"><a href="#十一、小结" class="headerlink" title="十一、小结"></a>十一、小结</h2><p>上下文是有限资源，会腐蚀，有注意力预算，这是前提。想验证它是否臃肿，先把上下文打印出来、数一遍 token、给「不该出现的字段」写上断言。</p>
+<p>教科书给的手段是压缩整合、结构化笔记、子代理，都很有用。但在我的项目里，真正解决问题的是另一件事：让每个节点从一开始就只看得见它该看见的。</p>
+<ul>
+<li>状态分区固定，节点只读自己那几块；</li>
+<li>工具在注册表里声明，模型不面对「选哪个」；</li>
+<li>角色提示词按需加载；</li>
+<li>链间交接用手写的字段白名单，确定性压缩，且逼你逐次回答「这一步到底需要什么」；</li>
+<li>新链从空白状态重开，默认什么都不带。</li>
+</ul>
+<p>回到开头那句「综合前述预警情况」。我最后没有靠优化提示词来解决它，也没有靠压缩上下文，只是让产业诊断节点不再读得到那个字段。</p>
+<p>最好的压缩，是那些 token 压根没进来。</p>
+<hr>
+<p><strong>参考资料</strong></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Effective context engineering for AI agents</a> - Anthropic Engineering，本文「上下文工程」定义与三件套手段的主要来源</li>
+<li><a target="_blank" rel="noopener" href="https://research.trychroma.com/context-rot">Context Rot: How Increasing Input Tokens Impacts LLM Performance</a> - Chroma，第三节「上下文腐蚀」实验的出处</li>
+<li><a target="_blank" rel="noopener" href="https://hello-agents.datawhale.cc/#/./chapter9/%E7%AC%AC%E4%B9%9D%E7%AB%A0%20%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B">Hello-Agents 第九章：上下文工程</a> - Datawhale，GSSC 流水线与整体框架</li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/27350/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/27350/')">上下文工程深度解析：如何让 Agent 只看必要信息</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/27350/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>上下文工程<span class="tagsPageCount">14</span></a><a class="post-meta__box__tags" href="/tags/LLM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>LLM<span class="tagsPageCount">7</span></a><a class="post-meta__box__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>工程实践<span class="tagsPageCount">5</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/41836/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/rag-retrieval.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">RAG 检索系统深度解析：先修语料，再谈算法</div></div></a></div><div class="next-post pull-right"><a href="/posts/30188/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-protocols.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">MCP 通信协议深度解析：从工具接入到 Agent 协作</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/64738/" title="Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent</div></div></a></div><div><a href="/posts/63844/" title="OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div><a href="/posts/63898/" title="OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-06</div><div class="title">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div><div><a href="/posts/65010/" title="ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/ecc-layered-learning-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-27</div><div class="title">ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线</div></div></a></div><div><a href="/posts/64815/" title="Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/hermes-system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-07</div><div class="title">Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本</div></div></a></div><div><a href="/posts/64920/" title="Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/superpowers-workflow-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-20</div><div class="title">Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%8A%A5%E5%91%8A%E9%87%8C%E5%87%BA%E7%8E%B0%E4%BA%86%E4%B8%80%E5%8F%A5%E4%B8%8D%E8%AF%A5%E5%87%BA%E7%8E%B0%E7%9A%84%E8%AF%9D"><span class="toc-number">1.</span> <span class="toc-text">一、报告里出现了一句不该出现的话</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E5%88%86%E6%B8%85%EF%BC%9A%E4%BB%80%E4%B9%88%E4%BC%9A%E8%BF%9B%E5%85%A5%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="toc-number">2.</span> <span class="toc-text">二、先分清：什么会进入上下文</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E4%B8%8A%E4%B8%8B%E6%96%87%E6%98%AF%E4%B8%80%E7%A7%8D%E6%9C%89%E9%99%90%E8%B5%84%E6%BA%90"><span class="toc-number">3.</span> <span class="toc-text">三、上下文是一种有限资源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%9C%89%E6%95%88%E4%B8%8A%E4%B8%8B%E6%96%87%E9%95%BF%E4%BB%80%E4%B9%88%E6%A0%B7"><span class="toc-number">4.</span> <span class="toc-text">四、有效上下文长什么样</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E4%B8%A4%E7%A7%8D%E6%8B%BF%E5%88%B0%E4%B8%8A%E4%B8%8B%E6%96%87%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="toc-number">5.</span> <span class="toc-text">五、两种拿到上下文的方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%95%BF%E6%97%B6%E7%A8%8B%E4%BB%BB%E5%8A%A1%E7%9A%84%E4%B8%89%E4%BB%B6%E5%A5%97"><span class="toc-number">6.</span> <span class="toc-text">六、长时程任务的三件套</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%85%88%E5%88%AB%E6%80%A5%E7%9D%80%E4%B8%8A%E6%89%8B%E6%AE%B5%EF%BC%9A%E6%80%8E%E4%B9%88%E7%9F%A5%E9%81%93%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E8%87%83%E8%82%BF%E4%BA%86"><span class="toc-number">7.</span> <span class="toc-text">七、先别急着上手段：怎么知道自己的上下文臃肿了</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%88%91%E7%9A%84%E9%A1%B9%E7%9B%AE%E5%AE%9E%E9%99%85%E6%80%8E%E4%B9%88%E5%81%9A%E7%9A%84"><span class="toc-number">8.</span> <span class="toc-text">八、我的项目实际怎么做的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E7%8A%B6%E6%80%81%E9%BB%91%E6%9D%BF%EF%BC%9A%E5%85%88%E6%9C%89%E9%AA%A8%E6%9E%B6%EF%BC%8C%E6%89%8D%E6%9C%89%E5%88%86%E5%8C%BA"><span class="toc-number">8.1.</span> <span class="toc-text">8.1 状态黑板：先有骨架，才有分区</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E4%B8%8D%E6%98%AF%E5%8E%8B%E7%BC%A9%EF%BC%8C%E6%98%AF%E4%B8%8D%E7%BB%99"><span class="toc-number">8.2.</span> <span class="toc-text">8.2 不是压缩，是不给</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%A1%8C%E5%B7%A5%E5%85%B7%E9%9B%86%EF%BC%8C%E6%98%AF%E5%A3%B0%E6%98%8E%E5%87%BA%E6%9D%A5%E7%9A%84"><span class="toc-number">8.3.</span> <span class="toc-text">8.3 最小可行工具集，是声明出来的</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-%E7%A1%AE%E5%AE%9A%E6%80%A7%E5%8E%8B%E7%BC%A9%EF%BC%9A%E4%B8%80%E4%BB%BD%E6%89%8B%E5%86%99%E7%9A%84%E5%AD%97%E6%AE%B5%E7%99%BD%E5%90%8D%E5%8D%95"><span class="toc-number">8.4.</span> <span class="toc-text">8.4 确定性压缩：一份手写的字段白名单</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-5-%E5%B9%B2%E5%87%80%E7%AA%97%E5%8F%A3%EF%BC%9A%E4%B8%8D%E6%98%AF%E6%B8%85%E7%A9%BA%EF%BC%8C%E6%98%AF%E9%87%8D%E5%BC%80"><span class="toc-number">8.5.</span> <span class="toc-text">8.5 干净窗口：不是清空，是重开</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-6-%E7%BB%93%E6%9E%84%E5%8C%96%E7%AC%94%E8%AE%B0%EF%BC%9Atrace"><span class="toc-number">8.6.</span> <span class="toc-text">8.6 结构化笔记：trace</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%8A%A8%E6%89%8B%EF%BC%9A30-%E8%A1%8C%E5%A4%8D%E7%8E%B0%E3%80%8C%E7%BB%93%E6%9E%84%E6%AF%94%E5%8E%8B%E7%BC%A9%E6%9B%B4%E6%A0%B9%E6%9C%AC%E3%80%8D"><span class="toc-number">9.</span> <span class="toc-text">九、动手：30 行复现「结构比压缩更根本」</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%87%A0%E7%82%B9%E8%90%BD%E5%B7%AE"><span class="toc-number">10.</span> <span class="toc-text">十、几点落差</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-number">11.</span> <span class="toc-text">十一、小结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

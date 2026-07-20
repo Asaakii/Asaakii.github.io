@@ -1,0 +1,710 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,LLM,教程,Python,从零构建"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><meta name="application-name" content="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><meta property="og:url" content="https://blog.asaakii.com/posts/65800/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="在上一篇受限工具 Agent 的基础上，实现更可靠的循环：保证 assistant 与 tool 消息配对，分开保存历史与 API 请求，设置回合预算，并返回结构化执行结果。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp"><meta name="description" content="在上一篇受限工具 Agent 的基础上，实现更可靠的循环：保证 assistant 与 tool 消息配对，分开保存历史与 API 请求，设置回合预算，并返回结构化执行结果。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/65800/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: '从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理',
+  postAI: '',
+  pageFillDescription: '这一篇解决什么问题, 先看循环的新边界, 规则一：assistant 消息和工具结果必须成对写回, 规则二：历史记录与 API 请求分开, 规则三：用回合预算和结构化状态结束循环, 完整的 agent.py, 再补一条：结束原因不等于最终文本, 关于 Hermes 的90 轮与子 Agent, 跑不通时先查这几处, 动手改改看, 这还不是完整的生产级, 安全边界仍要保留, 小结本文承接系列一上一篇的目标是做出一个安全可理解的最小模型决定是否调用工具工具结果回到模型直到它给出回答这一篇只把这条循环补成更可靠的版本不会假装已经实现了完整的生产系统这一篇解决什么问题最小循环能跑起来但它仍有几个会在真实使用中暴露的问题模型调用工具后如果漏存消息或绑错工具结果下一轮上下文就不完整直接把内部调试字段塞进模型请求可能导致接口报错也不利于排查问题模型陷入反复读文件反复改同一段代码时没有上限就会持续消耗时间和调用费用循环结束时只返回一段文本调用方无法区分任务完成和预算耗尽所以本篇只加入三条工程化规则消息必须配对历史与请求要分开每次任务都有明确预算和退出状态这里的代码是我在系列一基础上继续实现的教学版本它参考了的循环设计与教程项目但不把两者等同前者是持续演进的真实项目后者是选择性讲解其机制的学习项目先看循环的新边界用户输入写入历史构造干净的请求调用模型先保存消息是否有否返回是受限工具执行每个结果绑定达到回合预算否是返回和上一篇相比工具权限没有变宽仍然只使用上一篇实现的受限文件工具和固定测试命令消息边界预算和状态管理解决的是可靠性不是权限控制规则一消息和工具结果必须成对写回一次模型回复若包含工具调用历史至少要保留两类信息消息记录模型发起了哪些调用消息逐条用指回对应调用尤其是模型一次发起多个工具调用时顺序相同并不足以保证匹配正确才是稳定的关联键仅示意配对顺序先存模型的调用意图再存每个调用的结果完整版见下方那里会把转成纯原因稍后解释先看看不配对会怎样坏假设你偷懒跳过消息直接把工具结果进历史下一轮请求时接口会直接拒绝报出类似这样的错误也就是说在本文采用的消息协议中一条的消息必须紧跟在一条带的消息之后这不是最好这样而是不这样就报错反过来如果你存了却漏掉某个的结果接口会抱怨有没有对应的响应原生的是另一种消息形状它同样要求调用意图与结果完整对应但不能把本节的字段名原样搬过去所以这条规则的两半各自兜住一种崩溃漏掉消息模型下一轮既看不到是谁为什么发起调用接口也会报错漏掉多工具调用时结果归属错乱模型可能把工具的结果当成的顺序相同不等于配对正确才是稳定的关联键规则二历史记录与请求分开是我们保存恢复和调试一段任务时用的历史向模型发送的请求则应该是从历史中构造出的兼容副本为什么要多此一举先看看历史膨胀之后的样子上一篇的历史里每条消息只有模型协议认识的字段但真实应用几乎一定会想在历史里多记点东西这条回复来自哪次请求花了多少毫秒当时用的哪个模型于是一条历史记录很可能长成这样应用历史里的一条消息协议字段你自己加的调试字段我先读一下模型接口不认识模型接口不认识模型接口不认识这些多出来的字段对你很有用排查慢在哪复现某次对话但如果原样发给模型接口轻则被忽略重则某些提供商直接报未知字段做的就是每次请求前把历史过滤一遍只留协议认识的字段你是编程助手只能使用提供的工具处理内的文件修改前先阅读相关文件测试失败时如实说明结果从应用历史中挑出模型接口允许的字段上面那条带的历史经过后就只剩调试信息留在了你的历史里发给模型的是一份干净副本历史服务于应用请求服务于模型协议这条边界现在就具体了它不是所有都强制的两份数据结构而是你主动划出的一道界线让你想记什么和协议允许发什么互不干扰再注意这里和上一篇的一处改动上一篇把系统提示直接放进了跟着历史一起走这一篇把它移出历史你注意到第一行就是把硬拼到最前面而不是从里读为什么改因为系统提示是应用配置不是对话发生过的事把它和用户工具的真实对话混在一起之后做提示词版本管理上下文压缩会话恢复时三类数据就会缠成一团所以从这一篇起你的里不再包含那一条它由负责在每次请求时补上的提示词组装文档也是这样区分稳定的系统提示词与请求时才附加的内容规则三用回合预算和结构化状态结束循环先说清一轮是什么循环里的一个指的是一次完整的模型往返发一次请求拿一次回复如果这次回复要求调工具那这一轮里可能执行了好几个工具但它们只算一轮预算数的是问了模型几次因为模型请求才是最花时间和钱的部分所以的意思是一次用户任务里最多允许模型来回思考次预算首先是单次任务的保险丝到达上限后不让默默继续尝试而是把控制权交回调用方模型可能因为工具反复报错目标不清而陷进读文件改代码再读再改的循环里没有预算它会一直烧你的时间和调用费而你甚至不知道它是不是卡住了光有上限还不够还要让调用方知道循环是正常说完了还是被预算掐断的上一篇的循环结束时只返回一段文本调用方无从区分这两种情况所以这一篇引入一个结构化的返回值两个可能陌生的语法是的装饰器省掉手写你直接写字段它自动生成构造函数是类型提示声明只应是这两个字符串之一它只帮和类型检查器提示运行时并不会拦住你传别的值所以真正的约束还得靠代码本身只返回这两种把模型最终说的话与循环为什么结束分开返回网页或未来的网关才能采取不同动作就正常展示回复则提示用户任务未确认完成并借保存现场供后续诊断下面完整实现里会看到这两个分支分别在哪里返回完整的下面的实现直接接续上一篇假设你已经有中的中的和受限的上一篇好的模型等环境变量你是编程助手只能使用提供的工具处理内的文件修改前先阅读相关文件测试失败时如实说明结果保留下一轮调用需要的标准结构模型没有返回文本回复本次任务已达到轮预算已停止继续调用工具可以根据保存的继续诊断或让用户补充更明确的目标这里有个细节值得停一下为什么要把一个个拆开手动拼成普通而不是像规则一的示意片段那样直接因为返回的是的对象不是普通字典留在内存里直接用没问题但它不能干净地序列化而下一篇要把存进那时能不能就成了硬要求现在就转成纯历史才真正是一份你能保存能重新加载的数据这正是规则二说的历史服务于应用落到实处的地方这也是规则一那段特意标注完整版会转成的原因再补一条结束原因不等于最终文本本篇完整代码只实现了和这正好够把模型答完了和系统主动停下分开不要为了看起来更生产级而在这一章假装已经处理所有故障但从现在起调用方应把下面这些结束原因当成不同的产品状态而不是都显示成一段普通回复状态说明调用方不应做什么模型没有继续请求工具并给出回答不等于回答已被业务验证达到单次任务预算不应把半截观察当作完成请求模型失败或响应不合协议不应自动无限重试工具发生不可恢复错误不应假装工具已经执行成功达到墙钟时间或用户取消不应丢掉已经保存的现场高影响操作未获批准不应改用别的工具绕过审批后四种会在接入超时审批和交互运行时后才有对应实现先写下这张表的价值在于持久化与层从一开始就知道是给人看的文字才是系统为什么停止的事实在入口中调用方可以显式处理这两种状态提示本轮任务未确认完成历史已保留可继续排查想亲眼看到触发最简单的办法是把临时改成再给一个需要好几步的任务比如读完所有文件逐个总结再汇总成一段终端会看到类似你读取下每个文件并逐一总结最后合并成一段说明调用工具调用工具本次任务已达到轮预算已停止继续调用工具可以根据保存的继续诊断或让用户补充更明确的目标提示本轮任务未确认完成历史已保留可继续排查注意最后模型并没有给出总结它被预算掐断了而如实标成调用方于是走了提示未完成的分支而不是把半截结果当成功这个示例没有把超预算伪装成已完成这是比无限重试更诚实也更容易被上层产品正确处理的接口关于的轮与子当前文档中主的默认值是这个数字可以理解为一次循环的默认上限但不应据此推导出所有子共用父的同一个钱包其文档说明子有自己的预算并通过受到单独限制父子的总轮数可能超过父的单独上限这也提醒我不要把一个框架的某个实现细节写成所有都遵循的普遍规律本文自己的只是教学项目的一次请求预算选小一点是为了便于观察控制成本和调试跑不通时先查这几处这一篇引入了配对过滤预算三条规则出问题也大多集中在这三处报之类的错误配对断了回到规则一每次模型要求调工具必须先那条消息再为每一个各一条带对应的结果一个都不能少改动循环后最容易在这里破报多在下一篇存库时冒出来你多半是把对象直接塞进了历史而没走转成纯规则一的示意片段是简化版真正入历史要用转换后的模型接口报未知字段或行为诡异你给历史加了自定义字段耗时等但请求没经过过滤把这些字段原样发出去了所有发往模型的请求都应该从出而不是直接把丢给正常任务却总是设得太小或系统提示没引导模型拿到足够信息就收尾导致它反复读文件不肯总结先把每轮的打印出来看它是卡在重复调用还是真的需要更多轮排查这类问题的通用手段还是那句话打印它把完整都带出来了告诉你为什么停告诉你花了几轮让你逐条还原模型每一步看到了什么动手改改看给历史消息加一个字段在时都带上然后打印的输出确认这个字段没有出现在发往模型的请求里这是把规则二亲手验证一遍把改成的一个参数默认想一想什么样的任务值得给更大的预算什么场景反而要调小到来快速失败给再加一个取值比如当某个工具连续多次返回失败时提前退出这会逼你思考循环除了说完了和超预算还有哪些该被显式表达的结束方式这还不是完整的生产级有了三条规则循环更可靠了但离生产环境仍有不少距离下面这些能力不应只写成一句以后加上而应在后续章节分别实现和验证后续能力要解决的问题计划位置会话存储先后续可换重启后历史不丢失多个会话可隔离第四篇组装与上下文压缩历史变长后仍保留关键事实会话存储之后超时重试与模型故障切换网络或模型调用失败时可恢复稳定性章节审批与沙箱写文件运行测试之外的高风险动作工具权限章节子异步桥接与委派隔离并发协作平台接入和跨进程状态第三篇起其他部分留到进阶章节特别是异步桥接和实例可重建属于运行时与服务层设计没有对应的事件循环会话存储和并发测试只在循环里讲概念会让初学者误以为复制一段代码就已经获得这些能力因此我把它们留到后面届时给出可验证的实现安全边界仍要保留本篇没有新增任意命令执行能力仍应沿用上一篇的限制读写路径必须解析后仍位于内测试工具只能运行预先固定的不能接受模型拼出的命令工具输出应截断避免将大量内容无节制塞回上下文即便是固定测试也可能执行项目中的测试代码处理不可信仓库或不可信输入时仍应在隔离环境中运行并在接入删除联网部署等高影响工具前增加人工审批小结可靠循环先保证消息配对存再按存结果让保存应用历史让构造兼容模型接口的请求用限制单次任务并以或返回明确状态预算消息边界不能替代沙箱和审批安全边界仍由受限工具实现子异步桥接和是后续独立问题不能被一句生产级循环覆盖下一篇先实现子把高输出但可独立完成的查找任务隔离到另一份历史中并只把可核验的摘要回传给父会话存储紧接在下一篇先采用容易观察逐条追加的记录再讨论何时需要换成到那时历史和请求分开的价值会变得更直观参考资料开发文档开发文档教学项目本系列一对话循环与工具调用',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-19 12:00:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/%E4%BB%8E%E9%9B%B6%E6%9E%84%E5%BB%BA-Agent-%E6%A1%86%E6%9E%B6/" itemprop="url">从零构建 Agent 框架</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/LLM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>LLM</span></a><a class="article-meta__tags" href="/tags/%E6%95%99%E7%A8%8B/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>教程</span></a><a class="article-meta__tags" href="/tags/Python/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Python</span></a><a class="article-meta__tags" href="/tags/%E4%BB%8E%E9%9B%B6%E6%9E%84%E5%BB%BA/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>从零构建</span></a></span></div></div><h1 class="post-title" itemprop="name headline">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-19T04:00:00.000Z" title="更新于 2026-07-19 12:00:00">2026-07-19</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">5.2k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>17分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/65800/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/%E4%BB%8E%E9%9B%B6%E6%9E%84%E5%BB%BA-Agent-%E6%A1%86%E6%9E%B6/" itemprop="url">从零构建 Agent 框架</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/LLM/" tabindex="-1" itemprop="url">LLM</a><a href="/tags/%E6%95%99%E7%A8%8B/" tabindex="-1" itemprop="url">教程</a><a href="/tags/Python/" tabindex="-1" itemprop="url">Python</a><a href="/tags/%E4%BB%8E%E9%9B%B6%E6%9E%84%E5%BB%BA/" tabindex="-1" itemprop="url">从零构建</a><h1 id="CrawlerTitle" itemprop="name headline">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time><time itemprop="dateCreated datePublished" datetime="2026-07-19T04:00:00.000Z" title="更新于 2026-07-19 12:00:00">2026-07-19</time></header><blockquote>
+<p>本文承接<a href="/posts/65700">系列（一）</a>。上一篇的目标是做出一个安全、可理解的最小 Agent：模型决定是否调用工具，工具结果回到模型，直到它给出回答。这一篇只把这条循环补成更可靠的版本，不会假装已经实现了完整的生产系统。</p>
+</blockquote>
+<h2 id="这一篇解决什么问题"><a href="#这一篇解决什么问题" class="headerlink" title="这一篇解决什么问题"></a>这一篇解决什么问题</h2><p>最小循环能跑起来，但它仍有几个会在真实使用中暴露的问题：</p>
+<ul>
+<li>模型调用工具后，如果漏存 <code>assistant</code> 消息或绑错工具结果，下一轮上下文就不完整。</li>
+<li>直接把内部调试字段塞进模型请求，可能导致接口报错，也不利于排查问题。</li>
+<li>模型陷入反复读文件、反复改同一段代码时，没有上限就会持续消耗时间和调用费用。</li>
+<li>循环结束时只返回一段文本，调用方无法区分“任务完成”和“预算耗尽”。</li>
+</ul>
+<p>所以本篇只加入三条工程化规则：消息必须配对、历史与请求要分开、每次任务都有明确预算和退出状态。</p>
+<p>这里的代码是我在系列（一）基础上继续实现的教学版本。它参考了 <a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/agent-loop.md">Hermes Agent 的循环设计</a> 与 <a target="_blank" rel="noopener" href="https://github.com/longyunfeigu/learn-hermes-agent">learn-hermes-agent 教程项目</a>，但不把两者等同：前者是持续演进的真实项目，后者是选择性讲解其机制的学习项目。</p>
+<h2 id="先看循环的新边界"><a href="#先看循环的新边界" class="headerlink" title="先看循环的新边界"></a>先看循环的新边界</h2><div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  A[&quot;用户输入&quot;] --&gt; B[&quot;写入 messages 历史&quot;]
+  B --&gt; C[&quot;构造干净的 API 请求&quot;]
+  C --&gt; D[&quot;调用模型&quot;]
+  D --&gt; E[&quot;先保存 assistant 消息&quot;]
+  E --&gt; F{&quot;是否有 tool_calls?&quot;}
+  F --&gt;|&quot;否&quot;| G[&quot;返回 completed&quot;]
+  F --&gt;|&quot;是&quot;| H[&quot;受限工具执行&quot;]
+  H --&gt; I[&quot;每个结果绑定 tool_call_id&quot;]
+  I --&gt; J{&quot;达到回合预算?&quot;}
+  J --&gt;|&quot;否&quot;| C
+  J --&gt;|&quot;是&quot;| K[&quot;返回 budget_exhausted&quot;]
+  </pre></div>
+
+<p>和上一篇相比，工具权限没有变宽。仍然只使用上一篇实现的受限 <code>workspace/</code> 文件工具和固定测试命令。消息边界、预算和状态管理解决的是可靠性，不是权限控制。</p>
+<h2 id="规则一：assistant-消息和工具结果必须成对写回"><a href="#规则一：assistant-消息和工具结果必须成对写回" class="headerlink" title="规则一：assistant 消息和工具结果必须成对写回"></a>规则一：assistant 消息和工具结果必须成对写回</h2><p>一次模型回复若包含工具调用，历史至少要保留两类信息：</p>
+<ol>
+<li><code>assistant</code> 消息，记录模型发起了哪些调用。</li>
+<li><code>tool</code> 消息，逐条用 <code>tool_call_id</code> 指回对应调用。</li>
+</ol>
+<p>尤其是模型一次发起多个工具调用时，顺序相同并不足以保证匹配正确。<code>tool_call_id</code> 才是稳定的关联键。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 仅示意配对顺序：先存模型的调用意图，再存每个调用的结果</span></span><br><span class="line"><span class="comment"># （完整版见下方 agent.py，那里会把 tool_calls 转成纯 dict，原因稍后解释）</span></span><br><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: assistant.content,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: assistant.tool_calls,</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> tool_call <span class="keyword">in</span> assistant.tool_calls:</span><br><span class="line">    output = <span class="keyword">await</span> execute_tool(</span><br><span class="line">        tool_call.function.name,</span><br><span class="line">        tool_call.function.arguments,</span><br><span class="line">    )</span><br><span class="line">    messages.append(&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">        <span class="string">&quot;tool_call_id&quot;</span>: tool_call.<span class="built_in">id</span>,</span><br><span class="line">        <span class="string">&quot;name&quot;</span>: tool_call.function.name,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: output,</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+
+<p>先看看不配对会怎样坏。假设你偷懒，跳过 <code>assistant</code> 消息、直接把工具结果 append 进历史，下一轮请求时 OpenAI 接口会直接拒绝，报出类似这样的错误：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">BadRequestError: messages with role &#x27;tool&#x27; must be a response to a</span><br><span class="line">preceding message with &#x27;tool_calls&#x27;.</span><br></pre></td></tr></table></figure>
+
+<p>也就是说，<strong>在本文采用的 OpenAI-compatible 消息协议中</strong>，一条 <code>role=tool</code> 的消息必须紧跟在一条带 <code>tool_calls</code> 的 <code>assistant</code> 消息之后，这不是「最好这样」，而是「不这样就报错」。反过来，如果你存了 <code>assistant</code> 却漏掉某个 <code>tool_call</code> 的结果，接口会抱怨「有 <code>tool_call</code> 没有对应的 <code>tool</code> 响应」。Anthropic 原生 Messages API 的 <code>tool_use</code> &#x2F; <code>tool_result</code> 是另一种消息形状；它同样要求调用意图与结果完整对应，但不能把本节的字段名原样搬过去。</p>
+<p>所以这条规则的两半各自兜住一种崩溃：漏掉 <code>assistant</code> 消息，模型下一轮既看不到「是谁、为什么发起调用」，接口也会报错；漏掉 <code>tool_call_id</code>，多工具调用时结果归属错乱，模型可能把 A 工具的结果当成 B 的。顺序相同不等于配对正确，<code>tool_call_id</code> 才是稳定的关联键。</p>
+<h2 id="规则二：历史记录与-API-请求分开"><a href="#规则二：历史记录与-API-请求分开" class="headerlink" title="规则二：历史记录与 API 请求分开"></a>规则二：历史记录与 API 请求分开</h2><p><code>messages</code> 是我们保存、恢复和调试一段任务时用的历史。向模型发送的请求则应该是从历史中构造出的兼容副本。</p>
+<p>为什么要多此一举?先看看历史「膨胀」之后的样子。上一篇的历史里，每条消息只有模型协议认识的字段。但真实应用几乎一定会想在历史里多记点东西：这条回复来自哪次请求、花了多少毫秒、当时用的哪个模型。于是一条 <code>assistant</code> 历史记录很可能长成这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 应用历史里的一条消息：协议字段 + 你自己加的调试字段</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我先读一下 README。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: [...],</span><br><span class="line">    <span class="string">&quot;trace_id&quot;</span>: <span class="string">&quot;t-0007&quot;</span>,      <span class="comment"># ← 模型接口不认识</span></span><br><span class="line">    <span class="string">&quot;elapsed_ms&quot;</span>: <span class="number">820</span>,         <span class="comment"># ← 模型接口不认识</span></span><br><span class="line">    <span class="string">&quot;model&quot;</span>: <span class="string">&quot;gpt-4o-mini&quot;</span>,    <span class="comment"># ← 模型接口不认识</span></span><br><span class="line">    <span class="string">&quot;timestamp&quot;</span>: <span class="string">&quot;2026-07-16T20:31:05Z&quot;</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这些多出来的字段对你很有用(排查慢在哪、复现某次对话)，但如果原样发给模型接口，轻则被忽略，重则某些提供商直接报「未知字段」。<code>build_api_messages()</code> 做的就是每次请求前把历史「过滤」一遍，只留协议认识的字段：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">SYSTEM_PROMPT = (</span><br><span class="line">    <span class="string">&quot;你是编程助手。只能使用提供的工具处理 workspace 内的文件。&quot;</span></span><br><span class="line">    <span class="string">&quot;修改前先阅读相关文件；测试失败时如实说明结果。&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">API_FIELDS = (<span class="string">&quot;role&quot;</span>, <span class="string">&quot;content&quot;</span>, <span class="string">&quot;tool_calls&quot;</span>, <span class="string">&quot;tool_call_id&quot;</span>, <span class="string">&quot;name&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_api_messages</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>]</span>) -&gt; <span class="built_in">list</span>[<span class="built_in">dict</span>]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;从应用历史中挑出模型接口允许的字段。&quot;&quot;&quot;</span></span><br><span class="line">    api_messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: SYSTEM_PROMPT&#125;]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> message <span class="keyword">in</span> messages:</span><br><span class="line">        clean_message = &#123;</span><br><span class="line">            key: message[key]</span><br><span class="line">            <span class="keyword">for</span> key <span class="keyword">in</span> API_FIELDS</span><br><span class="line">            <span class="keyword">if</span> key <span class="keyword">in</span> message <span class="keyword">and</span> message[key] <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span></span><br><span class="line">        &#125;</span><br><span class="line">        api_messages.append(clean_message)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> api_messages</span><br></pre></td></tr></table></figure>
+
+<p>上面那条带 <code>trace_id</code>、<code>elapsed_ms</code> 的历史，经过 <code>build_api_messages()</code> 后就只剩 <code>role</code>&#x2F;<code>content</code>&#x2F;<code>tool_calls</code>，调试信息留在了你的历史里，发给模型的是一份干净副本。历史服务于应用，请求服务于模型协议，这条边界现在就具体了：它不是所有 SDK 都强制的「两份数据结构」，而是你主动划出的一道界线，让「你想记什么」和「协议允许发什么」互不干扰。</p>
+<p>再注意这里和上一篇的一处改动。上一篇把系统提示直接放进了 <code>messages[0]</code>，跟着历史一起走；这一篇把它移出历史，你注意到 <code>build_api_messages()</code> 第一行就是把 <code>SYSTEM_PROMPT</code> 硬拼到最前面，而不是从 <code>messages</code> 里读。为什么改?因为系统提示是「应用配置」，不是「对话发生过的事」，把它和用户、工具的真实对话混在一起，之后做提示词版本管理、上下文压缩、会话恢复时，三类数据就会缠成一团。所以从这一篇起，你的 <code>messages</code> 里不再包含 system 那一条，它由 <code>build_api_messages()</code> 负责在每次请求时补上。Hermes 的<a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/prompt-assembly.md">提示词组装文档</a>也是这样区分「稳定的系统提示词」与「请求时才附加的内容」。</p>
+<h2 id="规则三：用回合预算和结构化状态结束循环"><a href="#规则三：用回合预算和结构化状态结束循环" class="headerlink" title="规则三：用回合预算和结构化状态结束循环"></a>规则三：用回合预算和结构化状态结束循环</h2><p>先说清「一轮」是什么。循环里的一个 turn，指的是一次完整的模型往返：发一次请求、拿一次回复。如果这次回复要求调工具，那这一轮里可能执行了好几个工具，但它们只算一轮，预算数的是「问了模型几次」，因为模型请求才是最花时间和钱的部分。所以 <code>MAX_TURNS = 10</code> 的意思是：一次用户任务里，最多允许模型来回思考 10 次。</p>
+<p>预算首先是单次任务的保险丝。到达上限后，不让 Agent 默默继续尝试，而是把控制权交回调用方。模型可能因为工具反复报错、目标不清而陷进「读文件—改代码—再读—再改」的循环里；没有预算，它会一直烧你的时间和调用费，而你甚至不知道它是不是卡住了。</p>
+<p>光有上限还不够，还要让调用方知道循环是「正常说完了」还是「被预算掐断的」。上一篇的循环结束时只返回一段文本，调用方无从区分这两种情况。所以这一篇引入一个结构化的返回值 <code>AgentResult</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentResult</span>:</span><br><span class="line">    status: <span class="type">Literal</span>[<span class="string">&quot;completed&quot;</span>, <span class="string">&quot;budget_exhausted&quot;</span>]</span><br><span class="line">    reply: <span class="built_in">str</span></span><br><span class="line">    turns: <span class="built_in">int</span></span><br><span class="line">    messages: <span class="built_in">list</span>[<span class="built_in">dict</span>]</span><br></pre></td></tr></table></figure>
+
+<p>两个可能陌生的语法：<code>@dataclass</code> 是 Python 的装饰器，省掉手写 <code>__init__</code>，你直接写字段，它自动生成构造函数;<code>Literal[&quot;completed&quot;, &quot;budget_exhausted&quot;]</code> 是类型提示，声明 <code>status</code> 只应是这两个字符串之一(它只帮 IDE 和类型检查器提示，运行时并不会拦住你传别的值，所以真正的约束还得靠代码本身只返回这两种)。</p>
+<p>把「模型最终说的话」(<code>reply</code>)与「循环为什么结束」(<code>status</code>)分开返回，CLI、网页或未来的网关才能采取不同动作：<code>completed</code> 就正常展示回复;<code>budget_exhausted</code> 则提示用户任务未确认完成、并借 <code>messages</code> 保存现场供后续诊断。下面完整实现里会看到这两个分支分别在哪里返回。</p>
+<h2 id="完整的-agent-py"><a href="#完整的-agent-py" class="headerlink" title="完整的 agent.py"></a>完整的 <code>agent.py</code></h2><p>下面的实现直接接续上一篇。假设你已经有：</p>
+<ul>
+<li><code>llm.py</code> 中的 <code>call_llm(messages, tools=...)</code>；</li>
+<li><code>tools.py</code> 中的 <code>tool_schemas()</code> 和受限的 <code>execute_tool(name, raw_arguments)</code>；</li>
+<li>上一篇 <code>export</code> 好的模型 API Key 等环境变量。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> llm <span class="keyword">import</span> call_llm</span><br><span class="line"><span class="keyword">from</span> tools <span class="keyword">import</span> execute_tool, tool_schemas</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">MAX_TURNS = <span class="number">10</span></span><br><span class="line">SYSTEM_PROMPT = (</span><br><span class="line">    <span class="string">&quot;你是编程助手。只能使用提供的工具处理 workspace 内的文件。&quot;</span></span><br><span class="line">    <span class="string">&quot;修改前先阅读相关文件；测试失败时如实说明结果。&quot;</span></span><br><span class="line">)</span><br><span class="line">API_FIELDS = (<span class="string">&quot;role&quot;</span>, <span class="string">&quot;content&quot;</span>, <span class="string">&quot;tool_calls&quot;</span>, <span class="string">&quot;tool_call_id&quot;</span>, <span class="string">&quot;name&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentResult</span>:</span><br><span class="line">    status: <span class="type">Literal</span>[<span class="string">&quot;completed&quot;</span>, <span class="string">&quot;budget_exhausted&quot;</span>]</span><br><span class="line">    reply: <span class="built_in">str</span></span><br><span class="line">    turns: <span class="built_in">int</span></span><br><span class="line">    messages: <span class="built_in">list</span>[<span class="built_in">dict</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">assistant_message_for_history</span>(<span class="params">message</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;保留下一轮调用需要的标准 tool_calls 结构。&quot;&quot;&quot;</span></span><br><span class="line">    item = &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: message.content&#125;</span><br><span class="line">    tool_calls = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> message.tool_calls <span class="keyword">or</span> []:</span><br><span class="line">        tool_calls.append(&#123;</span><br><span class="line">            <span class="string">&quot;id&quot;</span>: tool_call.<span class="built_in">id</span>,</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">            <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;name&quot;</span>: tool_call.function.name,</span><br><span class="line">                <span class="string">&quot;arguments&quot;</span>: tool_call.function.arguments,</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> tool_calls:</span><br><span class="line">        item[<span class="string">&quot;tool_calls&quot;</span>] = tool_calls</span><br><span class="line">    <span class="keyword">return</span> item</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_api_messages</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>]</span>) -&gt; <span class="built_in">list</span>[<span class="built_in">dict</span>]:</span><br><span class="line">    api_messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: SYSTEM_PROMPT&#125;]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> message <span class="keyword">in</span> messages:</span><br><span class="line">        clean_message = &#123;</span><br><span class="line">            key: message[key]</span><br><span class="line">            <span class="keyword">for</span> key <span class="keyword">in</span> API_FIELDS</span><br><span class="line">            <span class="keyword">if</span> key <span class="keyword">in</span> message <span class="keyword">and</span> message[key] <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span></span><br><span class="line">        &#125;</span><br><span class="line">        api_messages.append(clean_message)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> api_messages</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">run_agent</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>], user_input: <span class="built_in">str</span></span>) -&gt; AgentResult:</span><br><span class="line">    messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_input&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> turn <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, MAX_TURNS + <span class="number">1</span>):</span><br><span class="line">        response = <span class="keyword">await</span> call_llm(</span><br><span class="line">            build_api_messages(messages),</span><br><span class="line">            tools=tool_schemas(),</span><br><span class="line">        )</span><br><span class="line">        messages.append(assistant_message_for_history(response))</span><br><span class="line"></span><br><span class="line">        tool_calls = response.tool_calls <span class="keyword">or</span> []</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> tool_calls:</span><br><span class="line">            <span class="keyword">return</span> AgentResult(</span><br><span class="line">                status=<span class="string">&quot;completed&quot;</span>,</span><br><span class="line">                reply=response.content <span class="keyword">or</span> <span class="string">&quot;模型没有返回文本回复。&quot;</span>,</span><br><span class="line">                turns=turn,</span><br><span class="line">                messages=messages,</span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">            output = <span class="keyword">await</span> execute_tool(</span><br><span class="line">                tool_call.function.name,</span><br><span class="line">                tool_call.function.arguments,</span><br><span class="line">            )</span><br><span class="line">            messages.append(&#123;</span><br><span class="line">                <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">                <span class="string">&quot;tool_call_id&quot;</span>: tool_call.<span class="built_in">id</span>,</span><br><span class="line">                <span class="string">&quot;name&quot;</span>: tool_call.function.name,</span><br><span class="line">                <span class="string">&quot;content&quot;</span>: output,</span><br><span class="line">            &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> AgentResult(</span><br><span class="line">        status=<span class="string">&quot;budget_exhausted&quot;</span>,</span><br><span class="line">        reply=(</span><br><span class="line">            <span class="string">f&quot;本次任务已达到 <span class="subst">&#123;MAX_TURNS&#125;</span> 轮预算，已停止继续调用工具。&quot;</span></span><br><span class="line">            <span class="string">&quot;可以根据保存的 messages 继续诊断，或让用户补充更明确的目标。&quot;</span></span><br><span class="line">        ),</span><br><span class="line">        turns=MAX_TURNS,</span><br><span class="line">        messages=messages,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>这里有个细节值得停一下:<code>assistant_message_for_history()</code> 为什么要把 <code>message.tool_calls</code> 一个个拆开、手动拼成普通 dict,而不是像规则一的示意片段那样直接 <code>&quot;tool_calls&quot;: message.tool_calls</code>?因为 <code>call_llm</code> 返回的 <code>message.tool_calls</code> 是 LiteLLM 的 pydantic 对象,不是普通字典。留在内存里直接用没问题,但它不能干净地序列化,而下一篇要把 <code>messages</code> 存进 SQLite,那时能不能 <code>json.dumps</code> 就成了硬要求。现在就转成纯 dict,历史才真正是「一份你能保存、能重新加载的数据」,这正是规则二说的「历史服务于应用」落到实处的地方。这也是规则一那段特意标注「完整版会转成 dict」的原因。</p>
+<h2 id="再补一条：结束原因不等于最终文本"><a href="#再补一条：结束原因不等于最终文本" class="headerlink" title="再补一条：结束原因不等于最终文本"></a>再补一条：结束原因不等于最终文本</h2><p>本篇完整代码只实现了 <code>completed</code> 和 <code>budget_exhausted</code>，这正好够把“模型答完了”和“系统主动停下”分开。不要为了看起来更“生产级”而在这一章假装已经处理所有故障；但从现在起，调用方应把下面这些结束原因当成不同的产品状态，而不是都显示成一段普通回复：</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>说明</th>
+<th>调用方不应做什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>completed</code></td>
+<td>模型没有继续请求工具并给出回答</td>
+<td>不等于回答已被业务验证</td>
+</tr>
+<tr>
+<td><code>budget_exhausted</code></td>
+<td>达到单次任务预算</td>
+<td>不应把半截观察当作完成</td>
+</tr>
+<tr>
+<td><code>model_error</code></td>
+<td>请求模型失败或响应不合协议</td>
+<td>不应自动无限重试</td>
+</tr>
+<tr>
+<td><code>tool_error</code></td>
+<td>工具发生不可恢复错误</td>
+<td>不应假装工具已经执行成功</td>
+</tr>
+<tr>
+<td><code>timeout</code> &#x2F; <code>cancelled</code></td>
+<td>达到墙钟时间或用户取消</td>
+<td>不应丢掉已经保存的现场</td>
+</tr>
+<tr>
+<td><code>permission_denied</code></td>
+<td>高影响操作未获批准</td>
+<td>不应改用别的工具绕过审批</td>
+</tr>
+</tbody></table>
+<p>后四种会在接入超时、审批和交互运行时后才有对应实现。先写下这张表的价值在于：持久化与 UI 层从一开始就知道，<code>reply</code> 是给人看的文字，<code>status</code> 才是系统为什么停止的事实。</p>
+<p>在入口中，调用方可以显式处理这两种状态：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">result = <span class="keyword">await</span> run_agent(messages, user_input)</span><br><span class="line"><span class="built_in">print</span>(result.reply)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> result.status == <span class="string">&quot;budget_exhausted&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;提示：本轮任务未确认完成，历史已保留，可继续排查。&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>想亲眼看到 <code>budget_exhausted</code> 触发,最简单的办法是把 <code>MAX_TURNS</code> 临时改成 <code>2</code>,再给一个需要好几步的任务(比如「读完所有文件、逐个总结、再汇总成一段」)。终端会看到类似:</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">你: 读取 workspace 下每个文件并逐一总结，最后合并成一段说明。</span><br><span class="line">  调用工具: list_files</span><br><span class="line">  调用工具: read_file</span><br><span class="line">本次任务已达到 2 轮预算，已停止继续调用工具。可以根据保存的 messages 继续诊断，或让用户补充更明确的目标。</span><br><span class="line">提示：本轮任务未确认完成，历史已保留，可继续排查。</span><br></pre></td></tr></table></figure>
+
+<p>注意最后模型并没有给出总结,它被预算掐断了,而 <code>status</code> 如实标成 <code>budget_exhausted</code>,调用方于是走了「提示未完成」的分支,而不是把半截结果当成功。这个示例没有把「超预算」伪装成「已完成」。这是比无限重试更诚实、也更容易被上层产品正确处理的接口。</p>
+<h2 id="关于-Hermes-的“90-轮”与子-Agent"><a href="#关于-Hermes-的“90-轮”与子-Agent" class="headerlink" title="关于 Hermes 的“90 轮”与子 Agent"></a>关于 Hermes 的“90 轮”与子 Agent</h2><p>Hermes 当前文档中，主 Agent 的 <code>agent.max_turns</code> 默认值是 90。这个数字可以理解为一次循环的默认上限，但不应据此推导出“所有子 Agent 共用父 Agent 的同一个钱包”。其文档说明子 Agent 有自己的预算，并通过 <code>delegation.max_iterations</code> 受到单独限制；父子 Agent 的总轮数可能超过父 Agent 的单独上限。</p>
+<p>这也提醒我：不要把一个框架的某个实现细节，写成所有 Agent 都遵循的普遍规律。本文自己的 <code>MAX_TURNS = 10</code> 只是教学项目的一次请求预算，选小一点是为了便于观察、控制成本和调试。</p>
+<h2 id="跑不通时，先查这几处"><a href="#跑不通时，先查这几处" class="headerlink" title="跑不通时，先查这几处"></a>跑不通时，先查这几处</h2><p>这一篇引入了配对、过滤、预算三条规则，出问题也大多集中在这三处：</p>
+<p>报 <code>messages with role &#39;tool&#39; must be a response to ...</code> 之类的 400 错误。配对断了。回到规则一：每次模型要求调工具，必须先 append 那条 <code>assistant</code> 消息，再为每一个 <code>tool_call</code> 各 append 一条带对应 <code>tool_call_id</code> 的 <code>tool</code> 结果，一个都不能少。改动循环后最容易在这里破。</p>
+<p>报 <code>Object of type ... is not JSON serializable</code>（多在下一篇存库时冒出来）。你多半是把 <code>message.tool_calls</code>（pydantic 对象）直接塞进了历史，而没走 <code>assistant_message_for_history()</code> 转成纯 dict。规则一的示意片段是简化版，真正入历史要用转换后的 dict。</p>
+<p>模型接口报「未知字段」或行为诡异。你给历史加了自定义字段（<code>trace_id</code>、耗时等），但请求没经过 <code>build_api_messages()</code> 过滤，把这些字段原样发出去了。所有发往模型的请求都应该从 <code>build_api_messages()</code> 出，而不是直接把 <code>messages</code> 丢给 <code>call_llm</code>。</p>
+<p>正常任务却总是 <code>budget_exhausted</code>。<code>MAX_TURNS</code> 设得太小，或系统提示没引导模型「拿到足够信息就收尾」，导致它反复读文件不肯总结。先把每轮的 <code>messages</code> 打印出来，看它是卡在重复调用，还是真的需要更多轮。</p>
+<p>排查这类问题的通用手段还是那句话:打印 <code>AgentResult</code>。它把 <code>status</code>、<code>turns</code>、完整 <code>messages</code> 都带出来了，<code>status</code> 告诉你为什么停、<code>turns</code> 告诉你花了几轮、<code>messages</code> 让你逐条还原模型每一步看到了什么。</p>
+<h2 id="动手改改看"><a href="#动手改改看" class="headerlink" title="动手改改看"></a>动手改改看</h2><ol>
+<li>给历史消息加一个 <code>timestamp</code> 字段（在 append <code>user</code>&#x2F;<code>assistant</code>&#x2F;<code>tool</code> 时都带上），然后打印 <code>build_api_messages()</code> 的输出，确认这个字段没有出现在发往模型的请求里。这是把规则二「亲手验证一遍」。</li>
+<li>把 <code>MAX_TURNS</code> 改成 <code>run_agent</code> 的一个参数，默认 10。想一想：什么样的任务值得给更大的预算，什么场景反而要调小到 2、3 来快速失败?</li>
+<li>给 <code>AgentResult</code> 再加一个 <code>status</code> 取值，比如 <code>tool_error</code>（当某个工具连续多次返回失败时提前退出）。这会逼你思考：循环除了「说完了」和「超预算」，还有哪些该被显式表达的结束方式?</li>
+</ol>
+<h2 id="这还不是完整的“生产级”"><a href="#这还不是完整的“生产级”" class="headerlink" title="这还不是完整的“生产级”"></a>这还不是完整的“生产级”</h2><p>有了三条规则，循环更可靠了，但离生产环境仍有不少距离。下面这些能力不应只写成一句“以后加上”，而应在后续章节分别实现和验证：</p>
+<table>
+<thead>
+<tr>
+<th>后续能力</th>
+<th>要解决的问题</th>
+<th>计划位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>会话存储（先 JSONL，后续可换 SQLite）</td>
+<td>重启后历史不丢失，多个会话可隔离</td>
+<td>第四篇</td>
+</tr>
+<tr>
+<td>Prompt 组装与上下文压缩</td>
+<td>历史变长后仍保留关键事实</td>
+<td>会话存储之后</td>
+</tr>
+<tr>
+<td>超时、重试与模型故障切换</td>
+<td>网络或模型调用失败时可恢复</td>
+<td>稳定性章节</td>
+</tr>
+<tr>
+<td>审批与沙箱</td>
+<td>写文件、运行测试之外的高风险动作</td>
+<td>工具权限章节</td>
+</tr>
+<tr>
+<td>子 Agent、异步桥接与 Gateway</td>
+<td>委派隔离、并发协作、平台接入和跨进程状态</td>
+<td>第三篇起，其他部分留到进阶章节</td>
+</tr>
+</tbody></table>
+<p>特别是“异步桥接”和“Gateway 实例可重建”属于运行时与服务层设计。没有对应的事件循环、会话存储和并发测试，只在 Agent 循环里讲概念，会让初学者误以为复制一段代码就已经获得这些能力。因此我把它们留到后面，届时给出可验证的实现。</p>
+<h2 id="安全边界仍要保留"><a href="#安全边界仍要保留" class="headerlink" title="安全边界仍要保留"></a>安全边界仍要保留</h2><p>本篇没有新增任意命令执行能力，仍应沿用上一篇的限制：</p>
+<ul>
+<li>读写路径必须解析后仍位于 <code>workspace/</code> 内。</li>
+<li>测试工具只能运行预先固定的 <code>pytest -q</code>，不能接受模型拼出的 shell 命令。</li>
+<li>工具输出应截断，避免将大量内容无节制塞回上下文。</li>
+</ul>
+<p>即便是固定测试，也可能执行项目中的测试代码。处理不可信仓库或不可信输入时，仍应在隔离环境中运行，并在接入删除、联网、部署等高影响工具前增加人工审批。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ul>
+<li>可靠循环先保证消息配对：存 <code>assistant</code>，再按 <code>tool_call_id</code> 存 <code>tool</code> 结果。</li>
+<li>让 <code>messages</code> 保存应用历史，让 <code>build_api_messages()</code> 构造兼容模型接口的请求。</li>
+<li>用 <code>MAX_TURNS</code> 限制单次任务，并以 <code>completed</code> 或 <code>budget_exhausted</code> 返回明确状态。</li>
+<li>预算、消息边界不能替代沙箱和审批。安全边界仍由受限工具实现。</li>
+<li>子 Agent、异步桥接和 Gateway 是后续独立问题，不能被一句“生产级循环”覆盖。</li>
+</ul>
+<p>下一篇先实现 fresh-context 子 Agent：把高输出但可独立完成的查找任务隔离到另一份历史中，并只把可核验的摘要回传给父 Agent。会话存储紧接在下一篇：先采用容易观察、逐条追加的 JSONL 记录，再讨论何时需要换成 SQLite。到那时，“历史”和“API 请求”分开的价值会变得更直观。</p>
+<hr>
+<p><strong>参考资料</strong></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/agent-loop.md">Hermes Agent Loop 开发文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/prompt-assembly.md">Hermes Prompt Assembly 开发文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/longyunfeigu/learn-hermes-agent">learn-hermes-agent 教学项目</a></li>
+<li><a href="/posts/65700">本系列（一）：对话循环与工具调用</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/65800/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/65800/')">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/65800/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/LLM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>LLM<span class="tagsPageCount">7</span></a><a class="post-meta__box__tags" href="/tags/%E6%95%99%E7%A8%8B/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>教程<span class="tagsPageCount">5</span></a><a class="post-meta__box__tags" href="/tags/Python/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Python<span class="tagsPageCount">3</span></a><a class="post-meta__box__tags" href="/tags/%E4%BB%8E%E9%9B%B6%E6%9E%84%E5%BB%BA/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>从零构建<span class="tagsPageCount">3</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/66000/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</div></div></a></div><div class="next-post pull-right"><a href="/posts/65900/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-07-15</div><div class="title">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</div></div></a></div><div><a href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-07-17</div><div class="title">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</div></div></a></div><div><a href="/posts/64738/" title="Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent</div></div></a></div><div><a href="/posts/46218/" title="从三种经典范式到真实 Agent：ReAct、Plan-and-Solve 与反馈迭代"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-paradigms.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-27</div><div class="title">从三种经典范式到真实 Agent：ReAct、Plan-and-Solve 与反馈迭代</div></div></a></div><div><a href="/posts/27350/" title="上下文工程深度解析：如何让 Agent 只看必要信息"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/context-engineering.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-16</div><div class="title">上下文工程深度解析：如何让 Agent 只看必要信息</div></div></a></div><div><a href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-07-18</div><div class="title">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%99%E4%B8%80%E7%AF%87%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98"><span class="toc-number">1.</span> <span class="toc-text">这一篇解决什么问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E7%9C%8B%E5%BE%AA%E7%8E%AF%E7%9A%84%E6%96%B0%E8%BE%B9%E7%95%8C"><span class="toc-number">2.</span> <span class="toc-text">先看循环的新边界</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%84%E5%88%99%E4%B8%80%EF%BC%9Aassistant-%E6%B6%88%E6%81%AF%E5%92%8C%E5%B7%A5%E5%85%B7%E7%BB%93%E6%9E%9C%E5%BF%85%E9%A1%BB%E6%88%90%E5%AF%B9%E5%86%99%E5%9B%9E"><span class="toc-number">3.</span> <span class="toc-text">规则一：assistant 消息和工具结果必须成对写回</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%84%E5%88%99%E4%BA%8C%EF%BC%9A%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95%E4%B8%8E-API-%E8%AF%B7%E6%B1%82%E5%88%86%E5%BC%80"><span class="toc-number">4.</span> <span class="toc-text">规则二：历史记录与 API 请求分开</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%84%E5%88%99%E4%B8%89%EF%BC%9A%E7%94%A8%E5%9B%9E%E5%90%88%E9%A2%84%E7%AE%97%E5%92%8C%E7%BB%93%E6%9E%84%E5%8C%96%E7%8A%B6%E6%80%81%E7%BB%93%E6%9D%9F%E5%BE%AA%E7%8E%AF"><span class="toc-number">5.</span> <span class="toc-text">规则三：用回合预算和结构化状态结束循环</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84-agent-py"><span class="toc-number">6.</span> <span class="toc-text">完整的 agent.py</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%8D%E8%A1%A5%E4%B8%80%E6%9D%A1%EF%BC%9A%E7%BB%93%E6%9D%9F%E5%8E%9F%E5%9B%A0%E4%B8%8D%E7%AD%89%E4%BA%8E%E6%9C%80%E7%BB%88%E6%96%87%E6%9C%AC"><span class="toc-number">7.</span> <span class="toc-text">再补一条：结束原因不等于最终文本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E-Hermes-%E7%9A%84%E2%80%9C90-%E8%BD%AE%E2%80%9D%E4%B8%8E%E5%AD%90-Agent"><span class="toc-number">8.</span> <span class="toc-text">关于 Hermes 的“90 轮”与子 Agent</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B7%91%E4%B8%8D%E9%80%9A%E6%97%B6%EF%BC%8C%E5%85%88%E6%9F%A5%E8%BF%99%E5%87%A0%E5%A4%84"><span class="toc-number">9.</span> <span class="toc-text">跑不通时，先查这几处</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%89%8B%E6%94%B9%E6%94%B9%E7%9C%8B"><span class="toc-number">10.</span> <span class="toc-text">动手改改看</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%99%E8%BF%98%E4%B8%8D%E6%98%AF%E5%AE%8C%E6%95%B4%E7%9A%84%E2%80%9C%E7%94%9F%E4%BA%A7%E7%BA%A7%E2%80%9D"><span class="toc-number">11.</span> <span class="toc-text">这还不是完整的“生产级”</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E8%BE%B9%E7%95%8C%E4%BB%8D%E8%A6%81%E4%BF%9D%E7%95%99"><span class="toc-number">12.</span> <span class="toc-text">安全边界仍要保留</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">13.</span> <span class="toc-text">小结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

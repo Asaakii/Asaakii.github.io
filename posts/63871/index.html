@@ -1,0 +1,640 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端 | Asaakiiの个人博客</title><meta name="keywords" content="OpenClaw,Agent,AI,架构,WebSocket"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端"><meta name="application-name" content="OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端"><meta property="og:url" content="https://blog.asaakii.com/posts/63871/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="面向初学者拆解 OpenClaw 的控制平面：Gateway 如何协调多端连接、为什么选择 WebSocket、JSON-RPC 与 Node 能力路由如何工作，以及统一入口的安全边界。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/control-plane-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/control-plane-cover.webp"><meta name="description" content="面向初学者拆解 OpenClaw 的控制平面：Gateway 如何协调多端连接、为什么选择 WebSocket、JSON-RPC 与 Node 能力路由如何工作，以及统一入口的安全边界。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/63871/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端',
+  postAI: '',
+  pageFillDescription: '初学者阅读地图, 一、先把概念摆正：控制平面是什么, 二、OpenClaw 为什么选择 WebSocket, 三、Gateway 作为「唯一事实源」, 四、协议层：JSON-RPC 2.0 + 命名空间, 五、节点接入：设备不是「客户端」而是「Node」, 六、多端一致性：多端只是「不同的显示器」, 七、统一的代价：一个入口也是一个靶心, 我的理解与核验, 小结核验范围本文以年月查阅的官方文档为准当时为第版协议字段命名空间与能力分级会随版本变化本文区分的现有实现和一般的架构设计经验的是多端交互的协调层手机节点和消息通道不各自维护一套会话状态而是连接到由它处理连接路由会话与事件分发理解这一层才能解释同一个任务为什么可以在不同入口继续查看暂停或接管初学者阅读地图先记住的对象它解决的问题统一连接会话与事件的协调入口控制平面决定谁连接状态在哪里事件发给谁数据平面实际运行模型工具和多媒体传输连接到并声明自身能力的设备或执行端阅读时先看第一二节建立控制平面与的概念再看协议和两个流程图最后再看统一入口带来的安全边界一先把概念摆正控制平面是什么分布式系统里有个经典划分控制平面数据平面放到交互里同样关键控制平面负责指挥与协调会话与状态管理谁在发言哪个任务在跑跑到第几步路由与调度这条消息发给哪个节点工具调用落到哪台设备权限与策略哪些端能读写谁能触发浏览器自动化事件分发流式输出执行进度状态通知数据平面负责干活模型推理与流式生成工具执行文件命令浏览器多媒体传输截图录音图片把两者分开有个直接好处只做调度与一致性不承担计算与执行它是一个真正的中枢神经系统而不是又一个塞满业务逻辑的巨无霸服务这个职责只做一件事的克制和第一篇讲队列时那个约束做进结构的思路是一脉相承的二为什么选择不是控制平面的唯一实现方式但它适合这类需要多端协作流式输出任务进度和异步事件的场景相比把实时同步拆成轮询和额外推送通道长连接能把双向事件放在同一条连接里处理恰好匹配控制平面需要的三件事全双工交互不是一问一答更像协作模型在持续吐工具在持续汇报进度用户随时插话节点随时上报状态全双工让事件成为一等公民低延迟长连接流式输出实时同步任务状态更新都需要持续连接和快速推送跨平台一致浏览器移动端桌面端几乎都能稳定地做客户端不用为每个平台重造通信栈的做法就是让所有节点统一连到一个本地模式下是从这一步起系统形态就变了不是每个端直连各自后端而是所有端接入同一个控制平面三作为唯一事实源拓扑上它不是网状互连而是典型的星形唯一事实源移动端浏览器自动化节点消息通道关键不在都能连上而在成了唯一事实源会话状态在它这里收敛任务进度在它这里编排事件在它这里广播或定向分发客户端因此越做越薄只负责输入与渲染不各自维护复杂状态机由此得到一个很工程化的收益扩展新入口重写逻辑新接一个本质是多了一个节点而不是多了一套系统从职责上可以拆成三块连接中枢客户端注册与认证心跳检测断线重连会话生命周期管理做过移动端的人都懂网络切换后台挂起代理变化会让连接状态充满脏边界没有一个统一的连接层状态漂移是必然的消息路由不只是转发而是聪明分发请求分发与响应回传单播多播广播优先级队列中断取消要比普通消息优先状态协调器真正决定多端是否一致的部分全局状态同步事件驱动传播冲突解决两端同时操作怎么办它不执行工具但它知道谁在执行执行到哪结果该广播给谁四协议层命名空间多端统一协议必须足够规整用的是一次调用大致长这样能力按命名空间分组大致是消息会话编排任务启停工具触发节点注册能力上报心跳自动化控制截图回传系统能力与诊断这类协议的价值在于它不是拼凑的事件名而是一套可演进的面加新端新能力靠扩展就能自然生长这里补几个原文没有但对判断成熟度很重要的官方现状截至年月协议当前是第版全部通信是文本帧三种帧客户端发起的服务端响应服务端主动广播统一在一个叫的判别联合类型下连接的第一帧必须是请求握手时服务端会下发一个带的事件客户端必须签名这个才能建立连接预连接帧上限也就是说原文把它描述成一套规整可演进的协议并不夸张官方实现确实带版本号带握手挑战帧类型有明确的类型定义五节点接入设备不是客户端而是一个重要抽象是每个设备入口都是一个节点节点接入时不只是连接还要声明能力比如节点声明节点声明据此维护一张能力感知路由表当需要定位或拍照它不会盲目广播给所有端而是路由到具备对应能力的节点这比写死某个平台负责某件事更灵活也更贴合多设备协作的现实配对这块官方实现比原文更严谨值得单独说清楚这也是安全的第一道关所有客户端操作者和节点连接时都要带一个设备身份新设备需要配对审批通过后发一个之后再连就用这个节点连接要带并在里附上能力更准确地说是探针能证明的权限级别分五级换句话说一个设备能做什么不是它自己说了算而是在配对和能力协商时就被框定了六多端一致性多端只是不同的显示器前面都是结构用两个流程看它跑起来是什么样案例一发起任务多端同步输入路由到模型流式返回把进度广播给同一的订阅者同步显示同步显示最关键的一句状态不在客户端拼凑而在统一生产与分发多端只是不同的显示器看同一份状态案例二下发浏览器自动化用户在说帮我登录并截图订单页判断需要能力调度执行时持续上报步骤和截图再把截图进度推给所有相关端手机端也能看到同一张截图同一个进度条必要时还能发停止这里藏着一个第一篇没提但很能体现控制平面价值的点人类操作和操作可以共存于同一用户在网页上手动点了一下接着接管或者正在跑流程用户从手机端发来暂停这些协作都需要一个统一的状态协调器否则你很快会陷入到底谁在控制的混乱控制平面把任务执行变成了一个可观测可中断可协作的流程而不是某个端里黑盒跑完再回一句好了七统一的代价一个入口也是一个靶心原文的收尾很激昂下一代系统拼的不是模型是中枢神经系统模型能力正在趋同真正拉开差距的是架构抽象这个判断我认同把当一等公民把控制平面从各端抽出来用一个统一所有交互移动端浏览器自动化消息通道从此不是多个产品而是同一个系统伸出的不同触角但作为系列的第三篇我想给这个统一补上它的另一面也正好接回第一篇统一入口的力量来自它是唯一事实源而它的代价恰恰也来自唯一它同时成了整个系统的唯一靶心这不是抽象的担忧第一篇引用的那篇安全分析里条按接口统计排第一的就是接口条占其中条条第一篇讲的那条完整未授权链第一步就是打的偷再通过改写策略这两件事是同一枚硬币你把所有交互收敛到一个点这个点就既是控制力的来源也是风险的汇聚所以第五节讲的那套配对握手能力五分级不是可选的装饰而是这个架构能不能安全成立的地基控制平面越强它的鉴权和治理就越不能是行为引导必须是结构性的强制这正是本系列反复撞见的同一条线所以三篇连起来看给的启示是完整的一体两面把能力统一到控制平面是把复杂度做进了结构这是它最聪明的地方而正因为一切都汇于此这个中枢的鉴权可观测可治理就必须做到同样的结构强度这也是它最脆弱最不容出错的地方统一带来整体性整体性要求可治理可治理不能靠自觉我的理解与核验我在整理这一篇时把负责什么和实际执行什么分开看前者解决连接状态与路由后者提供具体能力把两层混在一起最容易误以为自己执行所有动作阅读或部署时我会优先检查握手配对设备与能力声明再讨论多端体验文中协议版本端口和能力名称都是版本相关信息适合用来理解结构不应直接替代当前版本的配置检查小结这一篇把前两篇的背景板翻过来看了一遍控制平面数据平面的分工的选型理由的三块职责协议与命名空间的能力声明与配对以及多端共享同一的一致性核心就一句话把控制平面从各端抽出来让入口只是不同的显示器如果你在自己做多端产品这套抽象值得抄先分清控制与数据再让一个中枢收敛状态别让每个入口各自维护状态机但抄的时候记得连它的代价一起抄唯一事实源必然是唯一靶心中枢的鉴权和治理要和它的控制力一样强下一篇系统提示词深度解析上下文拼装与成本会从架构转向成本解释每轮请求为什么会包含远多于用户消息的上下文参考资料多模态智能体如何用一个控制平面统一所有交互原文收录官方文档本系列上一篇记忆系统深度解析第一篇技术架构深度解析',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-16 20:30:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/OpenClaw-%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" itemprop="url">OpenClaw 深度解析</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/OpenClaw/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>OpenClaw</span></a><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/%E6%9E%B6%E6%9E%84/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>架构</span></a><a class="article-meta__tags" href="/tags/WebSocket/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>WebSocket</span></a></span></div></div><h1 class="post-title" itemprop="name headline">OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-03-05T12:30:00.000Z" title="发表于 2026-03-05 20:30:00">2026-03-05</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-16T12:30:00.000Z" title="更新于 2026-07-16 20:30:00">2026-07-16</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">3.5k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>11分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/control-plane-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/63871/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/OpenClaw-%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" itemprop="url">OpenClaw 深度解析</a><a href="/tags/OpenClaw/" tabindex="-1" itemprop="url">OpenClaw</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/%E6%9E%B6%E6%9E%84/" tabindex="-1" itemprop="url">架构</a><a href="/tags/WebSocket/" tabindex="-1" itemprop="url">WebSocket</a><h1 id="CrawlerTitle" itemprop="name headline">OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-03-05T12:30:00.000Z" title="发表于 2026-03-05 20:30:00">2026-03-05</time><time itemprop="dateCreated datePublished" datetime="2026-07-16T12:30:00.000Z" title="更新于 2026-07-16 20:30:00">2026-07-16</time></header><blockquote>
+<p><strong>核验范围：</strong> 本文以 2026 年 7 月查阅的官方文档为准，Gateway protocol 当时为第 3 版。协议字段、命名空间与能力分级会随版本变化；本文区分 OpenClaw 的现有实现和一般的架构设计经验。</p>
+</blockquote>
+<p>OpenClaw 的 Gateway 是多端交互的协调层。CLI、WebChat、手机节点和消息通道不各自维护一套会话状态，而是连接到 Gateway，由它处理连接、路由、会话与事件分发。理解这一层，才能解释同一个任务为什么可以在不同入口继续查看、暂停或接管。</p>
+<h2 id="初学者阅读地图"><a href="#初学者阅读地图" class="headerlink" title="初学者阅读地图"></a>初学者阅读地图</h2><table>
+<thead>
+<tr>
+<th>先记住的对象</th>
+<th>它解决的问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gateway</td>
+<td>统一连接、会话与事件的协调入口</td>
+</tr>
+<tr>
+<td>控制平面</td>
+<td>决定谁连接、状态在哪里、事件发给谁</td>
+</tr>
+<tr>
+<td>数据平面</td>
+<td>实际运行模型、工具和多媒体传输</td>
+</tr>
+<tr>
+<td>Node</td>
+<td>连接到 Gateway 并声明自身能力的设备或执行端</td>
+</tr>
+</tbody></table>
+<p>阅读时先看第一、二节建立控制平面与 WebSocket 的概念，再看协议、Node 和两个流程图，最后再看统一入口带来的安全边界。</p>
+<h2 id="一、先把概念摆正：控制平面是什么"><a href="#一、先把概念摆正：控制平面是什么" class="headerlink" title="一、先把概念摆正：控制平面是什么"></a>一、先把概念摆正：控制平面是什么</h2><p>分布式系统里有个经典划分：控制平面 &#x2F; 数据平面。放到 AI 交互里同样关键。</p>
+<ul>
+<li><strong>控制平面（Control Plane）</strong> 负责「指挥与协调」：会话与状态管理（谁在发言、哪个任务在跑、跑到第几步）、路由与调度（这条消息发给哪个节点、工具调用落到哪台设备）、权限与策略（哪些端能读写、谁能触发浏览器自动化）、事件分发（流式输出、执行进度、typing 状态、通知）。</li>
+<li><strong>数据平面（Data Plane）</strong> 负责「干活」：模型推理与流式生成、工具执行（文件、命令、浏览器）、多媒体传输（截图、录音、图片）。</li>
+</ul>
+<p>把两者分开有个直接好处：<strong>Gateway 只做调度与一致性，不承担计算与执行。</strong> 它是一个真正的「中枢神经系统」，而不是又一个塞满业务逻辑的巨无霸服务。这个「职责只做一件事」的克制，和第一篇讲 lane 队列时那个「约束做进结构」的思路是一脉相承的。</p>
+<h2 id="二、OpenClaw-为什么选择-WebSocket"><a href="#二、OpenClaw-为什么选择-WebSocket" class="headerlink" title="二、OpenClaw 为什么选择 WebSocket"></a>二、OpenClaw 为什么选择 WebSocket</h2><p>WebSocket 不是控制平面的唯一实现方式，但它适合 OpenClaw 这类需要多端协作、流式输出、任务进度和异步事件的场景。相比把实时同步拆成轮询和额外推送通道，长连接能把双向事件放在同一条连接里处理。</p>
+<p>WebSocket 恰好匹配控制平面需要的三件事：</p>
+<ol>
+<li><strong>全双工。</strong> AI 交互不是一问一答，更像协作：模型在持续吐 token、工具在持续汇报进度、用户随时插话、节点随时上报状态。全双工让「事件」成为一等公民。</li>
+<li><strong>低延迟 + 长连接。</strong> 流式输出、实时同步、typing indicator、任务状态更新，都需要持续连接和快速推送。</li>
+<li><strong>跨平台一致。</strong> CLI、浏览器、移动端、桌面端几乎都能稳定地做 WebSocket 客户端，不用为每个平台重造通信栈。</li>
+</ol>
+<p>OpenClaw 的做法就是让所有节点统一连到一个 Gateway，本地模式下是 <code>ws://127.0.0.1:18789</code>。从这一步起，系统形态就变了：不是「每个端直连各自后端」，而是「所有端接入同一个控制平面」。</p>
+<h2 id="三、Gateway-作为「唯一事实源」"><a href="#三、Gateway-作为「唯一事实源」" class="headerlink" title="三、Gateway 作为「唯一事实源」"></a>三、Gateway 作为「唯一事实源」</h2><p>拓扑上，它不是网状互连，而是典型的 <strong>Hub &amp; Spoke（星形）</strong>：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  GW([&quot;Gateway&lt;br&#x2F;&gt;ws:&#x2F;&#x2F;127.0.0.1:18789&lt;br&#x2F;&gt;唯一事实源&quot;])
+  CLI[&quot;CLI&quot;] &lt;--&gt; GW
+  WEB[&quot;WebChat&quot;] &lt;--&gt; GW
+  MOB[&quot;移动端&lt;br&#x2F;&gt;iOS &#x2F; Android&quot;] &lt;--&gt; GW
+  BR[&quot;浏览器自动化节点&lt;br&#x2F;&gt;Playwright&quot;] &lt;--&gt; GW
+  MSG[&quot;消息通道&lt;br&#x2F;&gt;Telegram &#x2F; Slack &#x2F; WhatsApp&quot;] &lt;--&gt; GW
+  </pre></div>
+
+<p>关键不在「都能连上」，而在 Gateway 成了<strong>唯一事实源</strong>：会话状态在它这里收敛，任务进度在它这里编排，事件在它这里广播或定向分发。客户端因此越做越薄，只负责输入与渲染，不各自维护复杂状态机。</p>
+<p>由此得到一个很工程化的收益——<strong>扩展新入口 ≠ 重写 Agent 逻辑</strong>。新接一个 Telegram bot，本质是多了一个「节点」，而不是多了一套「系统」。</p>
+<p>从职责上，Gateway 可以拆成三块：</p>
+<ul>
+<li><strong>连接中枢（Connection Manager）</strong>：客户端注册与认证、心跳检测、断线重连、会话生命周期管理。做过移动端的人都懂：网络切换、后台挂起、代理变化，会让连接状态充满「脏边界」，没有一个统一的连接层，状态漂移是必然的。</li>
+<li><strong>消息路由（Message Router）</strong>：不只是转发，而是聪明分发——请求分发与响应回传、单播 &#x2F; 多播 &#x2F; 广播、优先级队列（中断、取消要比普通消息优先）。</li>
+<li><strong>状态协调器（State Coordinator）</strong>：真正决定「多端是否一致」的部分——全局状态同步、事件驱动传播、冲突解决（两端同时操作怎么办）。它不执行工具，但它知道谁在执行、执行到哪、结果该广播给谁。</li>
+</ul>
+<h2 id="四、协议层：JSON-RPC-2-0-命名空间"><a href="#四、协议层：JSON-RPC-2-0-命名空间" class="headerlink" title="四、协议层：JSON-RPC 2.0 + 命名空间"></a>四、协议层：JSON-RPC 2.0 + 命名空间</h2><p>多端统一，协议必须足够规整。OpenClaw 用的是 <strong>JSON-RPC 2.0</strong>。一次调用大致长这样：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;jsonrpc&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;method&quot;</span><span class="punctuation">:</span> <span class="string">&quot;chat.sendMessage&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;params&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="attr">&quot;peer&quot;</span><span class="punctuation">:</span> <span class="string">&quot;tg:12345&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;text&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Hello&quot;</span> <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>能力按命名空间分组，大致是 <code>chat.*</code>（消息、会话、typing）、<code>agent.*</code>（编排、任务启停、工具触发）、<code>node.*</code>（节点注册、能力上报、心跳）、<code>browser.*</code>（自动化控制、DOM &#x2F; 截图回传）、<code>system.*</code> &#x2F; <code>debug.*</code>（系统能力与诊断）。这类协议的价值在于它不是「拼凑的事件名」，而是一套可演进的 API 面：加新端、新能力，靠扩展 method 就能自然生长。</p>
+<p>这里补几个原文没有、但对判断成熟度很重要的<strong>官方现状</strong>（截至 2026 年 7 月）：</p>
+<ul>
+<li>Gateway 协议当前是<strong>第 3 版</strong>（<code>PROTOCOL_VERSION = 3</code>），全部通信是 WebSocket 文本帧 + JSON。</li>
+<li>三种帧（客户端发起的 RPC、服务端响应、服务端主动广播）统一在一个叫 <code>GatewayFrame</code> 的判别联合（discriminated union）类型下。</li>
+<li>连接的第一帧必须是 <code>connect</code> 请求，握手时服务端会下发一个带 nonce 的 <code>connect.challenge</code> 事件，客户端必须签名这个 nonce 才能建立连接。预连接帧上限 64 KiB。</li>
+</ul>
+<p>也就是说，原文把它描述成一套「规整、可演进的协议」并不夸张——官方实现确实带版本号、带握手挑战、帧类型有明确的类型定义。</p>
+<h2 id="五、节点接入：设备不是「客户端」，而是「Node」"><a href="#五、节点接入：设备不是「客户端」，而是「Node」" class="headerlink" title="五、节点接入：设备不是「客户端」，而是「Node」"></a>五、节点接入：设备不是「客户端」，而是「Node」</h2><p>OpenClaw 一个重要抽象是：<strong>每个设备 &#x2F; 入口都是一个节点（Node）</strong>。节点接入时不只是连接，还要<strong>声明能力（capabilities）</strong>。</p>
+<p>比如 iOS 节点声明 <code>[&quot;camera&quot;, &quot;location&quot;, &quot;notification&quot;]</code>，CLI 节点声明 <code>[&quot;exec&quot;, &quot;file_read&quot;]</code>。Gateway 据此维护一张「能力感知路由表」：当 Agent 需要「定位」或「拍照」，它不会盲目广播给所有端，而是<strong>路由到具备对应能力的节点</strong>。这比「写死某个平台负责某件事」更灵活，也更贴合多设备协作的现实。</p>
+<p>配对这块，官方实现比原文更严谨，值得单独说清楚（这也是安全的第一道关）：</p>
+<ul>
+<li>所有 WS 客户端（操作者和节点）连接时都要带一个<strong>设备身份</strong>。</li>
+<li>新设备 ID 需要<strong>配对审批</strong>；通过后 Gateway 发一个 <strong>device token</strong>，之后再连就用这个 token。</li>
+<li>节点连接要带 <code>role: &quot;node&quot;</code>，并在 <code>connect</code> 里附上 <code>caps</code> &#x2F; <code>commands</code> &#x2F; <code>permissions</code>。</li>
+<li>能力（更准确地说是「探针能证明的权限级别」）分五级：<code>read-only</code>、<code>write-capable</code>、<code>admin-capable</code>、<code>pairing-pending</code>、<code>connect-only</code>。</li>
+</ul>
+<p>换句话说，一个设备能做什么，不是它自己说了算，而是在配对和能力协商时就被 Gateway 框定了。</p>
+<h2 id="六、多端一致性：多端只是「不同的显示器」"><a href="#六、多端一致性：多端只是「不同的显示器」" class="headerlink" title="六、多端一致性：多端只是「不同的显示器」"></a>六、多端一致性：多端只是「不同的显示器」</h2><p>前面都是结构，用两个流程看它跑起来是什么样。</p>
+<p><strong>案例一：CLI 发起任务，多端同步。</strong></p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart LR
+  C[&quot;CLI 输入 prompt&lt;br&#x2F;&gt;chat.sendMessage&quot;] --&gt; G[&quot;Gateway 路由到 Agent&quot;]
+  G --&gt; M[&quot;模型流式返回 token&quot;]
+  M --&gt; B[&quot;Gateway 把 token&#x2F;进度&lt;br&#x2F;&gt;广播给同一 Session 的订阅者&quot;]
+  B --&gt; W[&quot;WebChat 同步显示&quot;]
+  B --&gt; P[&quot;Mobile 同步显示&quot;]
+  </pre></div>
+
+<p>最关键的一句：<strong>状态不在客户端拼凑，而在 Gateway 统一生产与分发。</strong> 多端只是「不同的显示器」看同一份状态。</p>
+<p><strong>案例二：WebChat 下发浏览器自动化。</strong> 用户在 WebChat 说「帮我登录并截图订单页」，Gateway 判断需要 <code>browser.*</code> 能力，调度 Browser Node，Playwright 执行时持续上报步骤和截图，Gateway 再把截图 &#x2F; 进度推给所有相关端——手机端也能看到同一张截图、同一个进度条，必要时还能发「停止」。</p>
+<p>这里藏着一个第一篇没提、但很能体现控制平面价值的点：<strong>人类操作和 Agent 操作可以共存于同一 Session。</strong> 用户在网页上手动点了一下、Agent 接着接管；或者 Agent 正在跑流程、用户从手机端发来「暂停」。这些协作都需要一个统一的状态协调器，否则你很快会陷入「到底谁在控制」的混乱。控制平面把「任务执行」变成了一个可观测、可中断、可协作的流程，而不是某个端里黑盒跑完再回一句「好了」。</p>
+<h2 id="七、统一的代价：一个入口，也是一个靶心"><a href="#七、统一的代价：一个入口，也是一个靶心" class="headerlink" title="七、统一的代价：一个入口，也是一个靶心"></a>七、统一的代价：一个入口，也是一个靶心</h2><p>原文的收尾很激昂：下一代 AI 系统拼的不是模型，是「中枢神经系统」；模型能力正在趋同，真正拉开差距的是架构抽象。这个判断我认同。把 Session 当一等公民、把控制平面从各端抽出来，用一个 WebSocket Gateway 统一所有交互——CLI、WebChat、移动端、浏览器自动化、消息通道，从此不是「多个产品」，而是同一个系统伸出的不同触角。</p>
+<p>但作为系列的第三篇，我想给这个「统一」补上它的另一面，也正好接回第一篇。</p>
+<p>统一入口的力量，来自它是<strong>唯一事实源</strong>；而它的代价，恰恰也来自「唯一」——<strong>它同时成了整个系统的唯一靶心。</strong> 这不是抽象的担忧。第一篇引用的那篇 arXiv 安全分析里，470 条 advisory 按接口统计，<strong>排第一的就是 Gateway WebSocket 接口，121 条，占 25.7%，其中 7 条 Critical、47 条 High</strong>。第一篇讲的那条完整未授权 RCE 链，第一步就是打 Gateway 的 <code>gatewayUrl</code>（SSRF），偷 token，再通过 <code>node.invoke</code> 改写策略。</p>
+<p>这两件事是同一枚硬币：<strong>你把所有交互收敛到一个点，这个点就既是控制力的来源，也是风险的汇聚。</strong> 所以第五节讲的那套配对握手、device token、能力五分级，不是可选的装饰，而是这个架构能不能安全成立的地基。控制平面越强，它的鉴权和治理就越不能是「行为引导」，必须是结构性的强制——这正是本系列反复撞见的同一条线。</p>
+<p>所以三篇连起来看，OpenClaw 给的启示是完整的一体两面：<strong>把能力统一到控制平面，是把复杂度做进了结构，这是它最聪明的地方；而正因为一切都汇于此，这个中枢的鉴权、可观测、可治理，就必须做到同样的结构强度——这也是它最脆弱、最不容出错的地方。</strong> 统一带来整体性，整体性要求可治理，可治理不能靠自觉。</p>
+<h2 id="我的理解与核验"><a href="#我的理解与核验" class="headerlink" title="我的理解与核验"></a>我的理解与核验</h2><p>我在整理这一篇时，把“Gateway 负责什么”和“Node 实际执行什么”分开看。前者解决连接、状态与路由，后者提供具体能力；把两层混在一起，最容易误以为 Gateway 自己执行所有动作。阅读或部署时，我会优先检查握手、配对、设备 token 与能力声明，再讨论多端体验。</p>
+<p>文中协议版本、端口和能力名称都是版本相关信息，适合用来理解结构，不应直接替代当前版本的配置检查。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>这一篇把前两篇的背景板 Gateway 翻过来看了一遍：控制平面 &#x2F; 数据平面的分工、WebSocket 的选型理由、Gateway 的三块职责、JSON-RPC 协议与命名空间、Node 的能力声明与配对、以及多端共享同一 Session 的一致性。核心就一句话——<strong>把控制平面从各端抽出来，让入口只是「不同的显示器」。</strong></p>
+<p>如果你在自己做多端 AI 产品，这套抽象值得抄：先分清控制与数据，再让一个中枢收敛状态，别让每个入口各自维护状态机。但抄的时候记得连它的代价一起抄——<strong>唯一事实源必然是唯一靶心，中枢的鉴权和治理要和它的控制力一样强。</strong></p>
+<blockquote>
+<p>下一篇<a href="/posts/63898">《OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本》</a>会从架构转向成本，解释每轮请求为什么会包含远多于用户消息的上下文。</p>
+</blockquote>
+<hr>
+<p><strong>参考资料</strong></p>
+<ul>
+<li>多模态智能体《OpenClaw 如何用一个 WebSocket 控制平面统一所有 AI 交互？》<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/g_dJK59u">原文</a>（<a target="_blank" rel="noopener" href="https://waytoagi.feishu.cn/wiki/FBriwcCT6iGkuSkKUaUcWRVPnpc">WaytoAGI 收录</a>）</li>
+<li><a target="_blank" rel="noopener" href="https://docs.openclaw.ai/gateway/protocol">OpenClaw 官方文档：Gateway protocol</a> ｜ <a target="_blank" rel="noopener" href="https://docs.openclaw.ai/concepts/architecture">Gateway architecture</a> ｜ <a target="_blank" rel="noopener" href="https://openclaw-ai.com/en/docs/nodes/index">Nodes</a></li>
+<li>本系列上一篇：<a href="/posts/63844">OpenClaw 记忆系统深度解析</a> ｜ 第一篇：<a href="/posts/63820">OpenClaw 技术架构深度解析</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/63871/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/63871/')">OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/63871/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/OpenClaw/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>OpenClaw<span class="tagsPageCount">6</span></a><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/%E6%9E%B6%E6%9E%84/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>架构<span class="tagsPageCount">5</span></a><a class="post-meta__box__tags" href="/tags/WebSocket/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>WebSocket<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/63844/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div class="next-post pull-right"><a href="/posts/63898/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/63820/" title="OpenClaw 技术架构深度解析"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/openclaw-official-banner.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-03</div><div class="title">OpenClaw 技术架构深度解析</div></div></a></div><div><a href="/posts/63925/" title="OpenClaw 多 Agent 架构深度解析：任务隔离、权限与协作"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/multi-agent-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-07</div><div class="title">OpenClaw 多 Agent 架构深度解析：任务隔离、权限与协作</div></div></a></div><div><a href="/posts/63952/" title="OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/skills-layers-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-18</div><div class="title">OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享</div></div></a></div><div><a href="/posts/63844/" title="OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div><a href="/posts/63898/" title="OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-06</div><div class="title">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div><div><a href="/posts/64738/" title="Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E5%AD%A6%E8%80%85%E9%98%85%E8%AF%BB%E5%9C%B0%E5%9B%BE"><span class="toc-number">1.</span> <span class="toc-text">初学者阅读地图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E6%8A%8A%E6%A6%82%E5%BF%B5%E6%91%86%E6%AD%A3%EF%BC%9A%E6%8E%A7%E5%88%B6%E5%B9%B3%E9%9D%A2%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">2.</span> <span class="toc-text">一、先把概念摆正：控制平面是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81OpenClaw-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%89%E6%8B%A9-WebSocket"><span class="toc-number">3.</span> <span class="toc-text">二、OpenClaw 为什么选择 WebSocket</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Gateway-%E4%BD%9C%E4%B8%BA%E3%80%8C%E5%94%AF%E4%B8%80%E4%BA%8B%E5%AE%9E%E6%BA%90%E3%80%8D"><span class="toc-number">4.</span> <span class="toc-text">三、Gateway 作为「唯一事实源」</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%8D%8F%E8%AE%AE%E5%B1%82%EF%BC%9AJSON-RPC-2-0-%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4"><span class="toc-number">5.</span> <span class="toc-text">四、协议层：JSON-RPC 2.0 + 命名空间</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%8A%82%E7%82%B9%E6%8E%A5%E5%85%A5%EF%BC%9A%E8%AE%BE%E5%A4%87%E4%B8%8D%E6%98%AF%E3%80%8C%E5%AE%A2%E6%88%B7%E7%AB%AF%E3%80%8D%EF%BC%8C%E8%80%8C%E6%98%AF%E3%80%8CNode%E3%80%8D"><span class="toc-number">6.</span> <span class="toc-text">五、节点接入：设备不是「客户端」，而是「Node」</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%A4%9A%E7%AB%AF%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%9A%E5%A4%9A%E7%AB%AF%E5%8F%AA%E6%98%AF%E3%80%8C%E4%B8%8D%E5%90%8C%E7%9A%84%E6%98%BE%E7%A4%BA%E5%99%A8%E3%80%8D"><span class="toc-number">7.</span> <span class="toc-text">六、多端一致性：多端只是「不同的显示器」</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E7%BB%9F%E4%B8%80%E7%9A%84%E4%BB%A3%E4%BB%B7%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%85%A5%E5%8F%A3%EF%BC%8C%E4%B9%9F%E6%98%AF%E4%B8%80%E4%B8%AA%E9%9D%B6%E5%BF%83"><span class="toc-number">8.</span> <span class="toc-text">七、统一的代价：一个入口，也是一个靶心</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%88%91%E7%9A%84%E7%90%86%E8%A7%A3%E4%B8%8E%E6%A0%B8%E9%AA%8C"><span class="toc-number">9.</span> <span class="toc-text">我的理解与核验</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">10.</span> <span class="toc-text">小结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

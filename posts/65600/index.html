@@ -1,0 +1,776 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,上下文工程,Agent 架构,Pi,可扩展性"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流"><meta name="application-name" content="Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流"><meta property="og:url" content="https://blog.asaakii.com/posts/65600/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="从一次编码任务出发，逐层拆解 Pi 如何用轻量 Agent Loop、按需加载的 Skills、带分支的会话树与 TypeScript 扩展构成可定制的编码 Agent，并说明它为什么把权限边界整个交给宿主环境。文中给出可核对的字段、默认值与示例代码。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/pi-agent-harness-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/pi-agent-harness-cover.webp"><meta name="description" content="从一次编码任务出发，逐层拆解 Pi 如何用轻量 Agent Loop、按需加载的 Skills、带分支的会话树与 TypeScript 扩展构成可定制的编码 Agent，并说明它为什么把权限边界整个交给宿主环境。文中给出可核对的字段、默认值与示例代码。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/65600/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流',
+  postAI: '',
+  pageFillDescription: '先建立几个最基本的概念, 一、先建立全局认识：Pi 不是一个单体, 二、核心循环只负责把任务往前推进, 三、薄核心不等于没有上下文管理, 3.1 什么时候触发压缩, 3.2 压缩时保留什么、丢什么, 3.3 会话不是一条直线而是一棵树, 四、Skills：让专项能力按需进入上下文, 4.1 一个 Skill 到底长什么样, 4.2 它是怎么被发现和加载的, 4.3 写好一个 Skill 的关键在 description, 4.4 Skill 和扩展的分工, 五、扩展：把你自己的规则写成代码, 5.1 扩展放在哪、长什么样, 5.2 用扩展实现改危险代码前必须确认, 5.3 扩展能挂到哪些点上, 六、可扩展性的代价：选择权交回给你, 七、权限边界不在 Pi 内部而在它外面, 八、什么时候适合选 Pi, 我的理解：先把可变的规则放到正确的层, 参考资料核验范围本文以年月的公开仓库和文档为依据是开源项目采用许可证文中把公开文档能确认的字段默认值命令与我对设计取舍的理解分开写源码和文档会迭代具体命令默认值与文件路径请以你安装的版本为准文中出现的默认数值如阈值均来自当时的文档用来帮你建立量级感不必当成永久承诺假设你把一个小任务交给编码找出测试为什么失败修复它并跑一遍验证很多会在模型外再包上不少东西权限判断上下文压缩错误恢复工作流约束也能做这些事但它先问了一个更朴素的问题哪些能力必须塞进核心哪些应该留给用户和扩展读完我对它的理解是它把稳定且通用的部分留在核心把变化快和团队习惯强相关的部分放到扩展和宿主环境里这个选择让很适合想自己搭建工作流的开发者也意味着你要更主动地管理权限和运行环境这篇文章不打算停在它很轻这句评价上我会把上面那个修复测试的任务一直带在身边用它穿过的每一层核心循环怎么把任务往前推上下文塞满了怎么办专项知识从哪里进来你自己的规则写在哪以及当这个真的能读写你的磁盘时安全边界在哪每讲一层我都尽量给出你能在自己机器上核对的东西先建立几个最基本的概念如果你刚接触这一段先把后面反复出现的词说清楚读起来会顺很多大模型本身只会做一件事给它一段文本它续写一段文本它不能自己读文件跑命令上网工具调用就是让模型开口要这些能力模型在回复里输出一个结构化请求比如请帮我执行外面的程序真正去执行再把结果作为新文本喂回模型模型据此决定下一步上下文是你这一轮实际发给模型的全部文本系统提示历史对话工具返回的结果都算在内上下文窗口是模型单次能接收的文本上限通常用约等于词的碎片一个汉字大致个来计窗口是有限的塞满了就得想办法腾地方这正是后面压缩要解决的问题直译挽具指的是套在模型外面驱动它连续干活的那层程序它负责把上下文组装好发出去把工具调用接住执行把结果写回去如此循环就是这样一个说它极简说的正是这层程序刻意做得薄把这几个词记住下面就好读了一先建立全局认识不是一个单体不是一个只有的单体程序官方仓库把它拆成几块各自职责清晰组成负责什么统一等不同模型提供商的调用接口让上层不必关心具体是哪家模型运行时处理工具调用与状态管理面向终端的编码会话上下文扩展等能力都在这一层终端界面渲染采用差量刷新此外还有一个独立的负责一类的工作流自动化不在本文范围内理解这张表就能纠正一个常见误会很小不是说它没有上下文管理或会话能力而是说它没有把每一种团队工作流都硬编码进最底层的能力分布在不同的层而不是全挤在核心把层次分开后下面几个问题会更容易一个一个谈清楚核心循环怎么转额外能力从哪来会话怎么回溯安全边界又在哪二核心循环只负责把任务往前推进回到修复测试的任务你输入找出测试为什么失败并修复从这一刻起的核心循环开始转动它的基本形状是这样用户任务与当前会话上下文请求模型并流式接收回复模型是否请求工具否返回本轮结果是校验参数并执行工具把工具结果写回上下文用我们的任务走一遍就是把系统提示你的任务组装成上下文发给模型流式一边生成一边显示不用等整段写完接收回复模型没法凭空知道测试为什么挂于是发起一个工具调用循环判断模型请求了工具于是先校验参数再执行把的失败输出接住这段输出被写回上下文再次发给模型模型现在看见了报错栈可能接着调用打开出错的文件如此往复直到模型认为改完了不再请求工具本轮结束这个循环的职责很克制模型给出回复若有工具调用就执行再把观察结果交还给模型它不替你规定改代码前必须先读三个文件也不预设某种产品流程它只保证转得动薄不等于执行时没有保护有几件事属于让循环可靠运行的基础能力核心必须管参数不完整时不能直接甩给比如模型请求了一个缺字段的工具调用执行层要把参数无效这个失败结果交回模型让它自己纠正而不是把残缺命令交给系统去跑用户中途插话要在合适的回合进上下文你在跑到一半时补一句顺便把这个函数也改了这条引导消息要在下一个合适的回合并入而不是被丢掉或打断当前工具执行它们是通用的和任何团队规则无关的能力所以留在核心是合理的对初学者可以把的核心理解成一台好替换的发动机它负责转动但不决定你要开去哪里方向盘导航限速都在上层三薄核心不等于没有上下文管理我最初看到的极简定位时很容易把它误读成没有压缩没有会话治理塞满了就崩看官方文档后这个理解并不准确压缩机制是有的而且做得相当细只是它放在编码层不在最底层的循环里什么时候触发压缩还是修复测试那个任务假设它比想象中麻烦模型读了十几个文件跑了好几轮测试上下文越堆越多逼近窗口上限这时压缩登场文档给出的自动触发条件很直白也就是当前已用超过窗口上限预留量就触发默认约可在或项目里的配置你也可以手动执行指令立刻压一次甚至在指令里告诉它重点保留和测试相关的内容压缩时保留什么丢什么关键在于它不是把整段历史无差别地抹成一句话流程大致是从最新的消息往回走一路累加直到攒够默认约这条线之后的近期消息原样保留因为你最近在干的事往往最重要这条线之前的旧消息才是被摘要的对象由模型生成一段结构化摘要替换掉原文工具调用和它的结果始终绑在一起切割点不会落在工具调用还在结果被砍掉的中间状态否则模型会看到一个没有下文的调用万一单独一个回合就超预算比如一次超长的工具输出会分别为更早的历史和这个未完成回合的前缀各生成一份摘要再合并摘要不是随便写的散文而是有固定骨架大致包含目标约束与偏好进展关键决策下一步关键上下文并用和两个区块单独列出读过和改过的文件路径压缩后会往会话里追加一条记录里面存着摘要文本从哪条消息开始保留的标记压缩前的数以及累积的文件操作清单之后会话就用摘要保留的近期消息重新装载继续跑对我们的任务来说效果就是模型忘掉了它十轮前逐字读过的某个无关文件但记得目标是修复这个失败测试已经定位到改了还差验证该丢的细节丢了该留的主线留着这就是上下文工程落到实处的样子会话不是一条直线而是一棵树普通对话是一条只能往前接的消息链的会话是一棵带父子关系的树文档里说得很清楚每条记录都有和当前位置是活跃的叶子这意味着你可以在任意节点分叉尝试另一条路需要时再回到岔路口用得上的命令命令作用在当前会话里可视化整棵树方向键浏览折叠跳转分支路径或从某个更早的节点拉出一个新会话文件把当前活跃分支复制成一个新会话或打开会话选择器搜索重命名删除历史会话查看会话信息命名导出上传为私密会话默认按工作目录存放在每个会话是一个文件里面记录消息模型切换思考等级变化标签压缩记录分支摘要扩展写入的数据等分支摘要是这套设计里我最喜欢的一点回到任务你走了方案直接改断言改了半天发现是错的你用跳回岔路口去试方案修数据初始化这时不会让方案的经验白费它会找到新旧位置的最近公共祖先把被放弃的那条分支收敛成一段摘要作为一条记录注入过来于是在方案里模型仍然知道方案试过什么为什么不行不会重蹈覆辙这就是为什么会话树特别适合编码探索性的工作天然是带回溯的改坏了退回去换个思路是常态而把这件事做成了一等公民而不是让你复制粘贴重开一个对话读源码或做二次开发时请把核心层很薄和整个产品只有一个循环分开后者是误解四让专项能力按需进入上下文一个编码很容易遇到上下文膨胀项目规范数据库约定部署说明测试流程各种工具定义如果全塞进开场提示词模型还没开始干活就先背了一大包既占窗口又分散注意力的走的是另一条路平时只放目录用到了才读正文这在提示工程里叫渐进式披露一个到底长什么样文档说得很干脆一个就是一个包含文件的目录其余都是自由的典型布局必需指令正文可选辅助脚本可选详细文档可选模板等资源开头是一段只有两个字段是必填的最长字符只能用小写字母数字和连字符合法不合法最长字符说明这个做什么什么时候用它可选字段包括等一个最小例子当改动涉及数据库或迁移文件时使用说明本项目跑迁移测试的正确顺序不涉及数据库时不要加载本项目的迁移测试必须按以下顺序执行若失败检查下最新的它是怎么被发现和加载的在启动时扫描几个约定位置只抽取每个的和全局项目以及命令行参数指定的位置在这两个目录里直接放在根下的文件也会被发现启动后系统提示里只带着这些简短的名称和描述相当于一份目录真正干活时常驻上下文名称简短描述目录当前任务匹配某个描述匹配模型用命令读取完整不匹配不加载详细内容模型按该的专门流程完成任务模型判断当前任务和某条描述对得上就用把那份完整的读进来对不上正文就一直躺在磁盘上不占窗口你也可以用强制加载某个或在提示里直接点名回到修复测试的任务如果失败的是一个迁移测试模型看到这条描述就会把它读进来照着正确的迁移测试顺序走如果只是个普通单元测试这个的正文永远不会进上下文能力的数量和常驻上下文的成本就这样被解耦了写好一个的关键在这套机制的成败几乎全压在上写得太模糊模型不知道何时该加载它写得太长太杂那份目录本身又开始膨胀我的经验是一个好的描述要回答两个问题它解决什么任务以及什么时候不要用它上面例子里那句不涉及数据库时不要加载就是在做后半件事它和正面描述同样重要和扩展的分工一句话区分是按任务临时读进来的知识流程扩展是常驻的新功能不改变能做什么只在合适的时机给模型一段专门指令扩展则真的往里加工具命令事件处理下一节就讲扩展五扩展把你自己的规则写成代码到这里前面那句可扩展才真正落地允许用扩展目录提示词模板主题和包来改变行为我重点讲扩展因为它最能说明规则由谁决定扩展放在哪长什么样扩展从几个受信任的位置自动发现全局或项目或一个扩展导出一个默认工厂函数拿到在这里订阅事件注册工具和命令工厂可以是同步或异步的异步的话会等它初始化完再触发开发时用挂载测试放进自动发现目录后还支持热重载用扩展实现改危险代码前必须确认第四节我留了个坑没填团队希望执行危险操作前先人工确认现在给出可运行的实现这几乎是官方文档里的示例每次模型请求工具调用都先过一遍这个钩子危险操作确定要执行吗已被用户拦截事件能拿到和并且允许返回直接拦下这次调用把换成命中支付相关文件路径就弹确认你要的那条团队规则就成立了关键在于这条规则是你写的由你的代码判断的核心不替你预装扩展能挂到哪些点上能订阅的生命周期事件相当密几个有代表性的会话回合工具可拦截可修改输入可拦截改写用户输入与模型提供商的交互等除了监听事件扩展还能主动往里加东西注册一个模型可调用的新工具带参数和注册一个斜杠命令通过弹出对话框发通知设状态栏通过读会话状态看用量甚至主动触发压缩这套的存在正是薄核心厚上层这句话的技术底座核心保持通用项目规则跟着项目走写成代码放进六可扩展性的代价选择权交回给你能扩展听起来总是好事但它把选择权也一并交给了使用者不会替每个团队预装改支付代码前先跑测试这类规则你得像上一节那样把它写进项目扩展或再通过真实任务验证它是否真的会触发写完不测等于没写这也是与偏重内置工作流的编码最明显的区别前者更适合你已经知道团队要什么并愿意把规则工程化后者更适合先拿到一套较完整的默认行为慢慢改两者不是能力高低而是默认分工不同社区项目是观察这个生态的好例子它在基础上组合了更多工具相关能力和自动化功能它说明薄核心可以承载很重的分发版本但也提醒你别把社区分发版的能力直接当成核心的默认能力七权限边界不在内部而在它外面这一点需要单独认真地说清因为它直接关系到安全官方写得毫不含糊它不内置限制文件系统进程网络或凭据访问的权限系统默认继承启动它的用户和进程的权限上一节那个拦截的扩展也顺带说明了同一件事文档明确提醒扩展以你的完整系统权限运行能执行任意代码只安装你信任来源的扩展换句话说里要不要拦某个操作这件事本身就是交给你写的代码去决定的这意味着你在本机跑时能做什么首先取决于你给当前进程什么权限它不会天然提供一个只允许改当前工作区的默认沙箱所以如果任务会接触不可信输入敏感凭据或生产资源正确的做法是把隔离放到外面官方给出三个方向方案适合的边界扩展把宿主机上的与模型认证保留在外把内置工具与命令放进本地微虚拟机执行把整个进程放进容器获得相对直接的隔离用策略控制的沙箱运行整个进程还要区分两类完全不同的安全别混为一谈供应链安全也就是装进来的依赖有没有问题在这方面相当严格直接依赖锁定精确版本设置依赖的最小发布时间里的用固定解析结果里跑新增带生命周期脚本的依赖需要显式审查运行时安全也就是正在跑的能对你的机器做什么这靠上面的容器或沙箱来管前者不能替代后者依赖再干净也拦不住一个拥有你全部权限的去读你的私钥那是运行时边界的职责八什么时候适合选不是越轻越好的答案而是一种有前提的选择比较适合的情况你想用终端完成编码任务并且希望更换模型提供商或自定义工具你有明确的项目规范愿意把它整理成或扩展你需要会话分支和可回溯的探索过程你能为运行环境提供容器沙箱或其他权限控制需要谨慎的情况你希望安装后就获得严格的文件网络和命令审批边界任务会接触不可信输入线上凭据或生产系统但你还没准备好外层隔离团队没人维护和扩展却希望规则会自动长期保持一致我的理解先把可变的规则放到正确的层把八节连起来看最值得学的地方不是提示词一定要多短而是它对分层的坚持模型调用和工具循环稳定通用留在核心会话分支与压缩属于编码场景的通用能力放在编码层专项知识和流程随任务变化做成按需加载的团队规则和自定义功能随项目变化写成里的扩展权限边界和你的运行环境强相关整个交给宿主的容器沙箱每一样东西它都先问这会不会随团队项目环境而变会变的就往外推一层这种分层不会减少你的工程工作只会让工作的位置更清楚对个人项目它给了很大自由度对团队和生产环境它要求你把权限测试发布和审计规则认真补齐真正该验证的不是的介绍页有多简洁而是你为它配置的那些规则能不能在真实任务里稳定地触发参考资料官方仓库与包说明官方文档索引机制与格式上下文压缩与分支摘要会话树与导航命令扩展与示例容器与沙箱方案扩展生态示例可对照阅读技术架构深度解析技术架构深度解析技术架构深度解析',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-17 21:00:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E6%A1%86%E6%9E%B6%E6%B7%B1%E5%BA%A6%E6%8B%86%E8%A7%A3/" itemprop="url">Agent 框架深度拆解</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>上下文工程</span></a><a class="article-meta__tags" href="/tags/Agent-%E6%9E%B6%E6%9E%84/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent 架构</span></a><a class="article-meta__tags" href="/tags/Pi/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Pi</span></a><a class="article-meta__tags" href="/tags/%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>可扩展性</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-07-08T12:30:00.000Z" title="发表于 2026-07-08 20:30:00">2026-07-08</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-17T13:00:00.000Z" title="更新于 2026-07-17 21:00:00">2026-07-17</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">6.2k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>19分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/pi-agent-harness-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/65600/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E6%A1%86%E6%9E%B6%E6%B7%B1%E5%BA%A6%E6%8B%86%E8%A7%A3/" itemprop="url">Agent 框架深度拆解</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url">上下文工程</a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" tabindex="-1" itemprop="url">Agent 架构</a><a href="/tags/Pi/" tabindex="-1" itemprop="url">Pi</a><a href="/tags/%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7/" tabindex="-1" itemprop="url">可扩展性</a><h1 id="CrawlerTitle" itemprop="name headline">Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-07-08T12:30:00.000Z" title="发表于 2026-07-08 20:30:00">2026-07-08</time><time itemprop="dateCreated datePublished" datetime="2026-07-17T13:00:00.000Z" title="更新于 2026-07-17 21:00:00">2026-07-17</time></header><blockquote>
+<p><strong>核验范围：</strong> 本文以 <a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi">earendil-works&#x2F;pi</a> 2026 年 7 月的公开仓库和文档为依据。Pi 是 TypeScript 开源项目，采用 MIT 许可证。文中把公开文档能确认的字段、默认值、命令与我对设计取舍的理解分开写；源码和文档会迭代，具体命令、默认值与文件路径请以你安装的版本为准。文中出现的默认数值（如 token 阈值）均来自当时的文档，用来帮你建立量级感，不必当成永久承诺。</p>
+</blockquote>
+<p>假设你把一个小任务交给编码 Agent：找出测试为什么失败，修复它，并跑一遍验证。很多 Agent 会在模型外再包上不少东西：权限判断、上下文压缩、错误恢复、工作流约束。Pi 也能做这些事，但它先问了一个更朴素的问题：哪些能力必须塞进核心，哪些应该留给用户和扩展？</p>
+<p>读完 Pi，我对它的理解是：它把稳定且通用的部分留在核心，把变化快、和团队习惯强相关的部分放到 Skills、扩展和宿主环境里。这个选择让 Pi 很适合想自己搭建工作流的开发者，也意味着你要更主动地管理权限和运行环境。</p>
+<p>这篇文章不打算停在”它很轻”这句评价上。我会把上面那个修复测试的任务一直带在身边，用它穿过 Pi 的每一层：核心循环怎么把任务往前推、上下文塞满了怎么办、专项知识从哪里进来、你自己的规则写在哪、以及当这个 Agent 真的能读写你的磁盘时安全边界在哪。每讲一层，我都尽量给出你能在自己机器上核对的东西。</p>
+<h2 id="先建立几个最基本的概念"><a href="#先建立几个最基本的概念" class="headerlink" title="先建立几个最基本的概念"></a>先建立几个最基本的概念</h2><p>如果你刚接触 Agent，这一段先把后面反复出现的词说清楚，读起来会顺很多。</p>
+<ul>
+<li>大模型（LLM）本身只会做一件事：给它一段文本，它续写一段文本。它不能自己读文件、跑命令、上网。</li>
+<li>工具调用（tool call）就是让模型”开口要”这些能力：模型在回复里输出一个结构化请求，比如”请帮我执行 <code>pytest tests/</code>“，外面的程序真正去执行，再把结果作为新文本喂回模型。模型据此决定下一步。</li>
+<li>上下文（context）是你这一轮实际发给模型的全部文本：系统提示、历史对话、工具返回的结果，都算在内。</li>
+<li>上下文窗口（context window）是模型单次能接收的文本上限，通常用 token（约等于”词的碎片”，一个汉字大致 1～2 个 token）来计。窗口是有限的，塞满了就得想办法腾地方，这正是后面”压缩”要解决的问题。</li>
+<li>Harness（直译”挽具”）指的是套在模型外面、驱动它连续干活的那层程序：它负责把上下文组装好发出去、把工具调用接住执行、把结果写回去，如此循环。Pi 就是这样一个 harness。说它”极简”，说的正是这层程序刻意做得薄。</li>
+</ul>
+<p>把这几个词记住，下面就好读了。</p>
+<h2 id="一、先建立全局认识：Pi-不是一个单体"><a href="#一、先建立全局认识：Pi-不是一个单体" class="headerlink" title="一、先建立全局认识：Pi 不是一个单体"></a>一、先建立全局认识：Pi 不是一个单体</h2><p>Pi 不是一个只有 CLI 的单体程序。官方仓库把它拆成几块，各自职责清晰：</p>
+<table>
+<thead>
+<tr>
+<th>组成</th>
+<th>负责什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pi-ai</code></td>
+<td>统一 OpenAI、Anthropic、Google 等不同模型提供商的调用接口，让上层不必关心具体是哪家模型</td>
+</tr>
+<tr>
+<td><code>pi-agent-core</code></td>
+<td>Agent 运行时：处理工具调用与 Agent 状态管理</td>
+</tr>
+<tr>
+<td><code>pi-coding-agent</code></td>
+<td>面向终端的编码 Agent：会话、上下文、Skills、扩展等能力都在这一层</td>
+</tr>
+<tr>
+<td><code>pi-tui</code></td>
+<td>终端界面渲染，采用差量刷新</td>
+</tr>
+</tbody></table>
+<p>（此外还有一个独立的 <code>pi-chat</code>，负责 Slack 一类的工作流自动化，不在本文范围内。）</p>
+<p>理解这张表，就能纠正一个常见误会。”Pi 很小”不是说它没有上下文管理或会话能力，而是说它没有把每一种团队工作流都硬编码进最底层的 Agent Loop。能力分布在不同的层，而不是全挤在核心。把层次分开后，下面几个问题会更容易一个一个谈清楚：核心循环怎么转，额外能力从哪来，会话怎么回溯，安全边界又在哪。</p>
+<h2 id="二、核心循环只负责把任务往前推进"><a href="#二、核心循环只负责把任务往前推进" class="headerlink" title="二、核心循环只负责把任务往前推进"></a>二、核心循环只负责把任务往前推进</h2><p>回到修复测试的任务。你输入”找出测试为什么失败并修复”，从这一刻起，Pi 的核心循环开始转动。它的基本形状是这样：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  A[&quot;用户任务与当前会话上下文&quot;] --&gt; B[&quot;请求模型并流式接收回复&quot;]
+  B --&gt; C{&quot;模型是否请求工具？&quot;}
+  C --&gt;|&quot;否&quot;| D[&quot;返回本轮结果&quot;]
+  C --&gt;|&quot;是&quot;| E[&quot;校验参数并执行工具&quot;]
+  E --&gt; F[&quot;把工具结果写回上下文&quot;]
+  F --&gt; B
+  </pre></div>
+
+<p>用我们的任务走一遍，就是：</p>
+<ol>
+<li>Pi 把系统提示 + 你的任务组装成上下文，发给模型，流式（一边生成一边显示，不用等整段写完）接收回复。</li>
+<li>模型没法凭空知道测试为什么挂，于是发起一个工具调用：<code>bash(&quot;pytest -x&quot;)</code>。</li>
+<li>循环判断”模型请求了工具”，于是先校验参数再执行，把 pytest 的失败输出接住。</li>
+<li>这段输出被写回上下文，再次发给模型。模型现在”看见”了报错栈，可能接着调用 <code>read</code> 打开出错的文件。</li>
+<li>如此往复，直到模型认为改完了、不再请求工具，本轮结束。</li>
+</ol>
+<p>这个循环的职责很克制：模型给出回复，若有工具调用就执行，再把观察结果交还给模型。它不替你规定”改代码前必须先读三个文件”，也不预设某种产品流程。它只保证”转得动”。</p>
+<p>薄，不等于执行时没有保护。有几件事属于”让循环可靠运行”的基础能力，核心必须管：</p>
+<ul>
+<li>参数不完整时不能直接甩给 shell。比如模型请求了一个缺字段的工具调用，执行层要把”参数无效”这个失败结果交回模型，让它自己纠正，而不是把残缺命令交给系统去跑。</li>
+<li>用户中途插话要在合适的回合进上下文。你在 Agent 跑到一半时补一句”顺便把这个函数也改了”，这条引导消息要在下一个合适的回合并入，而不是被丢掉或打断当前工具执行。</li>
+</ul>
+<p>它们是通用的、和任何团队规则无关的能力，所以留在核心是合理的。</p>
+<p>对初学者，可以把 Pi 的核心理解成一台好替换的发动机：它负责转动，但不决定你要开去哪里。方向盘、导航、限速，都在上层。</p>
+<h2 id="三、薄核心不等于没有上下文管理"><a href="#三、薄核心不等于没有上下文管理" class="headerlink" title="三、薄核心不等于没有上下文管理"></a>三、薄核心不等于没有上下文管理</h2><p>我最初看到 Pi 的极简定位时，很容易把它误读成”没有压缩、没有会话治理，塞满了就崩”。看官方文档后，这个理解并不准确。压缩机制是有的，而且做得相当细，只是它放在编码 Agent 层，不在最底层的循环里。</p>
+<h3 id="3-1-什么时候触发压缩"><a href="#3-1-什么时候触发压缩" class="headerlink" title="3.1 什么时候触发压缩"></a>3.1 什么时候触发压缩</h3><p>还是修复测试那个任务。假设它比想象中麻烦，模型读了十几个文件、跑了好几轮测试，上下文越堆越多，逼近窗口上限。这时压缩登场。</p>
+<p>文档给出的自动触发条件很直白：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">contextTokens &gt; contextWindow - reserveTokens</span><br></pre></td></tr></table></figure>
+
+<p>也就是”当前已用 token 超过（窗口上限 − 预留量）”就触发。<code>reserveTokens</code> 默认约 16384，可在 <code>~/.pi/agent/settings.json</code> 或项目里的 <code>.pi/settings.json</code> 配置。你也可以手动执行 <code>/compact [指令]</code> 立刻压一次，甚至在指令里告诉它”重点保留和测试相关的内容”。</p>
+<h3 id="3-2-压缩时保留什么、丢什么"><a href="#3-2-压缩时保留什么、丢什么" class="headerlink" title="3.2 压缩时保留什么、丢什么"></a>3.2 压缩时保留什么、丢什么</h3><p>关键在于它不是把整段历史无差别地”抹成一句话”。流程大致是：</p>
+<ul>
+<li>从最新的消息往回走，一路累加 token，直到攒够 <code>keepRecentTokens</code>（默认约 20000）。这条线之后的近期消息原样保留，因为你最近在干的事往往最重要。</li>
+<li>这条线之前的旧消息，才是被摘要的对象：由模型生成一段结构化摘要，替换掉原文。</li>
+<li>工具调用和它的结果始终绑在一起：切割点不会落在”工具调用还在、结果被砍掉”的中间状态，否则模型会看到一个没有下文的调用。</li>
+<li>万一单独一个回合就超预算（比如一次超长的工具输出），Pi 会分别为”更早的历史”和”这个未完成回合的前缀”各生成一份摘要再合并。</li>
+</ul>
+<p>摘要不是随便写的散文，而是有固定骨架，大致包含：目标（Goal）、约束与偏好（Constraints &amp; Preferences）、进展（Done &#x2F; In Progress &#x2F; Blocked）、关键决策（Key Decisions）、下一步（Next Steps）、关键上下文（Critical Context），并用 <code>&lt;read-files&gt;</code> 和 <code>&lt;modified-files&gt;</code> 两个区块单独列出读过和改过的文件路径。</p>
+<p>压缩后会往会话里追加一条 <code>compaction</code> 记录，里面存着摘要文本、”从哪条消息开始保留”的标记（<code>firstKeptEntryId</code>）、压缩前的 token 数，以及累积的文件操作清单。之后会话就用”摘要 + 保留的近期消息”重新装载继续跑。</p>
+<p>对我们的任务来说，效果就是：模型忘掉了它十轮前逐字读过的某个无关文件，但记得”目标是修复这个失败测试、已经定位到 X、改了 Y、还差验证”。该丢的细节丢了，该留的主线留着。这就是”上下文工程”落到实处的样子。</p>
+<h3 id="3-3-会话不是一条直线，而是一棵树"><a href="#3-3-会话不是一条直线，而是一棵树" class="headerlink" title="3.3 会话不是一条直线，而是一棵树"></a>3.3 会话不是一条直线，而是一棵树</h3><p>普通对话是一条只能往前接的消息链。Pi 的会话是一棵带父子关系的树，文档里说得很清楚：”每条记录都有 <code>id</code> 和 <code>parentId</code>，当前位置是活跃的叶子（active leaf）”。这意味着你可以在任意节点分叉，尝试另一条路，需要时再回到岔路口。</p>
+<p>用得上的命令：</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/tree</code></td>
+<td>在当前会话里可视化整棵树，方向键浏览、折叠&#x2F;跳转分支</td>
+</tr>
+<tr>
+<td><code>/fork &lt;路径或 id&gt;</code></td>
+<td>从某个更早的节点拉出一个新会话文件</td>
+</tr>
+<tr>
+<td><code>/clone</code></td>
+<td>把当前活跃分支复制成一个新会话</td>
+</tr>
+<tr>
+<td><code>/resume</code>（或 <code>pi -r</code>）</td>
+<td>打开会话选择器，搜索、重命名、删除历史会话</td>
+</tr>
+<tr>
+<td><code>/session</code> <code>/name</code> <code>/export</code> <code>/share</code></td>
+<td>查看会话信息、命名、导出 HTML、上传为私密 gist</td>
+</tr>
+</tbody></table>
+<p>会话默认按工作目录存放在 <code>~/.pi/agent/sessions/</code>，每个会话是一个 JSONL 文件，里面记录消息、模型切换、思考等级变化、标签、压缩记录、分支摘要、扩展写入的数据等。</p>
+<p>分支摘要是这套设计里我最喜欢的一点。回到任务：你走了”方案 A，直接改断言”，改了半天发现是错的。你用 <code>/tree</code> 跳回岔路口去试”方案 B，修数据初始化”。这时 Pi 不会让方案 A 的经验白费：它会找到新旧位置的最近公共祖先，把被放弃的那条分支收敛成一段摘要，作为一条 <code>branch_summary</code> 记录注入过来。于是在方案 B 里，模型仍然”知道”方案 A 试过什么、为什么不行，不会重蹈覆辙。</p>
+<p>这就是为什么会话树特别适合编码：探索性的工作天然是带回溯的，”改坏了退回去换个思路”是常态，而 Pi 把这件事做成了一等公民，而不是让你复制粘贴重开一个对话。</p>
+<p>读源码或做二次开发时，请把”核心层很薄”和”整个产品只有一个 <code>while</code> 循环”分开，后者是误解。</p>
+<h2 id="四、Skills：让专项能力按需进入上下文"><a href="#四、Skills：让专项能力按需进入上下文" class="headerlink" title="四、Skills：让专项能力按需进入上下文"></a>四、Skills：让专项能力按需进入上下文</h2><p>一个编码 Agent 很容易遇到上下文膨胀：项目规范、数据库约定、部署说明、测试流程、各种工具定义……如果全塞进开场提示词，模型还没开始干活就先背了一大包，既占窗口又分散注意力。</p>
+<p>Pi 的 Skills 走的是另一条路：平时只放”目录”，用到了才读”正文”。这在提示工程里叫渐进式披露（progressive disclosure）。</p>
+<h3 id="4-1-一个-Skill-到底长什么样"><a href="#4-1-一个-Skill-到底长什么样" class="headerlink" title="4.1 一个 Skill 到底长什么样"></a>4.1 一个 Skill 到底长什么样</h3><p>文档说得很干脆：”一个 Skill 就是一个包含 <code>SKILL.md</code> 文件的目录，其余都是自由的。”典型布局：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">my-skill/</span><br><span class="line">├── SKILL.md        # 必需：frontmatter + 指令正文</span><br><span class="line">├── scripts/        # 可选：辅助脚本</span><br><span class="line">├── references/     # 可选：详细文档</span><br><span class="line">└── assets/         # 可选：模板等资源</span><br></pre></td></tr></table></figure>
+
+<p><code>SKILL.md</code> 开头是一段 YAML frontmatter，只有两个字段是必填的：</p>
+<ul>
+<li><code>name</code>：最长 64 字符，只能用小写字母、数字和连字符。<code>pdf-processing</code>、<code>data-analysis</code> 合法；<code>PDF-Processing</code>、<code>pdf--processing</code> 不合法。</li>
+<li><code>description</code>：最长 1024 字符，说明这个 Skill 做什么、什么时候用它。</li>
+</ul>
+<p>可选字段包括 <code>license</code>、<code>compatibility</code>、<code>metadata</code>、<code>allowed-tools</code>、<code>disable-model-invocation</code> 等。一个最小例子：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">name: run-migration-tests</span><br><span class="line"><span class="section">description: 当改动涉及数据库 schema 或迁移文件时使用；说明本项目跑迁移测试的正确顺序。不涉及数据库时不要加载。</span></span><br><span class="line"><span class="section">---</span></span><br><span class="line"></span><br><span class="line">本项目的迁移测试必须按以下顺序执行：</span><br><span class="line"><span class="bullet">1.</span> <span class="code">`make db-reset`</span></span><br><span class="line"><span class="bullet">2.</span> <span class="code">`pytest tests/migrations -x`</span></span><br><span class="line"><span class="bullet">3.</span> 若失败，检查 <span class="code">`alembic/versions/`</span> 下最新的 revision ...</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-它是怎么被发现和加载的"><a href="#4-2-它是怎么被发现和加载的" class="headerlink" title="4.2 它是怎么被发现和加载的"></a>4.2 它是怎么被发现和加载的</h3><p>Pi 在启动时扫描几个约定位置，只抽取每个 Skill 的 <code>name</code> 和 <code>description</code>：</p>
+<ul>
+<li>全局：<code>~/.pi/agent/skills/</code></li>
+<li>项目：<code>.pi/skills/</code></li>
+<li>以及命令行参数指定的位置</li>
+</ul>
+<p>（在这两个 skills 目录里，直接放在根下的 <code>.md</code> 文件也会被发现。）</p>
+<p>启动后，系统提示里只带着这些简短的名称和描述，相当于一份目录。真正干活时：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart LR
+  A[&quot;常驻上下文：Skill 名称 + 简短描述（目录）&quot;] --&gt; B{&quot;当前任务匹配某个描述？&quot;}
+  B --&gt;|&quot;匹配&quot;| C[&quot;模型用 read 命令读取完整 SKILL.md&quot;]
+  B --&gt;|&quot;不匹配&quot;| D[&quot;不加载详细内容&quot;]
+  C --&gt; E[&quot;模型按该 Skill 的专门流程完成任务&quot;]
+  </pre></div>
+
+<p>模型判断当前任务和某条描述对得上，就用 <code>read</code> 把那份完整的 <code>SKILL.md</code> 读进来；对不上，正文就一直躺在磁盘上不占窗口。你也可以用 <code>/skill:name</code> 强制加载某个 Skill，或在提示里直接点名。</p>
+<p>回到修复测试的任务：如果失败的是一个迁移测试，模型看到 <code>run-migration-tests</code> 这条描述就会把它读进来，照着”正确的迁移测试顺序”走；如果只是个普通单元测试，这个 Skill 的正文永远不会进上下文。能力的数量和常驻上下文的成本，就这样被解耦了。</p>
+<h3 id="4-3-写好一个-Skill-的关键在-description"><a href="#4-3-写好一个-Skill-的关键在-description" class="headerlink" title="4.3 写好一个 Skill 的关键在 description"></a>4.3 写好一个 Skill 的关键在 description</h3><p>这套机制的成败几乎全压在 <code>description</code> 上。写得太模糊，模型不知道何时该加载它；写得太长太杂，那份”目录”本身又开始膨胀。我的经验是：一个好 Skill 的描述要回答两个问题，它解决什么任务，以及什么时候不要用它。上面例子里那句”不涉及数据库时不要加载”就是在做后半件事，它和正面描述同样重要。</p>
+<h3 id="4-4-Skill-和扩展的分工"><a href="#4-4-Skill-和扩展的分工" class="headerlink" title="4.4 Skill 和扩展的分工"></a>4.4 Skill 和扩展的分工</h3><p>一句话区分：Skill 是”按任务临时读进来的知识&#x2F;流程”，扩展是”常驻的新功能”。Skill 不改变 Pi 能做什么，只在合适的时机给模型一段专门指令；扩展则真的往 Pi 里加工具、命令、事件处理。下一节就讲扩展。</p>
+<h2 id="五、扩展：把”你自己的规则”写成代码"><a href="#五、扩展：把”你自己的规则”写成代码" class="headerlink" title="五、扩展：把”你自己的规则”写成代码"></a>五、扩展：把”你自己的规则”写成代码</h2><p>到这里，前面那句”可扩展”才真正落地。Pi 允许用 TypeScript 扩展、<code>.pi/</code> 目录、提示词模板、主题和包来改变行为。我重点讲 TypeScript 扩展，因为它最能说明”规则由谁决定”。</p>
+<h3 id="5-1-扩展放在哪、长什么样"><a href="#5-1-扩展放在哪、长什么样" class="headerlink" title="5.1 扩展放在哪、长什么样"></a>5.1 扩展放在哪、长什么样</h3><p>扩展从几个受信任的位置自动发现：</p>
+<ul>
+<li>全局：<code>~/.pi/agent/extensions/*.ts</code> 或 <code>~/.pi/agent/extensions/*/index.ts</code></li>
+<li>项目：<code>.pi/extensions/*.ts</code> 或 <code>.pi/extensions/*/index.ts</code></li>
+</ul>
+<p>一个扩展导出一个默认工厂函数，拿到 <code>ExtensionAPI</code>：</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="keyword">type</span> &#123; <span class="title class_">ExtensionAPI</span> &#125; <span class="keyword">from</span> <span class="string">&quot;@earendil-works/pi-coding-agent&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="keyword">function</span> (<span class="params"><span class="attr">pi</span>: <span class="title class_">ExtensionAPI</span></span>) &#123;</span><br><span class="line">  <span class="comment">// 在这里订阅事件、注册工具和命令</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>工厂可以是同步或异步的；异步的话，Pi 会等它初始化完再触发 <code>session_start</code>。开发时用 <code>pi -e ./my-extension.ts</code> 挂载测试，放进自动发现目录后还支持 <code>/reload</code> 热重载。</p>
+<h3 id="5-2-用扩展实现”改危险代码前必须确认”"><a href="#5-2-用扩展实现”改危险代码前必须确认”" class="headerlink" title="5.2 用扩展实现”改危险代码前必须确认”"></a>5.2 用扩展实现”改危险代码前必须确认”</h3><p>第四节我留了个坑没填：团队希望 Agent 执行危险操作前先人工确认。现在给出可运行的实现，这几乎是官方文档里的示例：</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="keyword">function</span> (<span class="params"><span class="attr">pi</span>: <span class="title class_">ExtensionAPI</span></span>) &#123;</span><br><span class="line">  <span class="comment">// 每次模型请求工具调用，都先过一遍这个钩子</span></span><br><span class="line">  pi.<span class="title function_">on</span>(<span class="string">&quot;tool_call&quot;</span>, <span class="title function_">async</span> (event, ctx) =&gt; &#123;</span><br><span class="line">    <span class="keyword">if</span> (</span><br><span class="line">      event.<span class="property">toolName</span> === <span class="string">&quot;bash&quot;</span> &amp;&amp;</span><br><span class="line">      event.<span class="property">input</span>.<span class="property">command</span>?.<span class="title function_">includes</span>(<span class="string">&quot;rm -rf&quot;</span>)</span><br><span class="line">    ) &#123;</span><br><span class="line">      <span class="keyword">const</span> ok = <span class="keyword">await</span> ctx.<span class="property">ui</span>.<span class="title function_">confirm</span>(<span class="string">&quot;危险操作&quot;</span>, <span class="string">&quot;确定要执行 rm -rf 吗？&quot;</span>);</span><br><span class="line">      <span class="keyword">if</span> (!ok) <span class="keyword">return</span> &#123; <span class="attr">block</span>: <span class="literal">true</span>, <span class="attr">reason</span>: <span class="string">&quot;已被用户拦截&quot;</span> &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>tool_call</code> 事件能拿到 <code>event.toolName</code> 和 <code>event.input</code>，并且允许返回 <code>&#123; block: true, reason: &quot;...&quot; &#125;</code> 直接拦下这次调用。把 <code>rm -rf</code> 换成”命中支付相关文件路径就弹确认”，你要的那条团队规则就成立了。关键在于：这条规则是你写的、由你的代码判断的，Pi 核心不替你预装。</p>
+<h3 id="5-3-扩展能挂到哪些点上"><a href="#5-3-扩展能挂到哪些点上" class="headerlink" title="5.3 扩展能挂到哪些点上"></a>5.3 扩展能挂到哪些点上</h3><p><code>pi.on</code> 能订阅的生命周期事件相当密，几个有代表性的：</p>
+<ul>
+<li>会话：<code>session_start</code>、<code>session_shutdown</code></li>
+<li>Agent 回合：<code>before_agent_start</code>、<code>agent_start</code>、<code>turn_start</code>、<code>turn_end</code>、<code>agent_end</code></li>
+<li>工具：<code>tool_call</code>（可拦截）、<code>tool_result</code>（可修改）、<code>tool_execution_start/update/end</code></li>
+<li>输入：<code>input</code>（可拦截&#x2F;改写用户输入）</li>
+<li>与模型提供商的交互：<code>before_provider_request</code>、<code>after_provider_response</code> 等</li>
+</ul>
+<p>除了监听事件，扩展还能主动往里加东西：</p>
+<ul>
+<li><code>pi.registerTool(&#123;...&#125;)</code> 注册一个模型可调用的新工具（带 <code>name</code>、<code>description</code>、参数 schema 和 <code>execute</code>）；</li>
+<li><code>pi.registerCommand(&quot;stats&quot;, &#123;...&#125;)</code> 注册一个 <code>/stats</code> 斜杠命令；</li>
+<li>通过 <code>ctx.ui</code> 弹出 <code>select</code> &#x2F; <code>confirm</code> &#x2F; <code>input</code> &#x2F; <code>editor</code> 对话框、发通知、设状态栏；</li>
+<li>通过 <code>ctx.sessionManager</code>、<code>ctx.getContextUsage()</code>、<code>ctx.compact()</code> 读会话状态、看 token 用量、甚至主动触发压缩。</li>
+</ul>
+<p>这套 API 的存在，正是”薄核心 + 厚上层”这句话的技术底座：核心保持通用，项目规则跟着项目走，写成代码放进 <code>.pi/</code>。</p>
+<h2 id="六、可扩展性的代价：选择权交回给你"><a href="#六、可扩展性的代价：选择权交回给你" class="headerlink" title="六、可扩展性的代价：选择权交回给你"></a>六、可扩展性的代价：选择权交回给你</h2><p>“能扩展”听起来总是好事，但它把选择权也一并交给了使用者。</p>
+<p>Pi 不会替每个团队预装”改支付代码前先跑测试”这类规则。你得像上一节那样把它写进项目扩展或 Skill，再通过真实任务验证它是否真的会触发。写完不测，等于没写。</p>
+<p>这也是 Pi 与偏重内置工作流的编码 Agent 最明显的区别：前者更适合”你已经知道团队要什么，并愿意把规则工程化”；后者更适合”先拿到一套较完整的默认行为，慢慢改”。两者不是能力高低，而是默认分工不同。</p>
+<p>社区项目 <a target="_blank" rel="noopener" href="https://github.com/can1357/oh-my-pi">oh-my-pi</a> 是观察这个生态的好例子：它在 Pi 基础上组合了更多工具、IDE 相关能力和自动化功能。它说明薄核心可以承载很重的分发版本，但也提醒你，别把社区分发版的能力直接当成 Pi 核心的默认能力。</p>
+<h2 id="七、权限边界不在-Pi-内部，而在它外面"><a href="#七、权限边界不在-Pi-内部，而在它外面" class="headerlink" title="七、权限边界不在 Pi 内部，而在它外面"></a>七、权限边界不在 Pi 内部，而在它外面</h2><p>这一点需要单独、认真地说清，因为它直接关系到安全。</p>
+<p>Pi 官方 README 写得毫不含糊：它不内置限制文件系统、进程、网络或凭据访问的权限系统，默认继承启动它的用户和进程的权限。上一节那个 <code>tool_call</code> 拦截 <code>rm -rf</code> 的扩展也顺带说明了同一件事，文档明确提醒：”扩展以你的完整系统权限运行，能执行任意代码，只安装你信任来源的扩展。”换句话说，Pi 里”要不要拦某个操作”这件事，本身就是交给你写的代码去决定的。</p>
+<p>这意味着：你在本机跑 Pi 时，Agent 能做什么，首先取决于你给当前进程什么权限。它不会天然提供一个”只允许改当前工作区”的默认沙箱。</p>
+<p>所以，如果任务会接触不可信输入、敏感凭据或生产资源，正确的做法是把隔离放到 Pi 外面。官方给出三个方向：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>适合的边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gondolin 扩展</td>
+<td>把宿主机上的 Pi 与模型认证保留在外，把内置工具与命令放进本地 Linux 微虚拟机执行</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>把整个 Pi 进程放进容器，获得相对直接的隔离</td>
+</tr>
+<tr>
+<td>OpenShell</td>
+<td>用策略控制的沙箱运行整个 Pi 进程</td>
+</tr>
+</tbody></table>
+<p>还要区分两类完全不同的安全，别混为一谈：</p>
+<ul>
+<li>供应链安全，也就是”装进来的依赖有没有问题”。Pi 在这方面相当严格：直接依赖锁定精确版本、设置依赖的最小发布时间（<code>.npmrc</code> 里的 <code>min-release-age</code>）、用 shrinkwrap 固定解析结果、CI 里跑 <code>npm audit</code>、新增带生命周期脚本的依赖需要显式审查。</li>
+<li>运行时安全，也就是”正在跑的 Agent 能对你的机器做什么”。这靠上面的容器或沙箱来管。</li>
+</ul>
+<p>前者不能替代后者。依赖再干净，也拦不住一个拥有你全部权限的 Agent 去读你的 SSH 私钥，那是运行时边界的职责。</p>
+<h2 id="八、什么时候适合选-Pi"><a href="#八、什么时候适合选-Pi" class="headerlink" title="八、什么时候适合选 Pi"></a>八、什么时候适合选 Pi</h2><p>Pi 不是”越轻越好”的答案，而是一种有前提的选择。</p>
+<p>比较适合的情况：</p>
+<ul>
+<li>你想用终端完成编码任务，并且希望更换模型提供商或自定义工具。</li>
+<li>你有明确的项目规范，愿意把它整理成 Skills 或扩展。</li>
+<li>你需要会话分支和可回溯的探索过程。</li>
+<li>你能为运行环境提供容器、沙箱或其他权限控制。</li>
+</ul>
+<p>需要谨慎的情况：</p>
+<ul>
+<li>你希望安装后就获得严格的文件、网络和命令审批边界。</li>
+<li>任务会接触不可信输入、线上凭据或生产系统，但你还没准备好外层隔离。</li>
+<li>团队没人维护 Skills 和扩展，却希望规则会自动长期保持一致。</li>
+</ul>
+<h2 id="我的理解：先把可变的规则放到正确的层"><a href="#我的理解：先把可变的规则放到正确的层" class="headerlink" title="我的理解：先把可变的规则放到正确的层"></a>我的理解：先把可变的规则放到正确的层</h2><p>把八节连起来看，Pi 最值得学的地方不是”提示词一定要多短”，而是它对分层的坚持：</p>
+<ul>
+<li>模型调用和工具循环，稳定、通用，留在核心；</li>
+<li>会话分支与压缩，属于编码场景的通用能力，放在编码 Agent 层；</li>
+<li>专项知识和流程，随任务变化，做成按需加载的 Skills；</li>
+<li>团队规则和自定义功能，随项目变化，写成 <code>.pi/</code> 里的扩展；</li>
+<li>权限边界，和你的运行环境强相关，整个交给宿主的容器&#x2F;沙箱。</li>
+</ul>
+<p>每一样东西，它都先问”这会不会随团队&#x2F;项目&#x2F;环境而变”，会变的就往外推一层。这种分层不会减少你的工程工作，只会让工作的位置更清楚。对个人项目，它给了很大自由度；对团队和生产环境，它要求你把权限、测试、发布和审计规则认真补齐。</p>
+<p>真正该验证的，不是 Pi 的介绍页有多简洁，而是你为它配置的那些规则，能不能在真实任务里稳定地触发。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>官方仓库与包说明：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi">earendil-works&#x2F;pi</a></li>
+<li>官方文档索引：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/index.md">Pi Documentation</a></li>
+<li>Skills 机制与 <code>SKILL.md</code> 格式：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md">Skills</a></li>
+<li>上下文压缩与分支摘要：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/compaction.md">Compaction</a></li>
+<li>会话树与导航命令：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sessions.md">Sessions</a></li>
+<li>扩展 API 与示例：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md">Extensions</a></li>
+<li>容器与沙箱方案：<a target="_blank" rel="noopener" href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/containerization.md">Containerization</a></li>
+<li>扩展生态示例：<a target="_blank" rel="noopener" href="https://github.com/can1357/oh-my-pi">can1357&#x2F;oh-my-pi</a></li>
+<li>可对照阅读：<a href="/posts/65400">Claude Code 技术架构深度解析</a> ｜ <a href="/posts/65500">Codex 技术架构深度解析</a> ｜ <a href="/posts/65200">Anthropic Skills 技术架构深度解析</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/65600/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/65600/')">Pi Agent 技术架构深度解析：极简 Harness、按需 Skills 与可扩展编码工作流</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/65600/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>上下文工程<span class="tagsPageCount">14</span></a><a class="post-meta__box__tags" href="/tags/Agent-%E6%9E%B6%E6%9E%84/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent 架构<span class="tagsPageCount">3</span></a><a class="post-meta__box__tags" href="/tags/Pi/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Pi<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>可扩展性<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/65500/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/codex-execution-sandbox-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Codex 技术架构深度解析：编码 Agent 的执行循环、沙箱与上下文管理</div></div></a></div><div class="next-post pull-right"><a href="/posts/65710/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://i.ytimg.com/vi/G2B0YWuJUgI/maxresdefault.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">The Prompting Playbook 深度解析：把提示词做成可评测、可维护的 Agent 系统</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/65400/" title="Claude Code 技术架构深度解析：Agent Loop、上下文、权限与子代理"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/claude-code-architecture-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-24</div><div class="title">Claude Code 技术架构深度解析：Agent Loop、上下文、权限与子代理</div></div></a></div><div><a href="/posts/65500/" title="Codex 技术架构深度解析：编码 Agent 的执行循环、沙箱与上下文管理"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/codex-execution-sandbox-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-07-01</div><div class="title">Codex 技术架构深度解析：编码 Agent 的执行循环、沙箱与上下文管理</div></div></a></div><div><a href="/posts/63844/" title="OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div><a href="/posts/63898/" title="OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-06</div><div class="title">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div><div><a href="/posts/65010/" title="ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/ecc-layered-learning-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-27</div><div class="title">ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线</div></div></a></div><div><a href="/posts/64815/" title="Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/hermes-system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-07</div><div class="title">Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E5%BB%BA%E7%AB%8B%E5%87%A0%E4%B8%AA%E6%9C%80%E5%9F%BA%E6%9C%AC%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="toc-number">1.</span> <span class="toc-text">先建立几个最基本的概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E5%BB%BA%E7%AB%8B%E5%85%A8%E5%B1%80%E8%AE%A4%E8%AF%86%EF%BC%9APi-%E4%B8%8D%E6%98%AF%E4%B8%80%E4%B8%AA%E5%8D%95%E4%BD%93"><span class="toc-number">2.</span> <span class="toc-text">一、先建立全局认识：Pi 不是一个单体</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%A0%B8%E5%BF%83%E5%BE%AA%E7%8E%AF%E5%8F%AA%E8%B4%9F%E8%B4%A3%E6%8A%8A%E4%BB%BB%E5%8A%A1%E5%BE%80%E5%89%8D%E6%8E%A8%E8%BF%9B"><span class="toc-number">3.</span> <span class="toc-text">二、核心循环只负责把任务往前推进</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%96%84%E6%A0%B8%E5%BF%83%E4%B8%8D%E7%AD%89%E4%BA%8E%E6%B2%A1%E6%9C%89%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86"><span class="toc-number">4.</span> <span class="toc-text">三、薄核心不等于没有上下文管理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E8%A7%A6%E5%8F%91%E5%8E%8B%E7%BC%A9"><span class="toc-number">4.1.</span> <span class="toc-text">3.1 什么时候触发压缩</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E5%8E%8B%E7%BC%A9%E6%97%B6%E4%BF%9D%E7%95%99%E4%BB%80%E4%B9%88%E3%80%81%E4%B8%A2%E4%BB%80%E4%B9%88"><span class="toc-number">4.2.</span> <span class="toc-text">3.2 压缩时保留什么、丢什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E4%BC%9A%E8%AF%9D%E4%B8%8D%E6%98%AF%E4%B8%80%E6%9D%A1%E7%9B%B4%E7%BA%BF%EF%BC%8C%E8%80%8C%E6%98%AF%E4%B8%80%E6%A3%B5%E6%A0%91"><span class="toc-number">4.3.</span> <span class="toc-text">3.3 会话不是一条直线，而是一棵树</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Skills%EF%BC%9A%E8%AE%A9%E4%B8%93%E9%A1%B9%E8%83%BD%E5%8A%9B%E6%8C%89%E9%9C%80%E8%BF%9B%E5%85%A5%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="toc-number">5.</span> <span class="toc-text">四、Skills：让专项能力按需进入上下文</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E4%B8%80%E4%B8%AA-Skill-%E5%88%B0%E5%BA%95%E9%95%BF%E4%BB%80%E4%B9%88%E6%A0%B7"><span class="toc-number">5.1.</span> <span class="toc-text">4.1 一个 Skill 到底长什么样</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%AE%83%E6%98%AF%E6%80%8E%E4%B9%88%E8%A2%AB%E5%8F%91%E7%8E%B0%E5%92%8C%E5%8A%A0%E8%BD%BD%E7%9A%84"><span class="toc-number">5.2.</span> <span class="toc-text">4.2 它是怎么被发现和加载的</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E5%86%99%E5%A5%BD%E4%B8%80%E4%B8%AA-Skill-%E7%9A%84%E5%85%B3%E9%94%AE%E5%9C%A8-description"><span class="toc-number">5.3.</span> <span class="toc-text">4.3 写好一个 Skill 的关键在 description</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-Skill-%E5%92%8C%E6%89%A9%E5%B1%95%E7%9A%84%E5%88%86%E5%B7%A5"><span class="toc-number">5.4.</span> <span class="toc-text">4.4 Skill 和扩展的分工</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%89%A9%E5%B1%95%EF%BC%9A%E6%8A%8A%E2%80%9D%E4%BD%A0%E8%87%AA%E5%B7%B1%E7%9A%84%E8%A7%84%E5%88%99%E2%80%9D%E5%86%99%E6%88%90%E4%BB%A3%E7%A0%81"><span class="toc-number">6.</span> <span class="toc-text">五、扩展：把”你自己的规则”写成代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E6%89%A9%E5%B1%95%E6%94%BE%E5%9C%A8%E5%93%AA%E3%80%81%E9%95%BF%E4%BB%80%E4%B9%88%E6%A0%B7"><span class="toc-number">6.1.</span> <span class="toc-text">5.1 扩展放在哪、长什么样</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E7%94%A8%E6%89%A9%E5%B1%95%E5%AE%9E%E7%8E%B0%E2%80%9D%E6%94%B9%E5%8D%B1%E9%99%A9%E4%BB%A3%E7%A0%81%E5%89%8D%E5%BF%85%E9%A1%BB%E7%A1%AE%E8%AE%A4%E2%80%9D"><span class="toc-number">6.2.</span> <span class="toc-text">5.2 用扩展实现”改危险代码前必须确认”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E6%89%A9%E5%B1%95%E8%83%BD%E6%8C%82%E5%88%B0%E5%93%AA%E4%BA%9B%E7%82%B9%E4%B8%8A"><span class="toc-number">6.3.</span> <span class="toc-text">5.3 扩展能挂到哪些点上</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7%E7%9A%84%E4%BB%A3%E4%BB%B7%EF%BC%9A%E9%80%89%E6%8B%A9%E6%9D%83%E4%BA%A4%E5%9B%9E%E7%BB%99%E4%BD%A0"><span class="toc-number">7.</span> <span class="toc-text">六、可扩展性的代价：选择权交回给你</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%9D%83%E9%99%90%E8%BE%B9%E7%95%8C%E4%B8%8D%E5%9C%A8-Pi-%E5%86%85%E9%83%A8%EF%BC%8C%E8%80%8C%E5%9C%A8%E5%AE%83%E5%A4%96%E9%9D%A2"><span class="toc-number">8.</span> <span class="toc-text">七、权限边界不在 Pi 内部，而在它外面</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E9%80%82%E5%90%88%E9%80%89-Pi"><span class="toc-number">9.</span> <span class="toc-text">八、什么时候适合选 Pi</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%88%91%E7%9A%84%E7%90%86%E8%A7%A3%EF%BC%9A%E5%85%88%E6%8A%8A%E5%8F%AF%E5%8F%98%E7%9A%84%E8%A7%84%E5%88%99%E6%94%BE%E5%88%B0%E6%AD%A3%E7%A1%AE%E7%9A%84%E5%B1%82"><span class="toc-number">10.</span> <span class="toc-text">我的理解：先把可变的规则放到正确的层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">11.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

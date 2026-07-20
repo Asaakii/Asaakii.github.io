@@ -1,0 +1,797 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,Skills,上下文工程,Claude Code,Anthropic"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测"><meta name="application-name" content="Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测"><meta property="og:url" content="https://blog.asaakii.com/posts/65200/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="从一个 PDF 处理任务出发，理解 Anthropic Skills 的目录结构、渐进式披露、脚本分工与评测思路，并区分开放标准、Claude 的实现和个人工程方法。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/anthropic-agent-skills-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/anthropic-agent-skills-cover.webp"><meta name="description" content="从一个 PDF 处理任务出发，理解 Anthropic Skills 的目录结构、渐进式披露、脚本分工与评测思路，并区分开放标准、Claude 的实现和个人工程方法。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/65200/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测',
+  postAI: '',
+  pageFillDescription: '这篇能解决什么问题, 先厘清概念：Skill 是什么不是什么, 一个 Skill 的最小结构, 正文该写什么, description 是触发器：怎么写以及匹配是怎么发生的, 匹配到底是怎么发生的, 渐进式披露：按需付出上下文成本, 把这笔账算出来, 用 PDF Skill 看一次完整分工, 动手写一个最小 Skill：博客发布前检查, 用评测判断 Skill 是否值得保留, 我的分类框架：能力型与纪律型, 安装与使用：skill 放在哪、怎么被发现, 使用公开 Skill 前的安全检查, 几个初学者常踩的坑, 我的结论, 参考资料核验范围本文以规范页和仓库的分支为主要来源重点读了规范正文目录以及官方工程文章文中给出的字段约束量级和脚本文件名均来自这两处是我按同一格式写的示例不是仓库里的现成我没有在本地跑完整的评测只讨论从规范和公开示例中读到的设计方式假设用户给了我一份页的要求提取其中的表格识别表单字段再填回一份新文件模型当然能读但要稳定地完成这件事还需要知道该用哪些库何时调用脚本遇到扫描件怎么办以及怎么校验填好的表单这几个问题本文都会具体回答而不是停在模型可以处理这句话上的想解决的就是这类问题它把一套可复用的操作经验放进一个目录先让看到简短的任务说明确定相关后再读取具体步骤最后按需要读取参考资料或执行脚本本文以的为例记录我理解这套机制的过程并且尽量把每个概念都落到一份能看到的文件或一段能读的代码上先说明三个边界后文会反复用到最初提出并开源了是的实现和示例仓库现在跨平台的格式规范以为准仓库也把的实现和标准分开说明凡是涉及怎么被发现怎么被加载的部分标准只规定组织方式具体行为取决于宿主我会在对应位置标出这篇能解决什么问题如果你想知道建议阅读和工具有什么区别先厘清概念一个最少要写什么正文长什么样最小结构到底怎么发现并选中一个与匹配机制为什么几十个不会一起塞满上下文渐进式披露与一笔账为什么有些操作应该写成脚本示例怎么从零写出并验证自己的第一个动手写一个最小是否真的带来提升评测闭环放在哪怎么被加载安装与使用强约束型应该怎么写我的分类框架先厘清概念是什么不是什么初学者最容易把和它周围一堆相似的东西混在一起先用一张表把边界划开后面的内容才不会悬空概念它是什么和的关系一次性你在对话里临时写的指令是把这套指令沉淀成可复用按需加载的文件全局指令每次会话都常驻上下文的项目约定默认不常驻只有相关时才载入省上下文工具让模型能做某件事调读文件查数据库是怎么做的知识可以指挥模型去调用工具或脚本斜杠命令用户手动触发的固定入口既可由用户点名也可由模型按任务自动选中运行时按相似度检索文档片段喂给模型是作者预先组织好的操作手册不依赖向量检索来命中一句话概括是一份可以被按需翻开的操作手册它不新增模型的能力上限而是在合适的时刻把这件事该怎么做的经验精确地送到模型面前同时避免不相关的经验一直占着上下文理解这一点就能明白为什么的价值不在内容多而在组织得当同样一段处理经验塞进一份三千行的超长提示词里每次对话都得付出全部上下文成本而且模型要在无关内容里找相关内容拆成一个则平时只露出一行真正处理时才展开正文需要填表单时才进一步读差别不在写了什么而在什么时候让模型看到什么一个的最小结构按当前规范一个是包含的目录和都是可选的元数据与核心操作说明必需仅填表单时才读的专项说明高级用法与排错按需读取可执行代码可直接运行上面是里的真实布局文件名照抄仓库可以先记住这个形状一份必需的若干按需读取的一批可执行脚本以开始真正必填的只有和最小的一份长这样各字段的约束如下数字都来自规范字段是否必填约束与要注意的点是个字符只能用小写字母数字和连字符不能以连字符开头或结尾不能出现连续连字符且必须和目录名一致是个字符非空要同时写清做什么和什么时候用否许可名称或指向一份打包在目录里的许可文件否字符有特殊依赖系统包网络要求或目标产品时再写否任意字符串键值对供实现方保存额外属性否空格分隔的预授权工具列表仍是实验字段不同支持情况不同其中值得举个具体例子规范给的写法是空格分隔的工具签名它的意思是这个运行时预先批准命令和读文件好处是执行时少几次授权打断但因为是实验字段跨平台时不要依赖它把它当锦上添花即可正文该写什么规范对正文没有格式限制只给了建议写清分步骤给输入输出示例列常见边界情况有一句提醒很关键一旦被激活整份正文会被完整读入上下文所以正文要克制长的东西拆到引用文件里去拿真实的来看它的正文骨架大致是这样我按仓库里的分节还原一段最短的用法让模型立刻能上手合并拆分旋转读元数据按版面提取文本提取表格从零创建各自擅长什么扫描件让扫描可搜索加水印提取图片加解密码一张任务用哪个工具的对照表需要填表单看高级用法和排错看这个骨架本身就是一堂课它没有把所有知识铺开而是先给一条最短路径再按库命令行常见任务分类最后用一张对照表收口把两块重内容表单排错明确指向别的文件初学者写自己的时照这个最短路径分类指针的结构走通常不会太差写完后可以用检查和命名是否符合规范是触发器怎么写以及匹配是怎么发生的这里最容易被低估的是它不只是给人看的简介而是判断要不要激活这个的唯一线索先看规范给的一组好坏对照差模型没法判断什么时候该用它好动作触发场景具体关键词都写清了差的那句问题不在短而在没有可供匹配的信号既没说清能做哪些具体动作也没说什么场景下该被选中好的那句把做什么和什么时候用提到表单文档提取都写出来了模型才有依据匹配到底是怎么发生的初学者常把这一步想成某种玄学或以为背后有向量检索就的实现而言机制其实很朴素启动时所有已安装的和会被放进模型的上下文约每个量级当任务与某个匹配时模型自己决定去激活它这才触发正文的加载没有没有相似度阈值就是模型读着这份清单做选择这个心智模型一旦建立两条写法上的推论就很自然写得过于笼统帮你处理文档模型在清单里看不出它和当前任务的关系很可能不被选中把无关场景全塞进想多覆盖一点又会让它在不该出现的时候被误选白白展开正文占上下文所以的目标不是介绍得全面而是让模型在一屏清单里一眼认出这是不是当前该用的那个真实的就把写得很直白从读取提取文本表格合并拆分旋转加水印创建填表单加解密提取图片扫描件一路列到只要用户提到文件或要求产出一个就用这个它宁可把触发条件写满也不含糊因为这一行就是它被发现的全部依据渐进式披露按需付出上下文成本的核心不是多放几份而是把信息拆到不同加载时机规范把它分成三层第一层与约个启动时载入供发现所有第二层正文建议激活某个后才读取核心步骤第三层仅在任务需要时才读取或执行规范把第一层约束在约的量级建议正文控制在和行以内更长的说明拆到引用文件里对这类具备文件系统和代码执行能力的脚本还可以直接执行不必先把脚本全文读进上下文把这笔账算出来抽象的省上下文不如一笔具体的账清楚假设你装了个每个正文平均如果不做分层这万就得一直常驻别说很多模型的窗口放不下就算放得下模型每次都要在一堆无关内容里找相关内容命中率反而下降做了渐进式披露就不一样平时常驻的只有的清单当前任务真正激活的可能就个展开正文用到脚本时才把某个脚本读进来常驻成本从万降到降了约倍这就是为什么强调正文要短重资料要拆省下来的不是磁盘而是每一次对话都要重复付出的上下文预算也正因如此第一层的才要写得精准因为它是这套机制里唯一一直在花钱的部分需要强调一句边界这套三层加载不是每个产品都必然实现的而是标准和实现所倡导的组织方式写跨平台时我会把按需加载和能否直接执行脚本分别写清不假设每个宿主都有相同的权限与工具用看一次完整分工的很适合初学者拆读它把常见操作放在中把填写表单等专项说明放到把更详细的资料放在再把字段提取填表渲染或校验等确定性工作交给回到开头那份页的任务整个流程可以理解为从每个已安装的和中发现相关能力选中它读取拿到常用操作分类和分支条件任务涉及表单时它再读取而不是预先加载所有高级说明对提取表单字段填字段校验填写结果这类可确定执行的操作它调用现成脚本并检查产物第四步是很多人没意识到却最能体现设计的地方仓库的里放的不是零散片段而是一批各司其职的确定性脚本比如提取表单里有哪些字段按给定值填入可填写字段检查字段是否真的被正确填上把每页转成图片生成可供人眼核对的校验图到这里开头留下的两个问题就有了着落先看遇到扫描件怎么办的里专门有一条扫描件把扫描变成可搜索文本这条分支模型读正文时就能看到再看怎么校验填好的表单不是让模型自己看一眼觉得对而是跑做程序化检查必要时再用渲染出图供人核对填表单这种既要精确又容易出错的操作交给脚本比交给模型的自然语言推理稳得多这种分工有两个直接收益第一模型不用每次重新组织一套库调用方式第二复杂规则不会挤占所有任务的上下文官方工程文章也用这个例子说明代码既能作为的工具也能作为可复用的操作知识官方文章我从这里得到的写法是如果某段工作可以被明确输入稳定执行方便验证就优先把它做成脚本如果它依赖任务判断和上下文取舍留在里只有少见的分支才放进引用文件填字段校验结果属于前者这份文档大概是什么类型该走哪条路属于后者这条界线比把所有经验写进一份超长提示词更容易维护也更容易解释每一部分为什么在那里动手写一个最小博客发布前检查只读官方仓库很容易觉得概念都懂了却不知道从哪下手下面把前面讲的东西压到一个能跑的最小例子上给我自己的博客写一个发布前检查它的目录只有两个文件先写注意怎么按前面的原则写足触发关键词正文怎么只放顺序和判断把机械检查甩给脚本发布前检查博客发布前检查什么时候用在提交或发布一篇文章前运行目标是挡住几类低级但常见的错误封面路径写错日期格式不对少字段正文里有坏链接检查顺序先跑脚本做机械检查文章路径它会检查必填字段格式是否为可用再由你人工判断脚本查不了的部分标题是否有关键词是否是标题党但空洞正文里的站内链接是否指向真实存在的文章异常处理脚本报缺字段补齐后重跑不要跳过脚本报格式可疑但你确认无误在提交说明里写清原因别默默改脚本再写那个被指向的脚本它只做能确定判断的事把需要人拍板的留给正文检查一篇文章的返回非零退出码表示有问题没找到缺字段格式可疑不像可用路径通过共处问题这个例子小但它把本文的几个点都串了起来写足了触发关键词发布前检查正文只保留顺序和异常处理这类需要判断的内容机械可验证的检查字段在不在像不像路径像不像交给脚本模型不必自己去数要验证它到底有没有用就用三篇文章各跑一遍一篇故意缺封面一篇日期格式写错一篇完全正确比较有和没时模型漏检的情况这个练习比照抄一个大型更值因为它逼你回答三个问题为什么需要它哪些内容必须进上下文怎样证明它确实减少了错误用评测判断是否值得保留一个看起来很完整并不等于它真的有用在公开建议中强调从评测开始先拿代表性任务观察在哪里失败再把失败模式整理成最后比较加前后的效果我会用一个很小的闭环开始而不是一上来搭复杂基准任务集到个真实任务对照组不加载的实验组加载的检查项结果正确性步骤是否遗漏耗时工具调用失败率复查人工看一遍关键产物与失败样本失败模式写成这句话有点抽象还是用上面的博客检查举个实的假设我先不写让帮我发布五篇文章观察到一个稳定的失败模式它经常忘记检查字段的格式导致文章排序错乱这就是一条值得沉淀的失败模式我把检查格式写进既进的检查顺序也进脚本的断言然后用一条可判定的断言来验证它是否补上了这个洞断言对一篇写成的文章实验组必须报出格式可疑对照组允许漏掉跑次实验组命中才算这条失败模式被覆盖关键不在于凑够某个固定的运行次数或比例而在于两点一是每条内容都能追溯到一个真实的失败模式别写感觉有用的条款二是始终保留对照组没有对照就很难分清模型本来就会做和真正补上了什么把这件事做得更系统准备代表性提示词保留对两组输出做断言或人工审阅再根据失败样本回头调正文和但它的内核就是上面这个闭环我的分类框架能力型与纪律型下面的分类不是规范中的官方术语而是我用来阅读这个系列文章的一把尺类型要解决的问题常见内容更适合的验证方式能力型缺少某项程序领域或工具知识处理生成文档调用特定输出正确性脚本结果边界案例纪律型知道方法但容易在压力下跳过步骤调试流程需求澄清提交前检查是否遵循流程是否留下验证证据仓库中的文档编辑和工具使用示例大多可以放进能力型我之前拆过的中则有不少内容偏纪律型上面那个博客发布前检查其实两头沾查字段是能力型不许跳过检查是纪律型两者都用同一个格式但写法不该完全照搬能力型要先让模型知道怎样完成任务脚本和可执行示例往往很重要纪律型则要把触发条件验收证据和例外情况写清避免模型用这次很简单跳过关键步骤这个分类只是起点实际经常同时包含两类内容所以仍然要回到具体失败样本来决定写法安装与使用放在哪怎么被发现写出来只是一半还得让真的能加载它这一节是标准之外的实现细节我只讲的情况别的宿主未必一样就而言通常来自三个位置来源放在哪作用范围个人你所有项目都能用项目项目只在这个项目里生效可随仓库提交团队共享插件通过插件安装由插件作者维护随版本更新通常只读放对位置后启动时它的和就进入前面说的第一层清单剩下的就交给去匹配想让某个只由人手动触发不让模型自动选中一些实现比如的仓库用表示这属于宿主的扩展约定不在核心规范里跨平台前要确认对方支不支持给初学者一个简单的定位目录放在下和目录名一致写足触发词一个就算装好了不需要额外注册步骤使用公开前的安全检查可以携带指令和脚本也就可能改变的行为边界安装第三方前我会先读脚本依赖和网络请求确认它不会把本地数据传往未知地址也不会执行与任务无关的命令前面那个字段在这里就有了双重意义它一方面替你省授权打断另一方面也意味着这些命令是被预先放行的读别人的时要特别看清它预授权了什么官方同样建议只从可信来源安装并在使用前审查代码与资源安全建议许可也要单独看仓库中许多示例采用但等文档类是的里就明确写着并不等同于开源软件将它们用于项目之前应以目录中实际的许可说明为准仓库说明几个初学者常踩的坑把前面的内容反过来说一遍就是几条容易犯的错写成自我介绍这是一个很强大的工具而不是触发线索模型靠它做选择写清动作和场景才有用把所有内容堆进正文正文一旦激活就整份进上下文长说明和低频分支应该拆到引用文件让模型用自然语言校验确定性结果能写成脚本断言的检查字段填没填对格式合不合规别指望模型自己看一眼不留就下结论没有对照组你分不清是起了作用还是模型本来就会假设别的宿主行为和一样加载时机脚本执行这些都可能因平台而异我的结论让我看到的不是一种万能提示词格式而是一种组织经验的方式用简短元数据做发现用给出主路径把重资料和确定性操作延后到需要时再使用它省的不是你写字的功夫而是每一次对话都要重复付出的上下文成本以及模型在无关内容里找相关内容的精力如果要把这篇的结论落到实践上我会按这个顺序做先写一个只有和核心步骤的最小拿真实任务和比较确认某一步重复且可验证后再补脚本确认某段说明只在少数分支用到再把它拆进引用文件最后才扩充参考资料这样写出来的更容易解释也更容易证明它给项目带来了什么参考资料仓库规范工程文章深度解析深度解析深度解析',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-17 20:30:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/GitHub-%E4%B8%87%E6%98%9F-Skills-%E6%8B%86%E8%A7%A3/" itemprop="url">GitHub 万星 Skills 拆解</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/Skills/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Skills</span></a><a class="article-meta__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>上下文工程</span></a><a class="article-meta__tags" href="/tags/Claude-Code/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Claude Code</span></a><a class="article-meta__tags" href="/tags/Anthropic/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Anthropic</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-06-10T12:30:00.000Z" title="发表于 2026-06-10 20:30:00">2026-06-10</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-17T12:30:00.000Z" title="更新于 2026-07-17 20:30:00">2026-07-17</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">6.8k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>22分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/anthropic-agent-skills-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/65200/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/GitHub-%E4%B8%87%E6%98%9F-Skills-%E6%8B%86%E8%A7%A3/" itemprop="url">GitHub 万星 Skills 拆解</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/Skills/" tabindex="-1" itemprop="url">Skills</a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url">上下文工程</a><a href="/tags/Claude-Code/" tabindex="-1" itemprop="url">Claude Code</a><a href="/tags/Anthropic/" tabindex="-1" itemprop="url">Anthropic</a><h1 id="CrawlerTitle" itemprop="name headline">Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-06-10T12:30:00.000Z" title="发表于 2026-06-10 20:30:00">2026-06-10</time><time itemprop="dateCreated datePublished" datetime="2026-07-17T12:30:00.000Z" title="更新于 2026-07-17 20:30:00">2026-07-17</time></header><blockquote>
+<p>核验范围：本文以 <a target="_blank" rel="noopener" href="https://agentskills.io/specification">agentskills.io 规范页</a> 和 <a target="_blank" rel="noopener" href="https://github.com/anthropics/skills">anthropics&#x2F;skills 仓库</a> 的 <code>main</code> 分支为主要来源，重点读了规范正文、<code>skills/pdf</code> 目录（<code>SKILL.md</code>、<code>forms.md</code>、<code>reference.md</code>、<code>scripts/</code>）以及官方工程文章。文中给出的字段约束、token 量级和脚本文件名均来自这两处；<code>blog-md-preflight</code> 是我按同一格式写的示例，不是仓库里的现成 Skill。我没有在本地跑完整的 <code>skill-creator</code> 评测，只讨论从规范和公开示例中读到的设计方式。</p>
+</blockquote>
+<p>假设用户给了我一份 30 页的 PDF，要求提取其中的表格、识别表单字段，再填回一份新文件。模型当然能读 PDF，但要稳定地完成这件事，还需要知道该用哪些库、何时调用脚本、遇到扫描件怎么办，以及怎么校验填好的表单。这几个问题本文都会具体回答，而不是停在”模型可以处理 PDF”这句话上。</p>
+<p>Anthropic 的 Agent Skills 想解决的就是这类问题。它把一套可复用的操作经验放进一个目录：先让 Agent 看到简短的任务说明，确定相关后再读取具体步骤，最后按需要读取参考资料或执行脚本。本文以 Anthropic 的 <code>pdf</code> skill 为例，记录我理解这套机制的过程，并且尽量把每个概念都落到一份能看到的文件或一段能读的代码上。</p>
+<p>先说明三个边界，后文会反复用到。Anthropic 最初提出并开源了 Agent Skills；<code>anthropics/skills</code> 是 Claude 的实现和示例仓库；现在跨平台的格式规范以 <a target="_blank" rel="noopener" href="https://agentskills.io/specification">agentskills.io</a> 为准。仓库 README 也把”Claude 的实现”和”标准”分开说明。凡是涉及”skill 怎么被发现、怎么被加载”的部分，标准只规定组织方式，具体行为取决于宿主 Agent，我会在对应位置标出。</p>
+<h2 id="这篇能解决什么问题"><a href="#这篇能解决什么问题" class="headerlink" title="这篇能解决什么问题"></a>这篇能解决什么问题</h2><table>
+<thead>
+<tr>
+<th>如果你想知道</th>
+<th>建议阅读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Skill 和 prompt、工具、MCP、RAG 有什么区别</td>
+<td>先厘清概念</td>
+</tr>
+<tr>
+<td>一个 Skill 最少要写什么、正文长什么样</td>
+<td>最小结构</td>
+</tr>
+<tr>
+<td>Agent 到底怎么”发现”并选中一个 Skill</td>
+<td>description 与匹配机制</td>
+</tr>
+<tr>
+<td>为什么几十个 Skill 不会一起塞满上下文</td>
+<td>渐进式披露与一笔账</td>
+</tr>
+<tr>
+<td>为什么有些操作应该写成脚本</td>
+<td>PDF 示例</td>
+</tr>
+<tr>
+<td>怎么从零写出并验证自己的第一个 Skill</td>
+<td>动手写一个最小 Skill</td>
+</tr>
+<tr>
+<td>Skill 是否真的带来提升</td>
+<td>评测闭环</td>
+</tr>
+<tr>
+<td>skill 放在哪、怎么被 Claude Code 加载</td>
+<td>安装与使用</td>
+</tr>
+<tr>
+<td>强约束型 Skill 应该怎么写</td>
+<td>我的分类框架</td>
+</tr>
+</tbody></table>
+<h2 id="先厘清概念：Skill-是什么，不是什么"><a href="#先厘清概念：Skill-是什么，不是什么" class="headerlink" title="先厘清概念：Skill 是什么，不是什么"></a>先厘清概念：Skill 是什么，不是什么</h2><p>初学者最容易把 Skill 和它周围一堆相似的东西混在一起。先用一张表把边界划开，后面的内容才不会悬空。</p>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>它是什么</th>
+<th>和 Skill 的关系</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一次性 prompt</td>
+<td>你在对话里临时写的指令</td>
+<td>Skill 是把这套指令沉淀成可复用、按需加载的文件</td>
+</tr>
+<tr>
+<td>CLAUDE.md &#x2F; 全局指令</td>
+<td>每次会话都常驻上下文的项目约定</td>
+<td>Skill 默认不常驻，只有相关时才载入，省上下文</td>
+</tr>
+<tr>
+<td>工具 &#x2F; MCP</td>
+<td>让模型能”做”某件事（调 API、读文件、查数据库）</td>
+<td>Skill 是”怎么做”的知识，可以指挥模型去调用工具或脚本</td>
+</tr>
+<tr>
+<td>斜杠命令</td>
+<td>用户手动触发的固定入口</td>
+<td>Skill 既可由用户点名，也可由模型按任务自动选中</td>
+</tr>
+<tr>
+<td>RAG</td>
+<td>运行时按相似度检索文档片段喂给模型</td>
+<td>Skill 是作者预先组织好的操作手册，不依赖向量检索来命中</td>
+</tr>
+</tbody></table>
+<p>一句话概括：Skill 是一份可以被 Agent 按需翻开的操作手册。它不新增模型的能力上限，而是在合适的时刻，把”这件事该怎么做”的经验精确地送到模型面前，同时避免不相关的经验一直占着上下文。</p>
+<p>理解这一点，就能明白为什么 Skill 的价值不在”内容多”，而在”组织得当”。同样一段 PDF 处理经验，塞进一份三千行的超长提示词里，每次对话都得付出全部上下文成本，而且模型要在无关内容里找相关内容；拆成一个 Skill，则平时只露出一行 description，真正处理 PDF 时才展开正文，需要填表单时才进一步读 <code>forms.md</code>。差别不在写了什么，而在什么时候让模型看到什么。</p>
+<h2 id="一个-Skill-的最小结构"><a href="#一个-Skill-的最小结构" class="headerlink" title="一个 Skill 的最小结构"></a>一个 Skill 的最小结构</h2><p>按当前规范，一个 Skill 是包含 <code>SKILL.md</code> 的目录。<code>scripts/</code>、<code>references/</code> 和 <code>assets/</code> 都是可选的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">pdf/</span><br><span class="line">├── SKILL.md          # 元数据与核心操作说明（必需）</span><br><span class="line">├── forms.md          # 仅填表单时才读的专项说明</span><br><span class="line">├── reference.md      # 高级用法与排错，按需读取</span><br><span class="line">├── scripts/          # 可执行代码，可直接运行</span><br><span class="line">│   ├── fill_fillable_fields.py</span><br><span class="line">│   ├── check_fillable_fields.py</span><br><span class="line">│   └── convert_pdf_to_images.py</span><br><span class="line">└── LICENSE.txt</span><br></pre></td></tr></table></figure>
+
+<p>上面是 <code>anthropics/skills</code> 里 <code>pdf</code> skill 的真实布局（文件名照抄仓库）。可以先记住这个形状：一份必需的 <code>SKILL.md</code>、若干按需读取的 Markdown、一批可执行脚本。</p>
+<p><code>SKILL.md</code> 以 YAML frontmatter 开始。真正必填的只有 <code>name</code> 和 <code>description</code>，最小的一份长这样：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">name:</span> <span class="string">pdf-processing</span></span><br><span class="line"><span class="attr">description:</span> <span class="string">Extract</span> <span class="string">text</span> <span class="string">and</span> <span class="string">tables</span> <span class="string">from</span> <span class="string">PDFs,</span> <span class="string">fill</span> <span class="string">forms,</span> <span class="string">and</span> <span class="string">merge</span> <span class="string">files.</span> <span class="string">Use</span> <span class="string">when</span> <span class="string">the</span> <span class="string">task</span> <span class="string">involves</span> <span class="string">PDF</span> <span class="string">files,</span> <span class="string">forms,</span> <span class="string">or</span> <span class="string">document</span> <span class="string">extraction.</span></span><br><span class="line"><span class="meta">---</span></span><br></pre></td></tr></table></figure>
+
+<p>各字段的约束如下，数字都来自规范：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>是否必填</th>
+<th>约束与要注意的点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>是</td>
+<td>1–64 个字符，只能用小写字母、数字和连字符，不能以连字符开头或结尾、不能出现连续连字符，且必须和目录名一致</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>是</td>
+<td>1–1024 个字符，非空，要同时写清”做什么”和”什么时候用”</td>
+</tr>
+<tr>
+<td><code>license</code></td>
+<td>否</td>
+<td>许可名称，或指向一份打包在目录里的许可文件</td>
+</tr>
+<tr>
+<td><code>compatibility</code></td>
+<td>否</td>
+<td>≤500 字符，有特殊依赖、系统包、网络要求或目标产品时再写</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>否</td>
+<td>任意字符串键值对，供实现方保存额外属性</td>
+</tr>
+<tr>
+<td><code>allowed-tools</code></td>
+<td>否</td>
+<td>空格分隔的预授权工具列表，仍是实验字段，不同 Agent 支持情况不同</td>
+</tr>
+</tbody></table>
+<p>其中 <code>allowed-tools</code> 值得举个具体例子，规范给的写法是空格分隔的工具签名：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">allowed-tools:</span> <span class="string">Bash(git:*)</span> <span class="string">Bash(jq:*)</span> <span class="string">Read</span></span><br></pre></td></tr></table></figure>
+
+<p>它的意思是”这个 Skill 运行时预先批准 <code>git</code>、<code>jq</code> 命令和读文件”，好处是执行时少几次授权打断。但因为是实验字段，跨平台时不要依赖它，把它当锦上添花即可。</p>
+<h3 id="正文该写什么"><a href="#正文该写什么" class="headerlink" title="正文该写什么"></a>正文该写什么</h3><p>规范对正文没有格式限制，只给了建议：写清分步骤、给输入输出示例、列常见边界情况。有一句提醒很关键：一旦 Skill 被激活，整份 <code>SKILL.md</code> 正文会被完整读入上下文，所以正文要克制，长的东西拆到引用文件里去。</p>
+<p>拿真实的 <code>pdf/SKILL.md</code> 来看，它的正文骨架大致是这样（我按仓库里的分节还原）：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># PDF processing</span></span><br><span class="line"></span><br><span class="line"><span class="section">## Quick start</span></span><br><span class="line">（一段最短的 pypdf 用法，让模型立刻能上手）</span><br><span class="line"></span><br><span class="line"><span class="section">## Python libraries</span></span><br><span class="line"><span class="section">### pypdf        —— 合并、拆分、旋转、读元数据</span></span><br><span class="line"><span class="section">### pdfplumber   —— 按版面提取文本、提取表格</span></span><br><span class="line"><span class="section">### reportlab    —— 从零创建 PDF</span></span><br><span class="line"></span><br><span class="line"><span class="section">## Command-line tools</span></span><br><span class="line">pdftotext / qpdf / pdftk 各自擅长什么</span><br><span class="line"></span><br><span class="line"><span class="section">## Common tasks</span></span><br><span class="line"><span class="bullet">-</span> 扫描件 OCR（让扫描 PDF 可搜索）</span><br><span class="line"><span class="bullet">-</span> 加水印</span><br><span class="line"><span class="bullet">-</span> 提取图片</span><br><span class="line"><span class="bullet">-</span> 加/解密码</span><br><span class="line"></span><br><span class="line"><span class="section">## Quick reference</span></span><br><span class="line">一张&quot;任务 → 用哪个工具&quot;的对照表</span><br><span class="line"></span><br><span class="line"><span class="section">## Next steps</span></span><br><span class="line">需要填表单看 forms.md；高级用法和排错看 reference.md</span><br></pre></td></tr></table></figure>
+
+<p>这个骨架本身就是一堂课：它没有把所有 PDF 知识铺开，而是先给一条最短路径（Quick start），再按”库&#x2F;命令行&#x2F;常见任务”分类，最后用一张对照表收口，把两块重内容（表单、排错）明确指向别的文件。初学者写自己的 Skill 时，照这个”最短路径 + 分类 + 指针”的结构走，通常不会太差。</p>
+<p>写完后可以用 <code>skills-ref validate ./my-skill</code> 检查 frontmatter 和命名是否符合规范。</p>
+<h2 id="description-是触发器：怎么写，以及匹配是怎么发生的"><a href="#description-是触发器：怎么写，以及匹配是怎么发生的" class="headerlink" title="description 是触发器：怎么写，以及匹配是怎么发生的"></a>description 是触发器：怎么写，以及匹配是怎么发生的</h2><p>这里最容易被低估的是 <code>description</code>。它不只是给人看的简介，而是 Agent 判断要不要激活这个 Skill 的唯一线索。先看规范给的一组好坏对照：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 差：模型没法判断什么时候该用它</span></span><br><span class="line"><span class="attr">description:</span> <span class="string">Helps</span> <span class="string">with</span> <span class="string">PDFs.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 好：动作 + 触发场景 + 具体关键词都写清了</span></span><br><span class="line"><span class="attr">description:</span> <span class="string">Extracts</span> <span class="string">text</span> <span class="string">and</span> <span class="string">tables</span> <span class="string">from</span> <span class="string">PDF</span> <span class="string">files,</span> <span class="string">fills</span> <span class="string">PDF</span> <span class="string">forms,</span> <span class="string">and</span></span><br><span class="line">  <span class="string">merges</span> <span class="string">multiple</span> <span class="string">PDFs.</span> <span class="string">Use</span> <span class="string">when</span> <span class="string">working</span> <span class="string">with</span> <span class="string">PDF</span> <span class="string">documents</span> <span class="string">or</span> <span class="string">when</span> <span class="string">the</span> <span class="string">user</span></span><br><span class="line">  <span class="string">mentions</span> <span class="string">PDFs,</span> <span class="string">forms,</span> <span class="string">or</span> <span class="string">document</span> <span class="string">extraction.</span></span><br></pre></td></tr></table></figure>
+
+<p>差的那句问题不在”短”，而在没有可供匹配的信号：既没说清能做哪些具体动作，也没说什么场景下该被选中。好的那句把”做什么（extract&#x2F;fill&#x2F;merge）”和”什么时候用（提到 PDF、表单、文档提取）”都写出来了，模型才有依据。</p>
+<h3 id="匹配到底是怎么发生的"><a href="#匹配到底是怎么发生的" class="headerlink" title="匹配到底是怎么发生的"></a>匹配到底是怎么发生的</h3><p>初学者常把这一步想成某种玄学，或以为背后有向量检索。就 Claude 的实现而言，机制其实很朴素：启动时，所有已安装 Skill 的 <code>name</code> 和 <code>description</code> 会被放进模型的上下文，约每个 100 token 量级；当任务与某个 description 匹配时，模型自己决定去激活它，这才触发正文的加载。没有 embedding，没有相似度阈值，就是模型读着这份清单做选择。</p>
+<p>这个心智模型一旦建立，两条写法上的推论就很自然：</p>
+<ul>
+<li>description 写得过于笼统（”帮你处理文档”），模型在清单里看不出它和当前任务的关系，Skill 很可能不被选中。</li>
+<li>把无关场景全塞进 description 想”多覆盖一点”，又会让它在不该出现的时候被误选，白白展开正文占上下文。</li>
+</ul>
+<p>所以 description 的目标不是”介绍得全面”，而是”让模型在一屏清单里一眼认出这是不是当前该用的那个”。真实的 <code>pdf</code> skill 就把 description 写得很直白：从”读取&#x2F;提取文本表格、合并、拆分、旋转、加水印、创建、填表单、加解密、提取图片、扫描件 OCR”一路列到”只要用户提到 .pdf 文件或要求产出一个 PDF，就用这个 skill”。它宁可把触发条件写满，也不含糊，因为这一行就是它被发现的全部依据。</p>
+<h2 id="渐进式披露：按需付出上下文成本"><a href="#渐进式披露：按需付出上下文成本" class="headerlink" title="渐进式披露：按需付出上下文成本"></a>渐进式披露：按需付出上下文成本</h2><p>Skills 的核心不是多放几份 Markdown，而是把信息拆到不同加载时机。规范把它分成三层：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  A[&quot;第一层：name 与 description（约 100 token&#x2F;个）&lt;br&#x2F;&gt;启动时载入，供 Agent 发现所有 Skill&quot;] --&gt; B[&quot;第二层：SKILL.md 正文（建议 &lt; 5000 token）&lt;br&#x2F;&gt;激活某个 Skill 后才读取核心步骤&quot;]
+  B --&gt; C[&quot;第三层：scripts、references、assets&lt;br&#x2F;&gt;仅在任务需要时才读取或执行&quot;]
+  </pre></div>
+
+<p>规范把第一层约束在约 100 token 的量级，建议 <code>SKILL.md</code> 正文控制在 5000 token 和 500 行以内，更长的说明拆到引用文件里。对 Claude 这类具备文件系统和代码执行能力的 Agent，脚本还可以直接执行，不必先把脚本全文读进上下文。</p>
+<h3 id="把这笔账算出来"><a href="#把这笔账算出来" class="headerlink" title="把这笔账算出来"></a>把这笔账算出来</h3><p>抽象的”省上下文”不如一笔具体的账清楚。假设你装了 50 个 Skill，每个正文平均 4000 token：</p>
+<p>如果不做分层，这 50 × 4000 &#x3D; 20 万 token 就得一直常驻。别说很多模型的窗口放不下，就算放得下，模型每次都要在一堆无关内容里找相关内容，命中率反而下降。</p>
+<p>做了渐进式披露就不一样：平时常驻的只有 50 × 100 &#x3D; 5000 token 的 description 清单；当前任务真正激活的可能就 1 个 Skill，展开 4000 token 正文；用到脚本时才把某个脚本读进来。常驻成本从 20 万降到 5000，降了约 40 倍。</p>
+<p>这就是为什么 Skill 强调”正文要短、重资料要拆”：省下来的不是磁盘，而是每一次对话都要重复付出的上下文预算。也正因如此，第一层的 description 才要写得精准，因为它是这套机制里唯一一直在花钱的部分。</p>
+<p>需要强调一句边界：这套三层加载不是每个 Agent 产品都必然实现的，而是标准和 Claude 实现所倡导的组织方式。写跨平台 Skill 时，我会把”按需加载”和”能否直接执行脚本”分别写清，不假设每个宿主都有相同的权限与工具。</p>
+<h2 id="用-PDF-Skill-看一次完整分工"><a href="#用-PDF-Skill-看一次完整分工" class="headerlink" title="用 PDF Skill 看一次完整分工"></a>用 PDF Skill 看一次完整分工</h2><p>Anthropic 的 <a target="_blank" rel="noopener" href="https://github.com/anthropics/skills/tree/main/skills/pdf"><code>pdf</code> skill</a> 很适合初学者拆读。它把常见操作放在 <code>SKILL.md</code> 中，把填写表单等专项说明放到 <code>forms.md</code>，把更详细的资料放在 <code>reference.md</code>，再把字段提取、填表、渲染或校验等确定性工作交给 <code>scripts/</code>。</p>
+<p>回到开头那份 30 页 PDF 的任务，整个流程可以理解为：</p>
+<ol>
+<li>Agent 从每个已安装 Skill 的 <code>name</code> 和 <code>description</code> 中发现 PDF 相关能力，选中 <code>pdf</code>。</li>
+<li>它读取 <code>pdf/SKILL.md</code>，拿到常用操作、分类和分支条件。</li>
+<li>任务涉及表单时，它再读取 <code>forms.md</code>，而不是预先加载所有高级说明。</li>
+<li>对”提取表单字段””填字段””校验填写结果”这类可确定执行的操作，它调用现成脚本并检查产物。</li>
+</ol>
+<p>第四步是很多人没意识到、却最能体现设计的地方。仓库的 <code>scripts/</code> 里放的不是零散片段，而是一批各司其职的确定性脚本，比如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">extract_form_field_info.py      # 提取表单里有哪些字段</span><br><span class="line">fill_fillable_fields.py         # 按给定值填入可填写字段</span><br><span class="line">check_fillable_fields.py        # 检查字段是否真的被正确填上</span><br><span class="line">convert_pdf_to_images.py        # 把 PDF 每页转成图片</span><br><span class="line">create_validation_image.py      # 生成可供人眼核对的校验图</span><br></pre></td></tr></table></figure>
+
+<p>到这里，开头留下的两个问题就有了着落。先看”遇到扫描件怎么办”：<code>SKILL.md</code> 的 Common tasks 里专门有一条扫描件 OCR，把扫描 PDF 变成可搜索文本，这条分支模型读正文时就能看到。再看”怎么校验填好的表单”：不是让模型”自己看一眼觉得对”，而是跑 <code>check_fillable_fields.py</code> 做程序化检查，必要时再用 <code>create_validation_image.py</code> 渲染出图供人核对。填表单这种既要精确、又容易出错的操作，交给脚本比交给模型的自然语言推理稳得多。</p>
+<p>这种分工有两个直接收益。第一，模型不用每次重新组织一套 PDF 库调用方式。第二，复杂规则不会挤占所有 PDF 任务的上下文。官方工程文章也用这个例子说明：代码既能作为 Agent 的工具，也能作为可复用的操作知识。(<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills">官方文章</a>)</p>
+<p>我从这里得到的写法是：如果某段工作可以被明确输入、稳定执行、方便验证，就优先把它做成脚本；如果它依赖任务判断和上下文取舍，留在 <code>SKILL.md</code> 里；只有少见的分支才放进引用文件。填字段、校验结果属于前者，”这份文档大概是什么类型、该走哪条路”属于后者。这条界线比”把所有经验写进一份超长提示词”更容易维护，也更容易解释每一部分为什么在那里。</p>
+<h2 id="动手写一个最小-Skill：博客发布前检查"><a href="#动手写一个最小-Skill：博客发布前检查" class="headerlink" title="动手写一个最小 Skill：博客发布前检查"></a>动手写一个最小 Skill：博客发布前检查</h2><p>只读官方仓库，很容易觉得概念都懂了，却不知道从哪下手。下面把前面讲的东西压到一个能跑的最小例子上：给我自己的 Hexo 博客写一个”发布前检查” Skill。它的目录只有两个文件：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">blog-md-preflight/</span><br><span class="line">├── SKILL.md</span><br><span class="line">└── scripts/</span><br><span class="line">    └── check_frontmatter.py</span><br></pre></td></tr></table></figure>
+
+<p>先写 <code>SKILL.md</code>。注意 description 怎么按前面的原则写足触发关键词，正文怎么只放”顺序和判断”、把机械检查甩给脚本：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">name: blog-md-preflight</span><br><span class="line">description: Check a Hexo blog post&#x27;s frontmatter before publishing — verifies</span><br><span class="line">  title, tags, categories, cover/top<span class="emphasis">_img image paths, publish date format, and</span></span><br><span class="line"><span class="emphasis">  broken Markdown links. Use before publishing or committing a Hexo article, or</span></span><br><span class="line"><span class="emphasis">  when the user mentions frontmatter, cover image, or 发布前检查.</span></span><br><span class="line"><span class="emphasis">---</span></span><br><span class="line"><span class="emphasis"></span></span><br><span class="line"><span class="emphasis"># 博客发布前检查</span></span><br><span class="line"><span class="emphasis"></span></span><br><span class="line"><span class="emphasis">## 什么时候用</span></span><br><span class="line"><span class="emphasis">在提交或发布一篇 Hexo 文章前运行。目标是挡住几类低级但常见的错误：</span></span><br><span class="line"><span class="emphasis">封面路径写错、日期格式不对、frontmatter 少字段、正文里有坏链接。</span></span><br><span class="line"><span class="emphasis"></span></span><br><span class="line"><span class="emphasis">## 检查顺序</span></span><br><span class="line"><span class="emphasis">1. 先跑脚本做机械检查：</span></span><br><span class="line"><span class="emphasis">   scripts/check_</span>frontmatter.py &lt;文章路径&gt;</span><br><span class="line">   它会检查必填字段、date 格式、cover/top<span class="emphasis">_img 是否为可用 URL。</span></span><br><span class="line"><span class="emphasis">2. 再由你人工判断脚本查不了的部分：</span></span><br><span class="line"><span class="emphasis">   - 标题是否有关键词、是否是&quot;标题党但空洞&quot;</span></span><br><span class="line"><span class="emphasis">   - 正文里的站内链接是否指向真实存在的文章</span></span><br><span class="line"><span class="emphasis"></span></span><br><span class="line"><span class="emphasis">## 异常处理</span></span><br><span class="line"><span class="emphasis">- 脚本报&quot;缺字段&quot;：补齐后重跑，不要跳过。</span></span><br><span class="line"><span class="emphasis">- 脚本报&quot;date 格式可疑&quot;但你确认无误：在提交说明里写清原因，别默默改脚本。</span></span><br></pre></td></tr></table></figure>
+
+<p>再写那个被指向的脚本。它只做能确定判断的事，把需要人拍板的留给正文：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;检查一篇 Hexo 文章的 frontmatter，返回非零退出码表示有问题。&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> re, sys, pathlib</span><br><span class="line"></span><br><span class="line">REQUIRED = [<span class="string">&quot;title&quot;</span>, <span class="string">&quot;tags&quot;</span>, <span class="string">&quot;categories&quot;</span>, <span class="string">&quot;cover&quot;</span>, <span class="string">&quot;top_img&quot;</span>, <span class="string">&quot;date&quot;</span>]</span><br><span class="line">DATE_RE = re.<span class="built_in">compile</span>(<span class="string">r&quot;^\d&#123;4&#125;-\d&#123;2&#125;-\d&#123;2&#125; \d&#123;2&#125;:\d&#123;2&#125;:\d&#123;2&#125;$&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>(<span class="params">path</span>):</span><br><span class="line">    text = pathlib.Path(path).read_text(encoding=<span class="string">&quot;utf-8&quot;</span>)</span><br><span class="line">    m = re.<span class="keyword">match</span>(<span class="string">r&quot;^---\n(.*?)\n---&quot;</span>, text, re.S)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> m:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;✗ 没找到 frontmatter&quot;</span>); <span class="keyword">return</span> <span class="number">1</span></span><br><span class="line">    fm = m.group(<span class="number">1</span>)</span><br><span class="line">    problems = []</span><br><span class="line">    <span class="keyword">for</span> key <span class="keyword">in</span> REQUIRED:</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> re.search(<span class="string">rf&quot;^<span class="subst">&#123;key&#125;</span>:&quot;</span>, fm, re.M):</span><br><span class="line">            problems.append(<span class="string">f&quot;缺字段: <span class="subst">&#123;key&#125;</span>&quot;</span>)</span><br><span class="line">    date = re.search(<span class="string">r&quot;^date:\s*(.+)$&quot;</span>, fm, re.M)</span><br><span class="line">    <span class="keyword">if</span> date <span class="keyword">and</span> <span class="keyword">not</span> DATE_RE.<span class="keyword">match</span>(date.group(<span class="number">1</span>).strip()):</span><br><span class="line">        problems.append(<span class="string">f&quot;date 格式可疑: <span class="subst">&#123;date.group(<span class="number">1</span>).strip()&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">for</span> field <span class="keyword">in</span> (<span class="string">&quot;cover&quot;</span>, <span class="string">&quot;top_img&quot;</span>):</span><br><span class="line">        v = re.search(<span class="string">rf&quot;^<span class="subst">&#123;field&#125;</span>:\s*(.+)$&quot;</span>, fm, re.M)</span><br><span class="line">        <span class="keyword">if</span> v <span class="keyword">and</span> <span class="keyword">not</span> v.group(<span class="number">1</span>).strip().startswith((<span class="string">&quot;http://&quot;</span>, <span class="string">&quot;https://&quot;</span>, <span class="string">&quot;/&quot;</span>)):</span><br><span class="line">            problems.append(<span class="string">f&quot;<span class="subst">&#123;field&#125;</span> 不像可用路径: <span class="subst">&#123;v.group(<span class="number">1</span>).strip()&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">for</span> p <span class="keyword">in</span> problems:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;✗&quot;</span>, p)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;✓ frontmatter 通过&quot;</span> <span class="keyword">if</span> <span class="keyword">not</span> problems <span class="keyword">else</span> <span class="string">f&quot;共 <span class="subst">&#123;<span class="built_in">len</span>(problems)&#125;</span> 处问题&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> <span class="keyword">if</span> problems <span class="keyword">else</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    sys.exit(main(sys.argv[<span class="number">1</span>]))</span><br></pre></td></tr></table></figure>
+
+<p>这个例子小，但它把本文的几个点都串了起来：description 写足了触发关键词（Hexo、frontmatter、cover、发布前检查）；正文只保留顺序和异常处理这类需要判断的内容；机械、可验证的检查（字段在不在、date 像不像、路径像不像）交给脚本，模型不必自己去数。</p>
+<p>要验证它到底有没有用，就用三篇文章各跑一遍：一篇故意缺封面、一篇日期格式写错、一篇完全正确，比较有 Skill 和没 Skill 时模型漏检的情况。这个练习比照抄一个大型 Skill 更值，因为它逼你回答三个问题：Agent 为什么需要它、哪些内容必须进上下文、怎样证明它确实减少了错误。</p>
+<h2 id="用评测判断-Skill-是否值得保留"><a href="#用评测判断-Skill-是否值得保留" class="headerlink" title="用评测判断 Skill 是否值得保留"></a>用评测判断 Skill 是否值得保留</h2><p>一个 Skill 看起来很完整，并不等于它真的有用。Anthropic 在公开建议中强调从评测开始：先拿代表性任务观察 Agent 在哪里失败，再把失败模式整理成 Skill，最后比较加 Skill 前后的效果。</p>
+<p>我会用一个很小的闭环开始，而不是一上来搭复杂基准：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">任务集：3 到 5 个真实任务</span><br><span class="line">对照组：不加载 Skill 的 Agent</span><br><span class="line">实验组：加载 Skill 的 Agent</span><br><span class="line">检查项：结果正确性、步骤是否遗漏、耗时、工具调用失败率</span><br><span class="line">复查：人工看一遍关键产物与失败样本</span><br></pre></td></tr></table></figure>
+
+<p>“失败模式 → 写成 Skill”这句话有点抽象，还是用上面的博客检查举个实的。假设我先不写 Skill，让 Agent 帮我发布五篇文章，观察到一个稳定的失败模式：它经常忘记检查 <code>date</code> 字段的格式，导致文章排序错乱。这就是一条值得沉淀的失败模式。我把”检查 date 格式”写进 Skill（既进 <code>SKILL.md</code> 的检查顺序，也进脚本的断言），然后用一条可判定的断言来验证它是否补上了这个洞：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">断言：对一篇 date 写成 &quot;2026/6/10&quot; 的文章，</span><br><span class="line">     实验组必须报出&quot;date 格式可疑&quot;，对照组允许漏掉。</span><br><span class="line">     跑 5 次，实验组命中 5/5 才算这条失败模式被 Skill 覆盖。</span><br></pre></td></tr></table></figure>
+
+<p>关键不在于凑够某个固定的运行次数或比例，而在于两点：一是每条 Skill 内容都能追溯到一个真实的失败模式，别写”感觉有用”的条款；二是始终保留 baseline（对照组）。没有对照，就很难分清”模型本来就会做”和”Skill 真正补上了什么”。<code>skill-creator</code> 把这件事做得更系统：准备代表性提示词、保留 baseline、对两组输出做断言或人工审阅、再根据失败样本回头调正文和 description，但它的内核就是上面这个闭环。</p>
+<h2 id="我的分类框架：能力型与纪律型"><a href="#我的分类框架：能力型与纪律型" class="headerlink" title="我的分类框架：能力型与纪律型"></a>我的分类框架：能力型与纪律型</h2><p>下面的分类不是 Agent Skills 规范中的官方术语，而是我用来阅读这个系列文章的一把尺。</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>要解决的问题</th>
+<th>常见内容</th>
+<th>更适合的验证方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>能力型 Skill</td>
+<td>Agent 缺少某项程序、领域或工具知识</td>
+<td>PDF 处理、生成文档、调用特定 API</td>
+<td>输出正确性、脚本结果、边界案例</td>
+</tr>
+<tr>
+<td>纪律型 Skill</td>
+<td>Agent 知道方法，但容易在压力下跳过步骤</td>
+<td>TDD、调试流程、需求澄清、提交前检查</td>
+<td>是否遵循流程、是否留下验证证据</td>
+</tr>
+</tbody></table>
+<p>Anthropic 仓库中的 PDF、文档编辑和工具使用示例，大多可以放进”能力型”。我之前拆过的 Superpowers、Matt Pocock Skills 中，则有不少内容偏”纪律型”。上面那个博客发布前检查其实两头沾：查字段是能力型，”不许跳过 date 检查”是纪律型。两者都用同一个 <code>SKILL.md</code> 格式，但写法不该完全照搬。</p>
+<p>能力型 Skill 要先让模型知道怎样完成任务，脚本和可执行示例往往很重要。纪律型 Skill 则要把触发条件、验收证据和例外情况写清，避免模型用”这次很简单”跳过关键步骤。这个分类只是起点，实际 Skill 经常同时包含两类内容，所以仍然要回到具体失败样本来决定写法。</p>
+<h2 id="安装与使用：skill-放在哪、怎么被发现"><a href="#安装与使用：skill-放在哪、怎么被发现" class="headerlink" title="安装与使用：skill 放在哪、怎么被发现"></a>安装与使用：skill 放在哪、怎么被发现</h2><p>写出来只是一半，还得让 Agent 真的能加载它。这一节是标准之外的实现细节，我只讲 Claude Code 的情况，别的宿主未必一样。</p>
+<p>就 Claude Code 而言，Skill 通常来自三个位置：</p>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>放在哪</th>
+<th>作用范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>个人 Skill</td>
+<td><code>~/.claude/skills/&lt;name&gt;/</code></td>
+<td>你所有项目都能用</td>
+</tr>
+<tr>
+<td>项目 Skill</td>
+<td><code>&lt;项目&gt;/.claude/skills/&lt;name&gt;/</code></td>
+<td>只在这个项目里生效，可随仓库提交、团队共享</td>
+</tr>
+<tr>
+<td>插件 Skill</td>
+<td>通过插件安装</td>
+<td>由插件作者维护、随版本更新，通常只读</td>
+</tr>
+</tbody></table>
+<p>放对位置后，启动时它的 <code>name</code> 和 <code>description</code> 就进入前面说的第一层清单，剩下的就交给 description 去匹配。想让某个 Skill 只由人手动触发、不让模型自动选中，一些实现（比如 Matt Pocock 的仓库）用 <code>disable-model-invocation: true</code> 表示。这属于宿主的扩展约定，不在核心规范里，跨平台前要确认对方支不支持。</p>
+<p>给初学者一个简单的定位：目录放在 <code>.claude/skills/</code> 下，<code>name</code> 和目录名一致，<code>description</code> 写足触发词，一个 Skill 就算装好了，不需要额外注册步骤。</p>
+<h2 id="使用公开-Skill-前的安全检查"><a href="#使用公开-Skill-前的安全检查" class="headerlink" title="使用公开 Skill 前的安全检查"></a>使用公开 Skill 前的安全检查</h2><p>Skill 可以携带指令和脚本，也就可能改变 Agent 的行为边界。安装第三方 Skill 前，我会先读 <code>SKILL.md</code>、脚本依赖和网络请求，确认它不会把本地数据传往未知地址，也不会执行与任务无关的命令。前面那个 <code>allowed-tools</code> 字段在这里就有了双重意义：它一方面替你省授权打断，另一方面也意味着这些命令是被预先放行的，读别人的 Skill 时要特别看清它预授权了什么。官方同样建议只从可信来源安装，并在使用前审查代码与资源。(<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills">安全建议</a>)</p>
+<p>许可也要单独看。Anthropic 仓库中许多示例采用 Apache 2.0，但 <code>docx</code>、<code>pdf</code>、<code>pptx</code>、<code>xlsx</code> 等文档类 Skill 是 source-available，<code>pdf/SKILL.md</code> 的 frontmatter 里就明确写着 <code>license: Proprietary. LICENSE.txt has complete terms</code>，并不等同于开源软件。将它们用于项目之前，应以目录中实际的许可说明为准。(<a target="_blank" rel="noopener" href="https://github.com/anthropics/skills">仓库说明</a>)</p>
+<h2 id="几个初学者常踩的坑"><a href="#几个初学者常踩的坑" class="headerlink" title="几个初学者常踩的坑"></a>几个初学者常踩的坑</h2><p>把前面的内容反过来说一遍，就是几条容易犯的错：</p>
+<ul>
+<li>description 写成自我介绍（”这是一个很强大的 PDF 工具”），而不是触发线索。模型靠它做选择，写清动作和场景才有用。</li>
+<li>把所有内容堆进 <code>SKILL.md</code> 正文。正文一旦激活就整份进上下文，长说明和低频分支应该拆到引用文件。</li>
+<li>让模型用自然语言”校验”确定性结果。能写成脚本断言的检查（字段填没填对、格式合不合规），别指望模型自己看一眼。</li>
+<li>不留 baseline 就下结论。没有对照组，你分不清是 Skill 起了作用还是模型本来就会。</li>
+<li>假设别的宿主行为和 Claude 一样。加载时机、脚本执行、<code>allowed-tools</code>、<code>disable-model-invocation</code> 这些都可能因平台而异。</li>
+</ul>
+<h2 id="我的结论"><a href="#我的结论" class="headerlink" title="我的结论"></a>我的结论</h2><p>Anthropic Skills 让我看到的不是一种”万能提示词格式”，而是一种组织 Agent 经验的方式：用简短元数据做发现，用 <code>SKILL.md</code> 给出主路径，把重资料和确定性操作延后到需要时再使用。它省的不是你写字的功夫，而是每一次对话都要重复付出的上下文成本，以及模型在无关内容里找相关内容的精力。</p>
+<p>如果要把这篇的结论落到实践上，我会按这个顺序做：先写一个只有 <code>name</code>、<code>description</code> 和核心步骤的最小 Skill；拿真实任务和 baseline 比较；确认某一步重复且可验证后再补脚本；确认某段说明只在少数分支用到，再把它拆进引用文件；最后才扩充参考资料。这样写出来的 Skill 更容易解释，也更容易证明它给项目带来了什么。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/anthropics/skills">Anthropic Skills 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://agentskills.io/specification">Agent Skills 规范</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills">Anthropic 工程文章：Equipping agents for the real world with Agent Skills</a></li>
+<li><a href="/posts/64920">Superpowers 深度解析</a> ｜ <a href="/posts/65010">ECC 深度解析</a> ｜ <a href="/posts/65105">Matt Pocock Skills 深度解析</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/65200/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/65200/')">Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/65200/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/Skills/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Skills<span class="tagsPageCount">6</span></a><a class="post-meta__box__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>上下文工程<span class="tagsPageCount">14</span></a><a class="post-meta__box__tags" href="/tags/Claude-Code/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Claude Code<span class="tagsPageCount">9</span></a><a class="post-meta__box__tags" href="/tags/Anthropic/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Anthropic<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/65310/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/claude-code-dynamic-workflow-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Claude Code 动态工作流深度解析：SubAgent、Agent Teams 与大规模并行编排</div></div></a></div><div class="next-post pull-right"><a href="/posts/65290/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/karpathy-guidelines-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Karpathy Skills 深度解析：四条编码准则如何约束 Agent，以及怎样验证它有效</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/65010/" title="ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/ecc-layered-learning-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-27</div><div class="title">ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线</div></div></a></div><div><a href="/posts/64920/" title="Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/superpowers-workflow-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-20</div><div class="title">Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程</div></div></a></div><div><a href="/posts/65290/" title="Karpathy Skills 深度解析：四条编码准则如何约束 Agent，以及怎样验证它有效"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/karpathy-guidelines-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-17</div><div class="title">Karpathy Skills 深度解析：四条编码准则如何约束 Agent，以及怎样验证它有效</div></div></a></div><div><a href="/posts/65105/" title="Matt Pocock Skills 深度解析：把 AI 编程从提示词聊天变成可检查的工程流程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/matt-pocock-skills-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-03</div><div class="title">Matt Pocock Skills 深度解析：把 AI 编程从提示词聊天变成可检查的工程流程</div></div></a></div><div><a href="/posts/65400/" title="Claude Code 技术架构深度解析：Agent Loop、上下文、权限与子代理"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/claude-code-architecture-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-24</div><div class="title">Claude Code 技术架构深度解析：Agent Loop、上下文、权限与子代理</div></div></a></div><div><a href="/posts/63952/" title="OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/skills-layers-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-18</div><div class="title">OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%99%E7%AF%87%E8%83%BD%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98"><span class="toc-number">1.</span> <span class="toc-text">这篇能解决什么问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E5%8E%98%E6%B8%85%E6%A6%82%E5%BF%B5%EF%BC%9ASkill-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%8C%E4%B8%8D%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">2.</span> <span class="toc-text">先厘清概念：Skill 是什么，不是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA-Skill-%E7%9A%84%E6%9C%80%E5%B0%8F%E7%BB%93%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">一个 Skill 的最小结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%A3%E6%96%87%E8%AF%A5%E5%86%99%E4%BB%80%E4%B9%88"><span class="toc-number">3.1.</span> <span class="toc-text">正文该写什么</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#description-%E6%98%AF%E8%A7%A6%E5%8F%91%E5%99%A8%EF%BC%9A%E6%80%8E%E4%B9%88%E5%86%99%EF%BC%8C%E4%BB%A5%E5%8F%8A%E5%8C%B9%E9%85%8D%E6%98%AF%E6%80%8E%E4%B9%88%E5%8F%91%E7%94%9F%E7%9A%84"><span class="toc-number">4.</span> <span class="toc-text">description 是触发器：怎么写，以及匹配是怎么发生的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8C%B9%E9%85%8D%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%8F%91%E7%94%9F%E7%9A%84"><span class="toc-number">4.1.</span> <span class="toc-text">匹配到底是怎么发生的</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B8%90%E8%BF%9B%E5%BC%8F%E6%8A%AB%E9%9C%B2%EF%BC%9A%E6%8C%89%E9%9C%80%E4%BB%98%E5%87%BA%E4%B8%8A%E4%B8%8B%E6%96%87%E6%88%90%E6%9C%AC"><span class="toc-number">5.</span> <span class="toc-text">渐进式披露：按需付出上下文成本</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8A%8A%E8%BF%99%E7%AC%94%E8%B4%A6%E7%AE%97%E5%87%BA%E6%9D%A5"><span class="toc-number">5.1.</span> <span class="toc-text">把这笔账算出来</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8-PDF-Skill-%E7%9C%8B%E4%B8%80%E6%AC%A1%E5%AE%8C%E6%95%B4%E5%88%86%E5%B7%A5"><span class="toc-number">6.</span> <span class="toc-text">用 PDF Skill 看一次完整分工</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E6%9C%80%E5%B0%8F-Skill%EF%BC%9A%E5%8D%9A%E5%AE%A2%E5%8F%91%E5%B8%83%E5%89%8D%E6%A3%80%E6%9F%A5"><span class="toc-number">7.</span> <span class="toc-text">动手写一个最小 Skill：博客发布前检查</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E8%AF%84%E6%B5%8B%E5%88%A4%E6%96%AD-Skill-%E6%98%AF%E5%90%A6%E5%80%BC%E5%BE%97%E4%BF%9D%E7%95%99"><span class="toc-number">8.</span> <span class="toc-text">用评测判断 Skill 是否值得保留</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%88%91%E7%9A%84%E5%88%86%E7%B1%BB%E6%A1%86%E6%9E%B6%EF%BC%9A%E8%83%BD%E5%8A%9B%E5%9E%8B%E4%B8%8E%E7%BA%AA%E5%BE%8B%E5%9E%8B"><span class="toc-number">9.</span> <span class="toc-text">我的分类框架：能力型与纪律型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8%EF%BC%9Askill-%E6%94%BE%E5%9C%A8%E5%93%AA%E3%80%81%E6%80%8E%E4%B9%88%E8%A2%AB%E5%8F%91%E7%8E%B0"><span class="toc-number">10.</span> <span class="toc-text">安装与使用：skill 放在哪、怎么被发现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E5%85%AC%E5%BC%80-Skill-%E5%89%8D%E7%9A%84%E5%AE%89%E5%85%A8%E6%A3%80%E6%9F%A5"><span class="toc-number">11.</span> <span class="toc-text">使用公开 Skill 前的安全检查</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%A0%E4%B8%AA%E5%88%9D%E5%AD%A6%E8%80%85%E5%B8%B8%E8%B8%A9%E7%9A%84%E5%9D%91"><span class="toc-number">12.</span> <span class="toc-text">几个初学者常踩的坑</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%88%91%E7%9A%84%E7%BB%93%E8%AE%BA"><span class="toc-number">13.</span> <span class="toc-text">我的结论</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">14.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

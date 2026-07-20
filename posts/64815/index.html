@@ -1,0 +1,775 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,上下文工程,提示词,Hermes Agent"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本"><meta name="application-name" content="Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本"><meta property="og:url" content="https://blog.asaakii.com/posts/64815/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="面向 AI 初学者，从 Hermes Agent 源码拆开系统提示词、项目上下文、工具 schema 与缓存机制，给出一套能自己复现的 Token 成本排查方法。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/hermes-system-prompt-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/hermes-system-prompt-cover.webp"><meta name="description" content="面向 AI 初学者，从 Hermes Agent 源码拆开系统提示词、项目上下文、工具 schema 与缓存机制，给出一套能自己复现的 Token 成本排查方法。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/64815/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本',
+  postAI: '',
+  pageFillDescription: '先建立一张正确的地图, Hermes 不是固定九层而是三段拼装, 稳定段：先让模型知道自己是谁、该怎么做事, Skills 索引：给模型目录不把整本手册塞进去, 项目段：一轮只选一种项目上下文, 会话快照段：记忆不是聊天记录的另一个名字, Token 成本应该怎么算哪些数字不能直接搬, 项目文件的截断规则以及它真正意味着什么, 工具发现：筛选发生在 system prompt 之前, 一个可以自己复现的排查流程, 第一步：固定一次观察对象, 第二步：查当前目录会命中什么, 第三步：区分四类常驻来源, 第四步：做一次最小对照实验, 第五步：最后才动大刀, 一个小例子：怎样写一份短而不空的 .hermes.md, 与 OpenClaw 对照时别把产品名当作结论, 容易犯的几个判断错误, 「上下文压缩会顺手把 system prompt 变小」, 「把所有规则放进 SOUL.md 最省事」, 「项目文件越短模型越聪明」, 「工具越少越便宜所以全关掉」, 「10K Token 就一定很贵」, 写在最后, 参考资料核验版本本文按年月日分支的提交阅读重点核对了与项目会持续更新路径默认值和提示词内容都可能变化文中把源码事实一个旧样本的数字和我的工程判断分开写不拿某次实测当作所有人的默认值很多人第一次看到的会有一种不太舒服的感觉我只发了句帮我看下这个报错为什么模型账单里已经先躺着一大段输入原因不神秘模型并不认识你的项目偏好工具权限和聊天平台每次请求前都要把其中一部分信息重新交给模型也是这样做的只是它把这些信息拆得比较细而且新版本已经不适合再用固定九层来概括这篇文章只回答四个问题一条用户消息发出去时到底准备了什么工具和聊天历史是不是同一笔项目里的为什么会影响回答和成本如果觉得会话又贵又笨应该从哪里查而不是凭感觉删文件读完以后你不需要记住所有函数名能分清提示词内容工具定义会话历史这三件事并能在自己的环境里定位最大的上下文来源就够用了先建立一张正确的地图先把一次模型调用想成一个快递包用户的一句话只是包里的一个小纸条还会装进一份系统说明已有对话和可调用工具的说明不同对这些东西的字段名不完全一样但对模型来说它们共同占用输入上下文窗口本轮请求系统提示词稳定部分身份规则索引平台说明项目部分等会话快照记忆用户画像日期和模型信息对话历史此前的用户消息助手回复工具结果工具每个可调用工具的名字说明和参数本轮用户消息这里有个很容易混淆的点工具通常不是拼在字符串里会将和作为请求里的不同字段发送计费和上下文窗口层面两者都可能算作输入排查时却要分开看因为缩短并不会自动让工具变小另一个常见误会是每轮都会从磁盘重新读取一切当前的实现会在一个会话开始时构建并缓存完整通常只在上下文压缩等重建节点重新生成这是为了提高的前缀缓存命中率换句话说在这个会话里更接近一次性快照而不是你刚写进去就会在下一轮自动刷新的实时数据库这也解释了两个看似矛盾的说法从逻辑上看系统提示词是每次模型调用的输入从实际账单看如果支持前缀缓存重复前缀可能按较低价格计费缓存能降低重复读取的价格却不会让上下文窗口凭空变大也不会消除长提示词对注意力和首延迟的影响不是固定九层而是三段拼装旧版拆解常把描述成九层那个视角在某个导出样本里能帮助数清来源但不是当前源码的结构现在的明确把内容分成三段和最后按这个顺序连接段放什么在同一会话中是否通常不变为什么这样放身份工具行为规则索引环境与平台提示是尽量让请求前缀稳定便于缓存调用者传入的系统消息项目上下文文件是与当前工作目录或入口有关记忆快照用户画像外部记忆块日期和会话信息会话级通常不变新会话或重建时可能不同这个名字容易让人误解它不是说每一轮一定变动而是相对于长期稳定的身份与规则它更容易因会话日期用户资料或记忆状态而不同当前源码为了保住缓存甚至只放日期而不是每分钟变化的时间如果把这三段继续拆开就能看到原先九层的来源但不能假定每个会话都会有所有层许多段都受工具是否启用平台模型配置和环境变量控制稳定段先让模型知道自己是谁该怎么做事稳定段从身份开始会优先读取文件不存在或为空时才回退到代码里的默认身份文本是用户可编辑的人格和长期行为边界不等于项目开发说明身份后面还可能出现一串规则例如当会话已加载工具时提示词会说明什么值得存成长期记忆什么只是短期任务进度当有时它会要求模型先搜索旧会话再让用户重复上下文当有时它会鼓励模型把复杂可复用的流程沉淀为并修订发现错误的有工具时可能加入完成任务避免编造结果并行发起独立工具调用等执行规则有看板工具或订阅能力时会追加对应的专门说明这些不是装饰文字它们在改变模型的默认行为例如把独立读取放到同一轮工具调用这条规则目标不是让答案更漂亮而是减少多次来回时反复携带上下文的成本模型也会影响稳定段当前代码会给部分模型加入更强的工具使用和验证纪律则可能拿到另一组操作说明平台同样如此等入口需要不同的和媒体投递规则于是两个用户问同一个问题若运行在不同平台或模型上看到的不一定相同索引给模型目录不把整本手册塞进去是里最值得单独理解的一部分一个通常是一份记录某类任务的流程约束和工具用法若每个全文都放进系统提示词多了以后几乎必然失控的做法是先放一个索引按分类列出名字和简短描述需要时由模型调用再加载全文这是一种目录按需阅读的策略它能把常驻成本压低但并不等于索引没有成本每新增一个至少会增加名称分类和描述的一部分文字当前实现还会检查是否适配当前平台环境条件和已启用工具集是否被配置禁用外部目录是否与本地同名冲突新版本还提供了一个很实用的折中在编码姿态下可以把不相关分类降级为只显示名字名字仍在模型仍能用加载只是描述被省掉这比粗暴隐藏更稳妥完全从索引里删掉的模型往往根本想不起它存在所以的维护目标不是越少越好而是索引中每一行都有继续存在的理由重复过期名字模糊且从未使用的会让模型多一个错误分支也让每次请求多一点固定输入项目段一轮只选一种项目上下文项目上下文是最容易被误读的一段当前的优先级如下或或或加上这里的优先级是先命中者获胜不是四类文件全部叠加找到后当前会话不会继续再注入同目录的和因此放一份短小明确的确实可以覆盖大型但它也意味着你必须把仍然必要的规则迁过去搜索范围也不完全相同会从当前目录向上找找到仓库根目录为止它适合放仓库级约定也允许子目录放更具体的覆盖文件只检查当前工作目录属于最后一种规则来源会和一起组成这一类上下文系统还会先扫描这些文件中的潜在提示注入模式扫描命中时会阻止该文件内容进入并以一个说明占位这不是完整的安全边界但很重要克隆一个不可信仓库时项目说明文件不是天然可信的纯文档当前版本还修复了一个很实际的坑对于桌面端或网关这类进程可能从安装目录启动的场景如果工作目录只是回退得到的安装目录系统会跳过项目上下文发现避免把源码仓库自身的贡献者当成用户项目规则从用户启动时仍可以显式在仓库里工作这会直接修正一个流传很广的说法默认工作目录会把仓库的每轮塞进去它可以解释某个旧样本但不能描述当前网关的默认行为排查自己的会话时先确认实际解析到的工作目录再看加载日志或上下文体积别根据目录名推断会话快照段记忆不是聊天记录的另一个名字在段中可以注入内置记忆用户画像和外部记忆提供商返回的提示块最后加上会话开始日期可选的模型和信息这几种信息各有用途内容适合放什么不适合放什么长期记忆稳定偏好固定环境细节长期约定某次任务进度临时待办几天后就过期的状态用户画像与用户有关且会长期影响回答方式的信息项目实现细节密钥一次性需求会话搜索已完成任务旧对话中的细节用来替代稳定偏好的存储可重复执行的步骤排错方法工作流一句事实或用户偏好为什么要把这几件事分开因为它们的生命周期不同把本周修了哪个写进长期记忆会让以后的每轮请求都带着它既浪费也可能让模型对过时状态过度自信反过来把用户偏好简洁答案只留在一次聊天记录里新会话又会丢掉它原文把记忆称为冻结是有道理的但需要补一句前提冻结的是当前实例已构建好的提示词快照内存中的记忆文件可能已经被工具写入要不要马上重新加载取决于当前实现是否重建不要把文件已写成功误读成模型下一句必然已经看见成本应该怎么算哪些数字不能直接搬一份旧导出样本里完整大约个字符粗略约其中一个原文约个字符这些数字作为案例很有价值它们说明项目说明可以成为最大块但它们不是的固定开销最常见的换算公式是英文大约个字符一个这只能做粗估不能拿来结算中文代码标点和模型的分词器都会让比例变化尤其是工具里面常有重复字段名枚举值和说明文本字符数看着不大却未必少更可靠的做法是按来源做账而不是急着算一个绝对数字总输入系统提示词工具历史消息本轮用户输入系统提示词对于成本至少要同时看四件事每项占了多少每项是否每次调用都会出现是否给重复前缀缓存以及缓存读写分别如何计价这项内容是否真的改善了当前任务的成功率只盯住第一个数字容易做错优化比如删掉一段短小的安全规则可能省不了什么却增加工具误用概率一个的项目说明如果让模型每次都避免读错目录可能比它的成本更划算优化不是越短越好而是删掉低价值重复和与当前会话无关的内容项目文件的截断规则以及它真正意味着什么当前给项目上下文文件设计了可配置上限默认基础上限是个字符但如果能获得模型的上下文窗口会按以下近似规则计算动态上限上限上下文窗口也就是说不是所有模型的硬顶用户在配置中显式设置时显式值优先源码中的字符一个是英文启发式只用于分配预算不是中文的测量结果当内容超过上限保留前和后中间替换为提示标记并告诉模型可以用读取完整文件以为上限时保留的是前个字符和后个字符插入的标记本身还会占一点位置因此它不是严格意义上的输出刚好字符这个策略有明显取舍文件开头通常有项目概况和常用命令结尾常有测试或注意事项二者比较可能有用但中间的关键规范也可能被砍掉看到截断警告时正确反应不是立刻把上限调大而是先问三个问题这份文件是否把手册历史记录和真正的操作规则混在一起了能否把每次都必须遵守的十几条规则写进短把背景资料留给按需读取当前任务真的需要这份完整说明吗如果答案是需要再考虑增大上限或让模型显式读取原文件把所有文档都塞进系统提示词是最省人的整理时间最浪费模型上下文的做法工具发现筛选发生在之前工具发现常被写成一笔模糊的成本实际过程要具体得多当前初始化流程大致是注册内置工具和插件根据展开工具集对每个候选工具执行可用性检查生成最终并记录按最终工具集合构建相关的行为规则和索引把历史消息发给模型里有一个值得记住的细节是白名单式选择在最后做减法最终传给模型的是通过的工具而不是注册表里所有工具可用性检查的结果还有短时间缓存以免每次初始化都重复探测环境所以注册了个工具某次只给模型个这种观察完全可能成立但和本身没有普适性服务是否连接环境变量是否存在插件是否加载平台是否限制工具集用户配置是否禁用工具都会改变结果工具数量与成本的关系也不只是一个工具一行字每个函数通常带名称用途参数类型必填字段可能的枚举和示例复杂工具的可能比普通段更贵更少的工具通常意味着更低的输入和更少的选择干扰但也可能让模型失去完成任务所需的能力有些场景会通过一类机制把延迟工具放在可检索目录里先不把全部展开给模型思路和索引类似把常驻说明换成按需加载它适合工具很多但单次任务只用少数工具的环境若模型频繁检索和加载同一批工具收益会下降一个可以自己复现的排查流程下面的流程不依赖抓包也不要求你先会读目标是把感觉上下文很大变成一张可行动的清单第一步固定一次观察对象不要一边频繁改配置一边比较不同会话的账单先选一个具体任务和一个具体模型例如在这个仓库里解释一个报错记录日期入口平台工作目录模型启用的工具集和是否是新会话否则两次差异可能只是模型或历史消息不同第二步查当前目录会命中什么在任务目录依次检查如果没有再从当前目录往根目录查看是否有它注意不要把仓库中存在直接等同于它被加载了优先级和当前工作目录决定最终结果接着看候选文件的体积和内容类型一个好的项目上下文文件更像驾驶舱检查单项目是什么如何验证哪些目录不要碰有哪些硬约束它不应该顺便塞进完整架构手册几十条历史决策和每次发布记录第三步区分四类常驻来源可以按下面的表做自己的盘点来源要检查的东西常见问题优先动作身份与规则平台提示模型专用规则人格描述很长内容相互矛盾保留少量稳定边界删掉一次性任务说明项目上下文等大而全重复被截断写精简入口背景材料按需读记忆与画像外部记忆把日志和临时进度当记忆只留未来还会影响判断的事实工具与插件索引低频工具和重复堆积先按场景缩小工具面再清理索引这个顺序有意把项目文件和记忆放在工具之前对多数个人来说它们更容易无意膨胀也更容易由用户自己控制工具集涉及能力和权限删之前要先确认任务不会因此失败第四步做一次最小对照实验一次只改一个变量比如新建一个只包含必要规则的不要同时换模型清空记忆禁用十个工具然后开一个新会话用同样的问题比较输入首时间工具调用次数和结果质量可以把结果写成这样版本改动输入首时间是否一次做对备注原项目文件待测待测待测基线精简待测待测待测只改项目上下文做对比少更重要若少了输入却让模型每次都忘记测试命令或误改生成目录那不是优化是把成本转成了返工第五步最后才动大刀有了对照数据后再做较大调整为不同场景配置不同归档低频迁移臃肿记忆或者改变工作目录策略每次调整后保留一份可回退的文件的上下文规则本身是程序的一部分应该像改配置一样对待而不是凭感觉删几段文字一个小例子怎样写一份短而不空的很多人听到精简后会把项目说明压成遵循最佳实践这种句子几乎没有操作价值好的短规则应该能在模型准备调用工具时改变选择下面是一份面向博客仓库的示意不是通用模板本仓库工作说明正文位于不要直接修改中的生成文件修改文章后先检查内部链接和代码块是否闭合只运行与本次改动相关的检查不要顺手格式化全仓库未经确认不修改主题配置依赖版本或部署脚本输出时说明改了哪些文章以及做过什么验证它只有几行却回答了模型最容易犯错的几个问题在哪里改哪些文件别碰怎么验证什么属于越权若项目还有复杂架构把详细说明放在并在这里给出文件路径和何时阅读的条件这样模型需要细节时再读不需要时不为整本手册付费与对照时别把产品名当作结论和都会把身份记忆工作区规则和工具能力送给模型因此两者都存在固定上下文成本这个层面的对照是成立的但实现细节不能互相套用本文确认的是在上述提交中的行为项目上下文的优先级动态截断三段提示词装配工具筛选和会话级缓存的工作区注入命令和压缩行为应以它自己的版本化文档和源码为准把一个系统的八个文件默认数贴到另一个系统上通常只会制造看起来专业的错误我更愿意用一组通用问题比较而不是背结论它把哪些信息全量常驻哪些信息按需检索项目说明来自哪里冲突时谁优先工具是全量还是延迟发现权限在哪里收口历史压缩后哪些约束还在哪些只存在于过去的对话里运行日志是否能让用户看清当前到底注入了什么能回答这些问题换到其他框架也不会完全从零开始容易犯的几个判断错误上下文压缩会顺手把变小不一定对话压缩主要处理历史消息和工具结果当前可能在压缩节点重建但重建并不等于自动删掉项目文件或工具只有你改变了这些来源或相关配置固定部分才会明显变小把所有规则放进最省事短期省事长期会混乱人格偏好项目规则用户画像和临时任务的变化速度不同都塞进同一个文件不仅难维护也会让每个无关项目都背上同一堆指令把规则放在与其生命周期相匹配的位置通常更短也更可靠项目文件越短模型越聪明也不对过短会把关键约束删没真正该删的是重复背景化过期和无法执行的句子保留能影响文件范围验证命令权限边界和交付格式的具体规则工具越少越便宜所以全关掉没有工具的可能少花输入却需要用户反复提供文件内容和运行结果合适的目标是任务所需的最小工具面例如纯写作会话不必加载一堆部署与家居控制工具排查线上问题却不该关掉必要的日志和终端能力就一定很贵要看模型缓存命中率调用次数和任务价值十分钟内连续做几十轮的编码任务与一天只问一次问题优化优先级并不一样先测自己的真实账单和延迟再决定是否值得花时间瘦身写在最后的不是一段神秘咒语而是一份会话开工前的工作包它把稳定身份项目规则和当前用户状态分开是为了让模型既能做事也不至于每次从零认识你代价是这些信息会占用输入上下文内容失控后还会干扰模型判断对初学者最有用的习惯只有一个每次觉得又慢又贵又不听话时先问这一轮究竟给它看了什么先看项目上下文和记忆再看工具和最后用单变量对照实验验证这样得到的不是一套只适用于的技巧而是一种排查所有上下文问题的方式参考资料官方仓库系统提示词三段装配项目文件索引与截断工具初始化工具筛选与岚叔抽丝剥茧深度解析万字系统提示词构成文中的导出样本可作为历史实测参照可对照阅读系统提示词深度解析记忆系统深度解析',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-19 20:30:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>上下文工程</span></a><a class="article-meta__tags" href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>提示词</span></a><a class="article-meta__tags" href="/tags/Hermes-Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Hermes Agent</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-05-07T12:30:00.000Z" title="发表于 2026-05-07 20:30:00">2026-05-07</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-19T12:30:00.000Z" title="更新于 2026-07-19 20:30:00">2026-07-19</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">6.8k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>20分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/hermes-system-prompt-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/64815/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" tabindex="-1" itemprop="url">上下文工程</a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" tabindex="-1" itemprop="url">提示词</a><a href="/tags/Hermes-Agent/" tabindex="-1" itemprop="url">Hermes Agent</a><h1 id="CrawlerTitle" itemprop="name headline">Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-05-07T12:30:00.000Z" title="发表于 2026-05-07 20:30:00">2026-05-07</time><time itemprop="dateCreated datePublished" datetime="2026-07-19T12:30:00.000Z" title="更新于 2026-07-19 20:30:00">2026-07-19</time></header><blockquote>
+<p>核验版本：本文按 2026 年 7 月 19 日 Hermes Agent <code>main</code> 分支的提交 <a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/tree/e598cef87465981fcea1c0339edfcf5d9716c917"><code>e598cef</code></a> 阅读。重点核对了 <code>agent/system_prompt.py</code>、<code>agent/prompt_builder.py</code>、<code>agent/agent_init.py</code> 与 <code>model_tools.py</code>。项目会持续更新，路径、默认值和提示词内容都可能变化。文中把源码事实、一个旧样本的数字和我的工程判断分开写，不拿某次实测当作所有人的默认值。</p>
+</blockquote>
+<p>很多人第一次看到 Agent 的 system prompt，会有一种不太舒服的感觉：我只发了句「帮我看下这个报错」，为什么模型账单里已经先躺着一大段输入？</p>
+<p>原因不神秘。模型并不认识你的项目、偏好、工具权限和聊天平台。每次请求前，Agent 都要把其中一部分信息重新交给模型。Hermes Agent 也是这样做的，只是它把这些信息拆得比较细，而且新版本已经不适合再用「固定九层」来概括。</p>
+<p>这篇文章只回答四个问题：</p>
+<ul>
+<li>一条用户消息发出去时，Hermes 到底准备了什么？</li>
+<li>system prompt、工具 schema 和聊天历史是不是同一笔 Token？</li>
+<li>项目里的 <code>AGENTS.md</code>、<code>.hermes.md</code> 为什么会影响回答和成本？</li>
+<li>如果觉得会话又贵又笨，应该从哪里查，而不是凭感觉删文件？</li>
+</ul>
+<p>读完以后，你不需要记住所有函数名。能分清「提示词内容」「工具定义」「会话历史」这三件事，并能在自己的环境里定位最大的上下文来源，就够用了。</p>
+<h2 id="先建立一张正确的地图"><a href="#先建立一张正确的地图" class="headerlink" title="先建立一张正确的地图"></a>先建立一张正确的地图</h2><p>先把一次模型调用想成一个快递包。用户的一句话只是包里的一个小纸条，Hermes 还会装进一份系统说明、已有对话和可调用工具的说明。不同 API 对这些东西的字段名不完全一样，但对模型来说，它们共同占用输入上下文窗口。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">本轮请求</span><br><span class="line">├── 系统提示词</span><br><span class="line">│   ├── 稳定部分：身份、规则、Skills 索引、平台说明</span><br><span class="line">│   ├── 项目部分：.hermes.md / AGENTS.md 等</span><br><span class="line">│   └── 会话快照：记忆、用户画像、日期和模型信息</span><br><span class="line">├── 对话历史：此前的用户消息、助手回复、工具结果</span><br><span class="line">├── 工具 schema：每个可调用工具的名字、说明和参数 JSON Schema</span><br><span class="line">└── 本轮用户消息</span><br></pre></td></tr></table></figure>
+
+<p>这里有个很容易混淆的点：工具 schema 通常不是拼在 system prompt 字符串里。Hermes 会将 system prompt 和 <code>tools</code> 作为 API 请求里的不同字段发送。计费和上下文窗口层面，两者都可能算作输入；排查时却要分开看，因为缩短 system prompt 并不会自动让工具 schema 变小。</p>
+<p>另一个常见误会是「每轮都会从磁盘重新读取一切」。当前 Hermes 的实现会在一个 <code>AIAgent</code> 会话开始时构建并缓存完整 system prompt，通常只在上下文压缩等重建节点重新生成。这是为了提高 provider 的前缀缓存命中率。换句话说，<code>MEMORY.md</code> 在这个会话里更接近一次性快照，而不是你刚写进去就会在下一轮自动刷新的实时数据库。</p>
+<p>这也解释了两个看似矛盾的说法：从逻辑上看，系统提示词是每次模型调用的输入；从实际账单看，如果 provider 支持前缀缓存，重复前缀可能按较低价格计费。缓存能降低重复读取的价格，却不会让上下文窗口凭空变大，也不会消除长提示词对注意力和首 token 延迟的影响。</p>
+<h2 id="Hermes-不是固定九层，而是三段拼装"><a href="#Hermes-不是固定九层，而是三段拼装" class="headerlink" title="Hermes 不是固定九层，而是三段拼装"></a>Hermes 不是固定九层，而是三段拼装</h2><p>旧版拆解常把 Hermes 描述成「九层 system prompt」。那个视角在某个导出样本里能帮助数清来源，但不是当前源码的结构。现在 <code>agent/system_prompt.py</code> 的 <code>build_system_prompt_parts()</code> 明确把内容分成三段：<code>stable</code>、<code>context</code> 和 <code>volatile</code>，最后按这个顺序连接。</p>
+<table>
+<thead>
+<tr>
+<th>段</th>
+<th>放什么</th>
+<th>在同一会话中是否通常不变</th>
+<th>为什么这样放</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>stable</code></td>
+<td>身份、工具行为规则、Skills 索引、环境与平台提示</td>
+<td>是</td>
+<td>尽量让请求前缀稳定，便于缓存</td>
+</tr>
+<tr>
+<td><code>context</code></td>
+<td>调用者传入的系统消息、项目上下文文件</td>
+<td>是</td>
+<td>与当前工作目录或入口有关</td>
+</tr>
+<tr>
+<td><code>volatile</code></td>
+<td>记忆快照、用户画像、外部记忆块、日期和会话信息</td>
+<td>会话级通常不变</td>
+<td>新会话或重建时可能不同</td>
+</tr>
+</tbody></table>
+<p><code>volatile</code> 这个名字容易让人误解。它不是说每一轮一定变动，而是相对于长期稳定的身份与规则，它更容易因会话、日期、用户资料或记忆状态而不同。当前源码为了保住缓存，甚至只放日期而不是每分钟变化的时间。</p>
+<p>如果把这三段继续拆开，就能看到原先「九层」的来源，但不能假定每个会话都会有所有层。许多段都受工具是否启用、平台、模型、配置和环境变量控制。</p>
+<h3 id="稳定段：先让模型知道自己是谁、该怎么做事"><a href="#稳定段：先让模型知道自己是谁、该怎么做事" class="headerlink" title="稳定段：先让模型知道自己是谁、该怎么做事"></a>稳定段：先让模型知道自己是谁、该怎么做事</h3><p>稳定段从身份开始。Hermes 会优先读取 <code>~/.hermes/SOUL.md</code>；文件不存在或为空时，才回退到代码里的默认身份文本。<code>SOUL.md</code> 是用户可编辑的人格和长期行为边界，不等于项目开发说明。</p>
+<p>身份后面还可能出现一串规则。例如：</p>
+<ul>
+<li>当会话已加载 <code>memory</code> 工具时，提示词会说明什么值得存成长期记忆，什么只是短期任务进度。</li>
+<li>当有 <code>session_search</code> 时，它会要求模型先搜索旧会话，再让用户重复上下文。</li>
+<li>当有 <code>skill_manage</code> 时，它会鼓励模型把复杂、可复用的流程沉淀为 Skill，并修订发现错误的 Skill。</li>
+<li>有工具时，可能加入「完成任务、避免编造结果、并行发起独立工具调用」等执行规则。</li>
+<li>有 <code>computer_use</code>、看板工具或 Nous 订阅能力时，会追加对应的专门说明。</li>
+</ul>
+<p>这些不是装饰文字。它们在改变模型的默认行为。例如「把独立读取放到同一轮工具调用」这条规则，目标不是让答案更漂亮，而是减少多次来回时反复携带上下文的成本。</p>
+<p>模型也会影响稳定段。当前代码会给部分 GPT、Codex、Grok 模型加入更强的工具使用和验证纪律；Gemini&#x2F;Gemma 则可能拿到另一组操作说明。平台同样如此：Telegram、WhatsApp 等入口需要不同的 Markdown 和媒体投递规则。于是两个用户问同一个问题，若运行在不同平台或模型上，看到的 system prompt 不一定相同。</p>
+<h3 id="Skills-索引：给模型目录，不把整本手册塞进去"><a href="#Skills-索引：给模型目录，不把整本手册塞进去" class="headerlink" title="Skills 索引：给模型目录，不把整本手册塞进去"></a>Skills 索引：给模型目录，不把整本手册塞进去</h3><p>Skills 是 Hermes 里最值得单独理解的一部分。一个 Skill 通常是一份 <code>SKILL.md</code>，记录某类任务的流程、约束和工具用法。若每个 Skill 全文都放进系统提示词，Skill 多了以后几乎必然失控。Hermes 的做法是先放一个索引：按分类列出名字和简短描述，需要时由模型调用 <code>skill_view</code> 再加载全文。</p>
+<p>这是一种「目录 + 按需阅读」的策略。它能把常驻成本压低，但并不等于索引没有成本。每新增一个 Skill，至少会增加名称、分类和描述的一部分文字。当前实现还会检查：Skill 是否适配当前平台、环境条件和已启用工具集，是否被配置禁用，外部 Skill 目录是否与本地同名冲突。</p>
+<p>新版本还提供了一个很实用的折中：在编码姿态下，可以把不相关分类降级为「只显示名字」。名字仍在，模型仍能用 <code>skill_view</code> 加载，只是描述被省掉。这比粗暴隐藏更稳妥。完全从索引里删掉的 Skill，模型往往根本想不起它存在。</p>
+<p>所以 Skill 的维护目标不是「越少越好」，而是「索引中每一行都有继续存在的理由」。重复、过期、名字模糊且从未使用的 Skill 会让模型多一个错误分支，也让每次请求多一点固定输入。</p>
+<h3 id="项目段：一轮只选一种项目上下文"><a href="#项目段：一轮只选一种项目上下文" class="headerlink" title="项目段：一轮只选一种项目上下文"></a>项目段：一轮只选一种项目上下文</h3><p>项目上下文是最容易被误读的一段。当前 <code>build_context_files_prompt()</code> 的优先级如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">1. .hermes.md 或 HERMES.md</span><br><span class="line">2. AGENTS.md 或 agents.md</span><br><span class="line">3. CLAUDE.md 或 claude.md</span><br><span class="line">4. .cursorrules，加上 .cursor/rules/*.mdc</span><br></pre></td></tr></table></figure>
+
+<p>这里的「优先级」是先命中者获胜，不是四类文件全部叠加。找到 <code>.hermes.md</code> 后，当前会话不会继续再注入同目录的 <code>AGENTS.md</code> 和 <code>CLAUDE.md</code>。因此放一份短小、明确的 <code>.hermes.md</code>，确实可以覆盖大型 <code>AGENTS.md</code>，但它也意味着你必须把仍然必要的规则迁过去。</p>
+<p>搜索范围也不完全相同：</p>
+<ul>
+<li><code>.hermes.md</code> 会从当前目录向上找，找到 Git 仓库根目录为止。它适合放仓库级约定，也允许子目录放更具体的覆盖文件。</li>
+<li><code>AGENTS.md</code>、<code>CLAUDE.md</code>、<code>.cursorrules</code> 只检查当前工作目录。</li>
+<li><code>.cursor/rules/*.mdc</code> 属于最后一种 Cursor 规则来源，会和 <code>.cursorrules</code> 一起组成这一类上下文。</li>
+</ul>
+<p>系统还会先扫描这些文件中的潜在提示注入模式。扫描命中时，Hermes 会阻止该文件内容进入 system prompt，并以一个说明占位。这不是完整的安全边界，但很重要：克隆一个不可信仓库时，项目说明文件不是天然可信的纯文档。</p>
+<p>当前版本还修复了一个很实际的坑。对于桌面端或网关这类「进程可能从 Hermes 安装目录启动」的场景，如果工作目录只是回退得到的安装目录，系统会跳过项目上下文发现，避免把 Hermes 源码仓库自身的贡献者 <code>AGENTS.md</code> 当成用户项目规则。CLI&#x2F;TUI 从用户 shell 启动时仍可以显式在 Hermes 仓库里工作。</p>
+<p>这会直接修正一个流传很广的说法：「默认工作目录会把 hermes-agent 仓库的 <code>AGENTS.md</code> 每轮塞进去。」它可以解释某个旧样本，但不能描述当前网关的默认行为。排查自己的会话时，先确认实际解析到的工作目录，再看加载日志或上下文体积，别根据目录名推断。</p>
+<h3 id="会话快照段：记忆不是聊天记录的另一个名字"><a href="#会话快照段：记忆不是聊天记录的另一个名字" class="headerlink" title="会话快照段：记忆不是聊天记录的另一个名字"></a>会话快照段：记忆不是聊天记录的另一个名字</h3><p>在 <code>volatile</code> 段中，Hermes 可以注入内置记忆、<code>USER.md</code> 用户画像和外部记忆提供商返回的提示块，最后加上会话开始日期、可选的 session ID、模型和 provider 信息。</p>
+<p>这几种信息各有用途：</p>
+<table>
+<thead>
+<tr>
+<th>内容</th>
+<th>适合放什么</th>
+<th>不适合放什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>长期记忆</td>
+<td>稳定偏好、固定环境细节、长期约定</td>
+<td>某次任务进度、临时待办、几天后就过期的状态</td>
+</tr>
+<tr>
+<td>用户画像</td>
+<td>与用户有关且会长期影响回答方式的信息</td>
+<td>项目实现细节、密钥、一次性需求</td>
+</tr>
+<tr>
+<td>会话搜索</td>
+<td>已完成任务、旧对话中的细节</td>
+<td>用来替代稳定偏好的存储</td>
+</tr>
+<tr>
+<td>Skill</td>
+<td>可重复执行的步骤、排错方法、工作流</td>
+<td>一句事实或用户偏好</td>
+</tr>
+</tbody></table>
+<p>为什么要把这几件事分开？因为它们的生命周期不同。把「本周修了哪个 bug」写进长期记忆，会让以后的每轮请求都带着它，既浪费 Token，也可能让模型对过时状态过度自信。反过来，把「用户偏好简洁答案」只留在一次聊天记录里，新会话又会丢掉它。</p>
+<p>原文把记忆称为「冻结」是有道理的，但需要补一句前提：冻结的是当前 agent 实例已构建好的提示词快照。内存中的记忆文件可能已经被工具写入；要不要马上重新加载，取决于当前实现是否重建 system prompt。不要把「文件已写成功」误读成「模型下一句必然已经看见」。</p>
+<h2 id="Token-成本应该怎么算，哪些数字不能直接搬"><a href="#Token-成本应该怎么算，哪些数字不能直接搬" class="headerlink" title="Token 成本应该怎么算，哪些数字不能直接搬"></a>Token 成本应该怎么算，哪些数字不能直接搬</h2><p>一份旧导出样本里，完整 system prompt 大约 36,700 个字符，粗略约 10K Token；其中一个 <code>AGENTS.md</code> 原文约 20,360 个字符。这些数字作为案例很有价值，它们说明项目说明可以成为最大块。但它们不是 Hermes 的固定开销。</p>
+<p>最常见的换算公式是「英文大约 4 个字符一个 Token」。这只能做粗估，不能拿来结算。中文、代码、URL、JSON Schema、标点和模型的分词器都会让比例变化。尤其是工具 schema，里面常有重复字段名、枚举值和说明文本，字符数看着不大，Token 却未必少。</p>
+<p>更可靠的做法是按来源做账，而不是急着算一个绝对数字：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">总输入 = 系统提示词 + 工具 schema + 历史消息 + 本轮用户输入</span><br><span class="line"></span><br><span class="line">系统提示词 = stable + context + volatile</span><br></pre></td></tr></table></figure>
+
+<p>对于成本，至少要同时看四件事：</p>
+<ol>
+<li>每项占了多少 Token。</li>
+<li>每项是否每次调用都会出现。</li>
+<li>provider 是否给重复前缀缓存，以及缓存读写分别如何计价。</li>
+<li>这项内容是否真的改善了当前任务的成功率。</li>
+</ol>
+<p>只盯住第一个数字容易做错优化。比如删掉一段短小的安全规则可能省不了什么，却增加工具误用概率；一个 15KB 的项目说明如果让模型每次都避免读错目录，可能比它的 Token 成本更划算。优化不是「越短越好」，而是删掉低价值、重复和与当前会话无关的内容。</p>
+<h3 id="项目文件的截断规则，以及它真正意味着什么"><a href="#项目文件的截断规则，以及它真正意味着什么" class="headerlink" title="项目文件的截断规则，以及它真正意味着什么"></a>项目文件的截断规则，以及它真正意味着什么</h3><p>当前 <code>prompt_builder.py</code> 给项目上下文文件设计了可配置上限。默认基础上限是 20,000 个字符，但如果能获得模型的上下文窗口，会按以下近似规则计算动态上限：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">上限 = max(20,000, min(上下文窗口 × 4 × 0.06, 500,000))</span><br></pre></td></tr></table></figure>
+
+<p>也就是说，20,000 不是所有模型的硬顶。用户在配置中显式设置 <code>context_file_max_chars</code> 时，显式值优先。源码中的「4 字符一个 Token」是英文启发式，只用于分配预算，不是中文 Token 的测量结果。</p>
+<p>当内容超过上限，Hermes 保留前 70% 和后 20%，中间替换为提示标记，并告诉模型可以用 <code>read_file</code> 读取完整文件。以 20,000 为上限时，保留的是前 14,000 个字符和后 4,000 个字符；插入的标记本身还会占一点位置。因此它不是严格意义上的「输出刚好 20,000 字符」。</p>
+<p>这个策略有明显取舍：文件开头通常有项目概况和常用命令，结尾常有测试或注意事项，二者比较可能有用；但中间的关键规范也可能被砍掉。看到截断警告时，正确反应不是立刻把上限调大，而是先问三个问题：</p>
+<ul>
+<li>这份文件是否把手册、历史记录和真正的操作规则混在一起了？</li>
+<li>能否把每次都必须遵守的十几条规则写进短 <code>.hermes.md</code>，把背景资料留给按需读取？</li>
+<li>当前任务真的需要这份完整说明吗？</li>
+</ul>
+<p>如果答案是「需要」，再考虑增大上限或让模型显式读取原文件。把所有文档都塞进系统提示词，是最省人的整理时间、最浪费模型上下文的做法。</p>
+<h2 id="工具发现：筛选发生在-system-prompt-之前"><a href="#工具发现：筛选发生在-system-prompt-之前" class="headerlink" title="工具发现：筛选发生在 system prompt 之前"></a>工具发现：筛选发生在 system prompt 之前</h2><p>「工具发现」常被写成一笔模糊的 Token 成本，实际过程要具体得多。当前初始化流程大致是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">注册内置工具和插件</span><br><span class="line">        ↓</span><br><span class="line">根据 enabled_toolsets / disabled_toolsets 展开工具集</span><br><span class="line">        ↓</span><br><span class="line">对每个候选工具执行可用性检查 check_fn</span><br><span class="line">        ↓</span><br><span class="line">生成最终 tool definitions，并记录 valid_tool_names</span><br><span class="line">        ↓</span><br><span class="line">按最终工具集合构建相关的行为规则和 Skills 索引</span><br><span class="line">        ↓</span><br><span class="line">把 system prompt、tools、历史消息发给模型 API</span><br></pre></td></tr></table></figure>
+
+<p><code>model_tools.py</code> 里有一个值得记住的细节：<code>enabled_toolsets</code> 是白名单式选择，<code>disabled_toolsets</code> 在最后做减法。最终传给模型的是通过 <code>check_fn</code> 的工具 schema，而不是注册表里所有工具。可用性检查的结果还有短时间缓存，以免每次初始化都重复探测环境。</p>
+<p>所以「注册了 51 个工具，某次只给模型 30 个」这种观察完全可能成立，但 51 和 30 本身没有普适性。MCP 服务是否连接、环境变量是否存在、插件是否加载、平台是否限制工具集、用户配置是否禁用工具，都会改变结果。</p>
+<p>工具数量与成本的关系也不只是「一个工具一行字」。每个函数 schema 通常带名称、用途、参数、类型、必填字段、可能的枚举和示例。复杂工具的 schema 可能比普通 system prompt 段更贵。更少的工具通常意味着更低的输入和更少的选择干扰，但也可能让模型失去完成任务所需的能力。</p>
+<p>有些 Hermes 场景会通过 <code>tool_search</code> 一类机制把延迟工具放在可检索目录里，先不把全部 schema 展开给模型。思路和 Skills 索引类似：把常驻说明换成按需加载。它适合工具很多但单次任务只用少数工具的环境；若模型频繁检索和加载同一批工具，收益会下降。</p>
+<h2 id="一个可以自己复现的排查流程"><a href="#一个可以自己复现的排查流程" class="headerlink" title="一个可以自己复现的排查流程"></a>一个可以自己复现的排查流程</h2><p>下面的流程不依赖抓包，也不要求你先会读 Python。目标是把「感觉上下文很大」变成一张可行动的清单。</p>
+<h3 id="第一步：固定一次观察对象"><a href="#第一步：固定一次观察对象" class="headerlink" title="第一步：固定一次观察对象"></a>第一步：固定一次观察对象</h3><p>不要一边频繁改配置，一边比较不同会话的账单。先选一个具体任务和一个具体模型，例如「在这个仓库里解释一个报错」。记录日期、入口平台、工作目录、模型、启用的工具集和是否是新会话。否则两次差异可能只是模型或历史消息不同。</p>
+<h3 id="第二步：查当前目录会命中什么"><a href="#第二步：查当前目录会命中什么" class="headerlink" title="第二步：查当前目录会命中什么"></a>第二步：查当前目录会命中什么</h3><p>在任务目录依次检查：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">pwd</span></span><br><span class="line">find . -maxdepth 1 \( -name <span class="string">&#x27;.hermes.md&#x27;</span> -o -name <span class="string">&#x27;HERMES.md&#x27;</span> -o -name <span class="string">&#x27;AGENTS.md&#x27;</span> -o -name <span class="string">&#x27;agents.md&#x27;</span> -o -name <span class="string">&#x27;CLAUDE.md&#x27;</span> -o -name <span class="string">&#x27;claude.md&#x27;</span> -o -name <span class="string">&#x27;.cursorrules&#x27;</span> \) -<span class="built_in">print</span></span><br></pre></td></tr></table></figure>
+
+<p>如果没有 <code>.hermes.md</code>，再从当前目录往 Git 根目录查看是否有它。注意不要把「仓库中存在 <code>AGENTS.md</code>」直接等同于「它被加载了」。优先级和当前工作目录决定最终结果。</p>
+<p>接着看候选文件的体积和内容类型。一个好的项目上下文文件更像驾驶舱检查单：项目是什么、如何验证、哪些目录不要碰、有哪些硬约束。它不应该顺便塞进完整架构手册、几十条历史决策和每次发布记录。</p>
+<h3 id="第三步：区分四类常驻来源"><a href="#第三步：区分四类常驻来源" class="headerlink" title="第三步：区分四类常驻来源"></a>第三步：区分四类常驻来源</h3><p>可以按下面的表做自己的盘点：</p>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>要检查的东西</th>
+<th>常见问题</th>
+<th>优先动作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>身份与规则</td>
+<td><code>SOUL.md</code>、平台提示、模型专用规则</td>
+<td>人格描述很长，内容相互矛盾</td>
+<td>保留少量稳定边界，删掉一次性任务说明</td>
+</tr>
+<tr>
+<td>项目上下文</td>
+<td><code>.hermes.md</code>、<code>AGENTS.md</code> 等</td>
+<td>大而全、重复、被截断</td>
+<td>写精简入口，背景材料按需读</td>
+</tr>
+<tr>
+<td>记忆与画像</td>
+<td><code>MEMORY.md</code>、<code>USER.md</code>、外部记忆</td>
+<td>把日志和临时进度当记忆</td>
+<td>只留未来还会影响判断的事实</td>
+</tr>
+<tr>
+<td>工具与 Skills</td>
+<td>toolsets、插件、Skill 索引</td>
+<td>低频工具和重复 Skill 堆积</td>
+<td>先按场景缩小工具面，再清理索引</td>
+</tr>
+</tbody></table>
+<p>这个顺序有意把项目文件和记忆放在工具之前。对多数个人 Agent 来说，它们更容易无意膨胀，也更容易由用户自己控制。工具集涉及能力和权限，删之前要先确认任务不会因此失败。</p>
+<h3 id="第四步：做一次最小对照实验"><a href="#第四步：做一次最小对照实验" class="headerlink" title="第四步：做一次最小对照实验"></a>第四步：做一次最小对照实验</h3><p>一次只改一个变量。比如新建一个只包含必要规则的 <code>.hermes.md</code>，不要同时换模型、清空记忆、禁用十个工具。然后开一个新会话，用同样的问题比较：输入 Token、首 token 时间、工具调用次数和结果质量。</p>
+<p>可以把结果写成这样：</p>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>改动</th>
+<th align="right">输入 Token</th>
+<th align="right">首 token 时间</th>
+<th>是否一次做对</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A</td>
+<td>原项目文件</td>
+<td align="right">待测</td>
+<td align="right">待测</td>
+<td>待测</td>
+<td>基线</td>
+</tr>
+<tr>
+<td>B</td>
+<td>精简 <code>.hermes.md</code></td>
+<td align="right">待测</td>
+<td align="right">待测</td>
+<td>待测</td>
+<td>只改项目上下文</td>
+</tr>
+</tbody></table>
+<p>「做对」比「Token 少」更重要。若 B 少了 20% 输入，却让模型每次都忘记测试命令或误改生成目录，那不是优化，是把成本转成了返工。</p>
+<h3 id="第五步：最后才动大刀"><a href="#第五步：最后才动大刀" class="headerlink" title="第五步：最后才动大刀"></a>第五步：最后才动大刀</h3><p>有了对照数据后，再做较大调整：为不同场景配置不同 toolset，归档低频 Skill，迁移臃肿记忆，或者改变工作目录策略。每次调整后保留一份可回退的文件。Agent 的上下文规则本身是程序的一部分，应该像改配置一样对待，而不是凭感觉删几段文字。</p>
+<h2 id="一个小例子：怎样写一份短而不空的-hermes-md"><a href="#一个小例子：怎样写一份短而不空的-hermes-md" class="headerlink" title="一个小例子：怎样写一份短而不空的 .hermes.md"></a>一个小例子：怎样写一份短而不空的 <code>.hermes.md</code></h2><p>很多人听到「精简」后，会把项目说明压成「遵循最佳实践」。这种句子几乎没有操作价值。好的短规则应该能在模型准备调用工具时改变选择。</p>
+<p>下面是一份面向博客仓库的示意，不是通用模板：</p>
+<figure class="highlight md"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># 本仓库工作说明</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 正文位于 <span class="code">`source/_posts/`</span>，不要直接修改 <span class="code">`public/`</span> 中的生成文件。</span><br><span class="line"><span class="bullet">-</span> 修改文章后，先检查 front matter、内部链接和 Markdown 代码块是否闭合。</span><br><span class="line"><span class="bullet">-</span> 只运行与本次改动相关的检查；不要顺手格式化全仓库。</span><br><span class="line"><span class="bullet">-</span> 未经确认，不修改主题配置、依赖版本或部署脚本。</span><br><span class="line"><span class="bullet">-</span> 输出时说明改了哪些文章，以及做过什么验证。</span><br></pre></td></tr></table></figure>
+
+<p>它只有几行，却回答了模型最容易犯错的几个问题：在哪里改、哪些文件别碰、怎么验证、什么属于越权。若项目还有复杂架构，把详细说明放在 <code>docs/</code>，并在这里给出文件路径和何时阅读的条件。这样模型需要细节时再读，不需要时不为整本手册付费。</p>
+<h2 id="与-OpenClaw-对照时，别把产品名当作结论"><a href="#与-OpenClaw-对照时，别把产品名当作结论" class="headerlink" title="与 OpenClaw 对照时，别把产品名当作结论"></a>与 OpenClaw 对照时，别把产品名当作结论</h2><p>Hermes 和 OpenClaw 都会把身份、记忆、工作区规则和工具能力送给模型，因此两者都存在固定上下文成本。这个层面的对照是成立的。</p>
+<p>但实现细节不能互相套用。本文确认的是 Hermes 在上述提交中的行为：项目上下文的优先级、动态截断、三段提示词装配、工具筛选和会话级缓存。OpenClaw 的工作区注入、命令和压缩行为应以它自己的版本化文档和源码为准。把一个系统的「八个文件」「默认 Token 数」贴到另一个系统上，通常只会制造看起来专业的错误。</p>
+<p>我更愿意用一组通用问题比较 Agent，而不是背结论：</p>
+<ol>
+<li>它把哪些信息全量常驻，哪些信息按需检索？</li>
+<li>项目说明来自哪里，冲突时谁优先？</li>
+<li>工具是全量 schema 还是延迟发现，权限在哪里收口？</li>
+<li>历史压缩后，哪些约束还在，哪些只存在于过去的对话里？</li>
+<li>运行日志是否能让用户看清当前到底注入了什么？</li>
+</ol>
+<p>能回答这些问题，换到其他 Agent 框架也不会完全从零开始。</p>
+<h2 id="容易犯的几个判断错误"><a href="#容易犯的几个判断错误" class="headerlink" title="容易犯的几个判断错误"></a>容易犯的几个判断错误</h2><h3 id="「上下文压缩会顺手把-system-prompt-变小」"><a href="#「上下文压缩会顺手把-system-prompt-变小」" class="headerlink" title="「上下文压缩会顺手把 system prompt 变小」"></a>「上下文压缩会顺手把 system prompt 变小」</h3><p>不一定。对话压缩主要处理历史消息和工具结果。当前 Hermes 可能在压缩节点重建 system prompt，但重建并不等于自动删掉 <code>SOUL.md</code>、项目文件、Skills 或工具 schema。只有你改变了这些来源或相关配置，固定部分才会明显变小。</p>
+<h3 id="「把所有规则放进-SOUL-md-最省事」"><a href="#「把所有规则放进-SOUL-md-最省事」" class="headerlink" title="「把所有规则放进 SOUL.md 最省事」"></a>「把所有规则放进 SOUL.md 最省事」</h3><p>短期省事，长期会混乱。人格偏好、项目规则、用户画像和临时任务的变化速度不同。都塞进同一个文件，不仅难维护，也会让每个无关项目都背上同一堆指令。把规则放在与其生命周期相匹配的位置，通常更短也更可靠。</p>
+<h3 id="「项目文件越短，模型越聪明」"><a href="#「项目文件越短，模型越聪明」" class="headerlink" title="「项目文件越短，模型越聪明」"></a>「项目文件越短，模型越聪明」</h3><p>也不对。过短会把关键约束删没。真正该删的是重复、背景化、过期和无法执行的句子。保留能影响文件范围、验证命令、权限边界和交付格式的具体规则。</p>
+<h3 id="「工具越少越便宜，所以全关掉」"><a href="#「工具越少越便宜，所以全关掉」" class="headerlink" title="「工具越少越便宜，所以全关掉」"></a>「工具越少越便宜，所以全关掉」</h3><p>没有工具的 Agent 可能少花输入 Token，却需要用户反复提供文件内容和运行结果。合适的目标是任务所需的最小工具面。例如纯写作会话不必加载一堆部署与家居控制工具，排查线上问题却不该关掉必要的日志和终端能力。</p>
+<h3 id="「10K-Token-就一定很贵」"><a href="#「10K-Token-就一定很贵」" class="headerlink" title="「10K Token 就一定很贵」"></a>「10K Token 就一定很贵」</h3><p>要看模型、provider、缓存命中率、调用次数和任务价值。十分钟内连续做几十轮的编码任务，与一天只问一次问题，优化优先级并不一样。先测自己的真实账单和延迟，再决定是否值得花时间瘦身。</p>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>Hermes 的 system prompt 不是一段神秘咒语，而是一份会话开工前的工作包。它把稳定身份、项目规则和当前用户状态分开，是为了让模型既能做事，也不至于每次从零认识你。代价是这些信息会占用输入上下文，内容失控后还会干扰模型判断。</p>
+<p>对初学者最有用的习惯只有一个：每次觉得 Agent 又慢又贵又不听话时，先问「这一轮究竟给它看了什么」。先看项目上下文和记忆，再看工具和 Skills，最后用单变量对照实验验证。这样得到的不是一套只适用于 Hermes 的技巧，而是一种排查所有 Agent 上下文问题的方式。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/tree/e598cef87465981fcea1c0339edfcf5d9716c917">Hermes Agent 官方仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/e598cef87465981fcea1c0339edfcf5d9716c917/agent/system_prompt.py">系统提示词三段装配：<code>agent/system_prompt.py</code></a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/e598cef87465981fcea1c0339edfcf5d9716c917/agent/prompt_builder.py">项目文件、Skills 索引与截断：<code>agent/prompt_builder.py</code></a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/e598cef87465981fcea1c0339edfcf5d9716c917/agent/agent_init.py">工具初始化：<code>agent/agent_init.py</code></a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NousResearch/hermes-agent/blob/e598cef87465981fcea1c0339edfcf5d9716c917/model_tools.py">工具筛选与 schema：<code>model_tools.py</code></a></li>
+<li>岚叔《<a target="_blank" rel="noopener" href="https://waytoagi.feishu.cn/wiki/NRPewYIPtiXgZDk16qNcR0vdnRe">抽丝剥茧：深度解析 Hermes Agent 万字系统提示词构成</a>》，文中的导出样本可作为历史实测参照</li>
+<li>可对照阅读：<a href="/posts/63898">OpenClaw 系统提示词深度解析</a> ｜ <a href="/posts/63844">OpenClaw 记忆系统深度解析</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/64815/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/64815/')">Hermes Agent 系统提示词深度解析：从源码看上下文、工具与 Token 成本</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/64815/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">30</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>上下文工程<span class="tagsPageCount">14</span></a><a class="post-meta__box__tags" href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>提示词<span class="tagsPageCount">3</span></a><a class="post-meta__box__tags" href="/tags/Hermes-Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Hermes Agent<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/64738/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-harness-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent</div></div></a></div><div class="next-post pull-right"><a href="/posts/64920/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/superpowers-workflow-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/63898/" title="OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-06</div><div class="title">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div><div><a href="/posts/63844/" title="OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div><a href="/posts/65010/" title="ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/ecc-layered-learning-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-27</div><div class="title">ECC 深度解析：从 Rules、Hooks 到持续学习，给 AI 编程初学者的完整上手路线</div></div></a></div><div><a href="/posts/64920/" title="Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/superpowers-workflow-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-20</div><div class="title">Superpowers 技术架构深度解析：Skills 如何自动加载并约束开发流程</div></div></a></div><div><a href="/posts/65200/" title="Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/anthropic-agent-skills-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-10</div><div class="title">Anthropic Skills 技术架构深度解析：Agent Skills 标准、渐进式披露与评测</div></div></a></div><div><a href="/posts/65400/" title="Claude Code 技术架构深度解析：Agent Loop、上下文、权限与子代理"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/claude-code-architecture-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-24</div><div class="title">Claude Code 技术架构深度解析：Agent Loop、上下文、权限与子代理</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E5%BB%BA%E7%AB%8B%E4%B8%80%E5%BC%A0%E6%AD%A3%E7%A1%AE%E7%9A%84%E5%9C%B0%E5%9B%BE"><span class="toc-number">1.</span> <span class="toc-text">先建立一张正确的地图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hermes-%E4%B8%8D%E6%98%AF%E5%9B%BA%E5%AE%9A%E4%B9%9D%E5%B1%82%EF%BC%8C%E8%80%8C%E6%98%AF%E4%B8%89%E6%AE%B5%E6%8B%BC%E8%A3%85"><span class="toc-number">2.</span> <span class="toc-text">Hermes 不是固定九层，而是三段拼装</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A8%B3%E5%AE%9A%E6%AE%B5%EF%BC%9A%E5%85%88%E8%AE%A9%E6%A8%A1%E5%9E%8B%E7%9F%A5%E9%81%93%E8%87%AA%E5%B7%B1%E6%98%AF%E8%B0%81%E3%80%81%E8%AF%A5%E6%80%8E%E4%B9%88%E5%81%9A%E4%BA%8B"><span class="toc-number">2.1.</span> <span class="toc-text">稳定段：先让模型知道自己是谁、该怎么做事</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Skills-%E7%B4%A2%E5%BC%95%EF%BC%9A%E7%BB%99%E6%A8%A1%E5%9E%8B%E7%9B%AE%E5%BD%95%EF%BC%8C%E4%B8%8D%E6%8A%8A%E6%95%B4%E6%9C%AC%E6%89%8B%E5%86%8C%E5%A1%9E%E8%BF%9B%E5%8E%BB"><span class="toc-number">2.2.</span> <span class="toc-text">Skills 索引：给模型目录，不把整本手册塞进去</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E6%AE%B5%EF%BC%9A%E4%B8%80%E8%BD%AE%E5%8F%AA%E9%80%89%E4%B8%80%E7%A7%8D%E9%A1%B9%E7%9B%AE%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="toc-number">2.3.</span> <span class="toc-text">项目段：一轮只选一种项目上下文</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%9A%E8%AF%9D%E5%BF%AB%E7%85%A7%E6%AE%B5%EF%BC%9A%E8%AE%B0%E5%BF%86%E4%B8%8D%E6%98%AF%E8%81%8A%E5%A4%A9%E8%AE%B0%E5%BD%95%E7%9A%84%E5%8F%A6%E4%B8%80%E4%B8%AA%E5%90%8D%E5%AD%97"><span class="toc-number">2.4.</span> <span class="toc-text">会话快照段：记忆不是聊天记录的另一个名字</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Token-%E6%88%90%E6%9C%AC%E5%BA%94%E8%AF%A5%E6%80%8E%E4%B9%88%E7%AE%97%EF%BC%8C%E5%93%AA%E4%BA%9B%E6%95%B0%E5%AD%97%E4%B8%8D%E8%83%BD%E7%9B%B4%E6%8E%A5%E6%90%AC"><span class="toc-number">3.</span> <span class="toc-text">Token 成本应该怎么算，哪些数字不能直接搬</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E6%96%87%E4%BB%B6%E7%9A%84%E6%88%AA%E6%96%AD%E8%A7%84%E5%88%99%EF%BC%8C%E4%BB%A5%E5%8F%8A%E5%AE%83%E7%9C%9F%E6%AD%A3%E6%84%8F%E5%91%B3%E7%9D%80%E4%BB%80%E4%B9%88"><span class="toc-number">3.1.</span> <span class="toc-text">项目文件的截断规则，以及它真正意味着什么</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E5%85%B7%E5%8F%91%E7%8E%B0%EF%BC%9A%E7%AD%9B%E9%80%89%E5%8F%91%E7%94%9F%E5%9C%A8-system-prompt-%E4%B9%8B%E5%89%8D"><span class="toc-number">4.</span> <span class="toc-text">工具发现：筛选发生在 system prompt 之前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E5%8F%AF%E4%BB%A5%E8%87%AA%E5%B7%B1%E5%A4%8D%E7%8E%B0%E7%9A%84%E6%8E%92%E6%9F%A5%E6%B5%81%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">一个可以自己复现的排查流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E5%9B%BA%E5%AE%9A%E4%B8%80%E6%AC%A1%E8%A7%82%E5%AF%9F%E5%AF%B9%E8%B1%A1"><span class="toc-number">5.1.</span> <span class="toc-text">第一步：固定一次观察对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E6%9F%A5%E5%BD%93%E5%89%8D%E7%9B%AE%E5%BD%95%E4%BC%9A%E5%91%BD%E4%B8%AD%E4%BB%80%E4%B9%88"><span class="toc-number">5.2.</span> <span class="toc-text">第二步：查当前目录会命中什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9A%E5%8C%BA%E5%88%86%E5%9B%9B%E7%B1%BB%E5%B8%B8%E9%A9%BB%E6%9D%A5%E6%BA%90"><span class="toc-number">5.3.</span> <span class="toc-text">第三步：区分四类常驻来源</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9A%E5%81%9A%E4%B8%80%E6%AC%A1%E6%9C%80%E5%B0%8F%E5%AF%B9%E7%85%A7%E5%AE%9E%E9%AA%8C"><span class="toc-number">5.4.</span> <span class="toc-text">第四步：做一次最小对照实验</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%94%E6%AD%A5%EF%BC%9A%E6%9C%80%E5%90%8E%E6%89%8D%E5%8A%A8%E5%A4%A7%E5%88%80"><span class="toc-number">5.5.</span> <span class="toc-text">第五步：最后才动大刀</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E5%B0%8F%E4%BE%8B%E5%AD%90%EF%BC%9A%E6%80%8E%E6%A0%B7%E5%86%99%E4%B8%80%E4%BB%BD%E7%9F%AD%E8%80%8C%E4%B8%8D%E7%A9%BA%E7%9A%84-hermes-md"><span class="toc-number">6.</span> <span class="toc-text">一个小例子：怎样写一份短而不空的 .hermes.md</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8E-OpenClaw-%E5%AF%B9%E7%85%A7%E6%97%B6%EF%BC%8C%E5%88%AB%E6%8A%8A%E4%BA%A7%E5%93%81%E5%90%8D%E5%BD%93%E4%BD%9C%E7%BB%93%E8%AE%BA"><span class="toc-number">7.</span> <span class="toc-text">与 OpenClaw 对照时，别把产品名当作结论</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%B9%E6%98%93%E7%8A%AF%E7%9A%84%E5%87%A0%E4%B8%AA%E5%88%A4%E6%96%AD%E9%94%99%E8%AF%AF"><span class="toc-number">8.</span> <span class="toc-text">容易犯的几个判断错误</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E3%80%8C%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8E%8B%E7%BC%A9%E4%BC%9A%E9%A1%BA%E6%89%8B%E6%8A%8A-system-prompt-%E5%8F%98%E5%B0%8F%E3%80%8D"><span class="toc-number">8.1.</span> <span class="toc-text">「上下文压缩会顺手把 system prompt 变小」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E3%80%8C%E6%8A%8A%E6%89%80%E6%9C%89%E8%A7%84%E5%88%99%E6%94%BE%E8%BF%9B-SOUL-md-%E6%9C%80%E7%9C%81%E4%BA%8B%E3%80%8D"><span class="toc-number">8.2.</span> <span class="toc-text">「把所有规则放进 SOUL.md 最省事」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E3%80%8C%E9%A1%B9%E7%9B%AE%E6%96%87%E4%BB%B6%E8%B6%8A%E7%9F%AD%EF%BC%8C%E6%A8%A1%E5%9E%8B%E8%B6%8A%E8%81%AA%E6%98%8E%E3%80%8D"><span class="toc-number">8.3.</span> <span class="toc-text">「项目文件越短，模型越聪明」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E3%80%8C%E5%B7%A5%E5%85%B7%E8%B6%8A%E5%B0%91%E8%B6%8A%E4%BE%BF%E5%AE%9C%EF%BC%8C%E6%89%80%E4%BB%A5%E5%85%A8%E5%85%B3%E6%8E%89%E3%80%8D"><span class="toc-number">8.4.</span> <span class="toc-text">「工具越少越便宜，所以全关掉」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E3%80%8C10K-Token-%E5%B0%B1%E4%B8%80%E5%AE%9A%E5%BE%88%E8%B4%B5%E3%80%8D"><span class="toc-number">8.5.</span> <span class="toc-text">「10K Token 就一定很贵」</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E"><span class="toc-number">9.</span> <span class="toc-text">写在最后</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">10.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

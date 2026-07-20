@@ -1,0 +1,3 @@
+var posts=["posts/4ea6/","posts/c0a3/","posts/653e/","posts/27746/","posts/50dd7fcb/","posts/63952/","posts/63871/","posts/63844/","posts/63898/","posts/63820/","posts/17120/","posts/64738/","posts/58149/","posts/65010/","posts/64815/","posts/64920/","posts/46218/","posts/571d/","posts/65320/","posts/65200/","posts/65400/","posts/65290/","posts/39471/","posts/65310/","posts/65500/","posts/63925/","posts/65600/","posts/41836/","posts/65710/","posts/27350/","posts/65700/","posts/65800/","posts/65900/","posts/66100/","posts/30188/","posts/52907/","posts/66000/","posts/65105/"];function toRandomPost(){
+    pjax.loadUrl('/'+posts[Math.floor(Math.random() * posts.length)]);
+  };

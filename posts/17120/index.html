@@ -1,0 +1,672 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写 | Asaakiiの个人博客</title><meta name="keywords" content="AI,简历优化,求职技巧,ChatGPT提示词"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写"><meta name="application-name" content="用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写"><meta property="og:url" content="https://blog.asaakii.com/posts/17120/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="用AI改简历，效果取决于你对HR筛选规则的理解有多深。本文先讲清HR在7秒内看什么、成就句该怎么写（STAR→X-Y-Z→量化四象限），再把这些规则翻译成可直接复制的提示词，最后补上投递动作与一份16条自检清单。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-4.0.3&amp;auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-4.0.3&amp;auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><meta name="description" content="用AI改简历，效果取决于你对HR筛选规则的理解有多深。本文先讲清HR在7秒内看什么、成就句该怎么写（STAR→X-Y-Z→量化四象限），再把这些规则翻译成可直接复制的提示词，最后补上投递动作与一份16条自检清单。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/17120/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: '用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写',
+  postAI: '',
+  pageFillDescription: '一、先搞懂：HR在7秒内到底在看什么, 二、简历的结构：每一栏放什么, 三、核心技能：把「职责」改写成「成就句」, 3.1 失败的写法长什么样, 3.2 STAR：搭骨架, 3.3 X-Y-Z：强化结果, 3.4 量化四象限：找不到数字时从这四个维度挖, 3.5 让AI帮你改：把公式写进提示词, 四、实战篇：不同经验段的「角色化提示词」, 4.1 应届生x2F实习生（0-1 年）：主打高潜力, 4.2 工作 1-3 年（初级）：主打独立完成, 4.3 管理层x2F高管（5 年以上）：主打影响力, 4.4 简历体检：让AI做一回「毒舌招聘官」, 五、投递篇：简历写对了只是成功了一半, 六、防造假：优化 ≠ 造假, 七、简历自检清单（建议收藏）, 结语用等改简历已经是不少求职者的默认动作但很多人得到的结果是一份看起来很专业却连自己都觉得陌生的简历投出去依然零回复问题往往不在而在你给它的指令你让它帮我写一份简历它只能按训练数据里的平均样子给你一份平均的简历而平均的简历正是划掉最快的那一类想让真正帮上忙得先明白一件事的产出质量取决于你对筛选规则的理解有多深你懂在看什么才能把指令下得足够具体指令足够具体才能替你产出对的东西所以这篇文章分两层先讲清侧的几条底层规则大量来自一位做了年招聘的从业者复盘数字仅供参考不同行业会有差异再把每条规则翻译成可以直接复制的提示词一先搞懂在秒内到底在看什么改简历之前你得先接受一个前提你的简历不是写给自己看的是写给一个上午要处理近百份简历每份平均只停留几秒的人看的据那位招聘从业者的复盘他筛简历时视线只在个落点上停留任意两项不达标就划掉看下一份这套快速评分的心智模型几乎不会写在任何招聘网站上但它真实地决定了你的简历会不会被点开对你有用的结论只有一条简历的前半屏必须在几秒内回答清楚你是谁你解决过什么你拿过什么结果并且用的是里会出现的词做不到这点后面写得再详细也没人看到这也是为什么后面所有提示词都会反复强调让在秒内抓住重点这不是修辞是筛选机制本身二简历的结构每一栏放什么一份互联网行业的简历通常包含个模块顺序也重要因为视线是从上往下扫的模块放什么注意个人信息姓名手机邮箱城市邮箱用跨城求职注明可到岗接受出差个人简介年限方向核心能力代表成果决定是否往下读务必用的语言工作经历成就句本文重点停留最久也是多数人写得最差的一栏项目经历高复杂度能体现能力的项目应届年经验用它替代工作经历的空缺教育背景学校专业时间学历名校高可加粗突出别写高中及以下技能证书硬技能工具证书语言只写与岗位相关的别堆砌个人简介一栏值得单独说因为它决定了会不会继续读反面写法是性格开朗工作踏实学习能力强每个候选人都能这么写等于没写正面写法是把三件事说清楚年电商增长运营主做存量用户复购私域转化产研协同主导用户分层会员券包策略个月次月复购率推动产研上线优惠券自动触达工具活动从提升到四行字回答了你是谁你做什么你拿过什么结果且全是里会出现的词三核心技能把职责改写成成就句这是整份简历最重要也最能靠提效的一栏前提是你得先懂公式否则只会帮你把流水账润色成更漂亮的流水账失败的写法长什么样负责线上活动运营维护用户社群做数据统计配合各部门完成工作全是动词没有结果没有数字看不出你解决了什么问题这种句子读起来像只执行命令的打杂人员会直接跳过搭骨架简历写作最经典的方法论是背景任务行动结果但在简历里不能平铺因为每行只有行空间原则是压缩到前半句甚至省略必须完整量化带数据负责公司官网优化包括关键词研究内容优化等主导官网重构覆盖关键词个月自然流量从万增至万月强化结果一个更简洁的公式实现了目标背景通过核心动作达成了可量化结果实现官网自然流量翻倍通过主导重构覆盖关键词协同内容团队产出优化文章个月内自然流量从万月增至万月获客成本降低它的好处是目标动作结果一目了然扫一眼就能抓到关键词尤其适合年以上需要突出独立操盘能力的候选人建议先用搭骨架再用强化结果两者不是替代关系量化四象限找不到数字时从这四个维度挖很多人卡在我不知道该写什么数字从规模时间效率财务业务用户产品这四个维度里挖多数岗位都能找到量化点边界提醒实在没有数字时退而写规模结果如独立负责项目按时交付获客户好评数字可以估算但必须合理因为面试时一定会追问口径说不清来源的数字绝对不要写这条是硬底线也是下面防造假部分的核心让帮你改把公式写进提示词懂了公式才知道你要什么把上面的规则直接下达给它提示词模板你是有年经验熟悉的资深招聘专家下面是我某段工作的原始描述粘贴请按以下规则改写成成就句用压缩强化放前半句结果单独占半句每条控制在行必须包含从规模时间财务用户四个维度中挖出的数字只在我提供的事实范围内改写不添加我没有的经历不编造数字如果某条缺少可量化的结果直接标注出来提示我补充而不是替我编第点很关键它把从帮你圆谎变成帮你发现漏洞四实战篇不同经验段的角色化提示词不同发展阶段简历侧重点完全不同给提问前先为它赋予专业角色再叠加对应阶段的规则应届生实习生年主打高潜力工作经历模块替换为实习项目经历重点写你做了什么而非你参与了被动描述是应届生最容易被划掉的原因提示词模板结合我的学校项目实习和自由职业经历粘贴帮我强化展示潜力学习速度和可转移技能每段用公司全称岗位时间条成就句的结构成就句必须带结果数字把最强的学业成绩竞赛科研前置以证明学习能力避免不必要的细节工作年初级主打独立完成每段写条成就句重点体现独立完成和成果可量化最近段写条更早的写条删掉所有纯职责描述提示词模板你是资深招聘专家请把我以下经历粘贴改写为成就句每条突出我独立完成了什么可量化的结果删除所有没有结果的职责性描述每条行管理层高管年以上主打影响力突出带团队和战略级成果体现从执行者到决策者的转变量化重点是管理规模人团队业务规模营收影响范围个部门国家提示词模板你是服务过全球公司的高管猎头请为我突出领导力战略布局影响范围决策权我管理的团队规模预算大小对业务增长的贡献每段条至少条体现带团队或负责业务线语气充满信心低调但有力绝对结果导向简历体检让做一回毒舌招聘官写完后用对立视角自查一遍提示词模板你是严厉但公平的招聘专家请从和人类两个视角按秒筛选规则批评我的简历粘贴列出优点弱点淘汰风险具体改进建议五投递篇简历写对了只是成功了一半简历再好投递方式不对也白搭这一段能帮的是研究不是代劳海投定投一份针对岗位定制过的简历回调率通常明显高于通用简历与其每天海投几十份不如把时间花在研究改简历上定投少量真正匹配的岗位可以让帮你对比与你的经历找出匹配点和缺口投递前把拆成三列拿到别急着投花分钟拆成硬门槛词核心任务词业务结果词你的简历要三类全覆盖不是机械塞词而是让经历围绕这些词重新组织提示词模板把这份粘贴拆成三列硬门槛词学历年限证书核心任务词日常要做什么业务结果词要拿什么结果再对照我的简历粘贴指出哪些词没覆盖到建议我怎么调整警惕幽灵岗位有相当比例的招聘帖并不在积极招人冻结收储备简历内部早有人选出现这些信号就谨慎投入发帖超天仍在招描述像模板薪资跨度极大职级模糊多平台一字不差不回任何岗位细节这类岗位不值得你花一小时精修投递前尽量找个内部人聊分钟是写给所有人看的团队真实的痛点从不写在里通过校友群脉脉小红书找到在职的人先聊业务再顺势要内推一上来就问能不能内推我容易被拒问清三件事就能拿到不会告诉你的真相据此决定简历哪段经历前置投递后天做一次二次激活已读不回时补一条字以内的短消息只做一件事把你与的匹配点重新放到面前别写长接到电话前准备好高频问题的答案电话筛选不是聊天是帮业务方做最后的风险排除下面个高频问题各自在测什么标准思路是什么提前把答案写成文字练到分钟内能自然讲完六防造假优化造假用改简历最大的风险是改出一个连自己都不认识的史诗级大牛这在背调或面试时是致命伤守住几条底线拒绝无中生有明确告诉帮我重新表述得更清晰更有影响力但绝不添加我没有的技能和经历不夸大结果不编造数字任务转化价值而非捏造业绩做的是螺丝钉的工作就让突出具体价值和实际责任而不是凭空造一个假消除空洞语言爱堆协同推进深度赋能这类词也爱用显著大幅有效代替数字要求它清除空洞短语用简单专业易懂的措辞替换形容词一律换成具体数字最终道德审查定稿前让把关提示词模板诚实分析我的最终简历哪些内容清晰可信哪些看起来像过度夸大或生成如何在绝对不撒谎的前提下进一步改进顺带列出多数人都在犯的个误区改简历时逐条对照只写职责不写成果用形容词代替数字每条写成小作文超过行就跳过数字靠夸大追问即穿帮把年前的初级经历全部罗列年以上只保留高含金量的段七简历自检清单建议收藏把全文压成一张可直接照做的清单分写之前写之中写之后写之前拿到先拆成三列硬门槛词核心任务词业务结果词判断是不是幽灵岗位是就往后放简历第一行必须出现里的精确岗位名投商业化产品就别写产品经理第一屏只回答三个问题你是谁你解决过什么你拿过什么结果全文至少出现个与完全匹配的关键词写之中工作经历只写成就句不写职责描述每条行先用压缩再用强化结果每条成就句都有数字从规模时间财务用户四个维度挖删掉所有显著大幅有效换成具体数字早期经历年以上只留高含金量的段写之后定投优先于海投把时间花在研究和改简历上投递后天做一次二次激活接电话前准备好高频问题的答案每个不超过分钟文件命名用岗位名姓名年限别用个人简历导出多数接受度更好别用以免格式解析错乱用毒舌招聘官提示词和道德审查提示词各过一遍再投结语是能极大提升求职效率的杠杆但它放大的是你原本的东西你懂的规则它就帮你把真实价值说清楚你不懂它就帮你把平庸包装得更平庸所以真正的顺序是先花一个周末按上面的清单把简历改一遍搞清楚每一条经历值多少分再让帮你把它表达得更准把重点放在如何更清晰地传递你的真正价值而不是如何用漂亮的辞藻掩盖不足本文的侧规则与数据部分整理自用户对一位年招聘从业者的复盘具体数字因行业而异仅供参考',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-20 13:32:16',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 1.05rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 1.05rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span><a class="card-more-btn" href="/archives/" title="查看更多">
+    <i class="anzhiyufont anzhiyu-icon-angle-right"></i></a></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">8</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">9</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/12/"><span class="card-archive-list-date">2025年12月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/02/"><span class="card-archive-list-date">2025年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">2</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E8%81%8C%E5%9C%BA%E4%B8%8E%E6%8A%80%E8%83%BD/" itemprop="url">职场与技能</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/%E7%AE%80%E5%8E%86%E4%BC%98%E5%8C%96/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>简历优化</span></a><a class="article-meta__tags" href="/tags/%E6%B1%82%E8%81%8C%E6%8A%80%E5%B7%A7/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>求职技巧</span></a><a class="article-meta__tags" href="/tags/ChatGPT%E6%8F%90%E7%A4%BA%E8%AF%8D/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>ChatGPT提示词</span></a></span></div></div><h1 class="post-title" itemprop="name headline">用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-03-09T10:15:00.000Z" title="发表于 2026-03-09 18:15:00">2026-03-09</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-20T05:32:16.637Z" title="更新于 2026-07-20 13:32:16">2026-07-20</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">3.9k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>12分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-4.0.3&amp;auto=format&amp;fit=crop&amp;w=1200&amp;q=80"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/17120/"><header><a class="post-meta-categories" href="/categories/%E8%81%8C%E5%9C%BA%E4%B8%8E%E6%8A%80%E8%83%BD/" itemprop="url">职场与技能</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/%E7%AE%80%E5%8E%86%E4%BC%98%E5%8C%96/" tabindex="-1" itemprop="url">简历优化</a><a href="/tags/%E6%B1%82%E8%81%8C%E6%8A%80%E5%B7%A7/" tabindex="-1" itemprop="url">求职技巧</a><a href="/tags/ChatGPT%E6%8F%90%E7%A4%BA%E8%AF%8D/" tabindex="-1" itemprop="url">ChatGPT提示词</a><h1 id="CrawlerTitle" itemprop="name headline">用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-03-09T10:15:00.000Z" title="发表于 2026-03-09 18:15:00">2026-03-09</time><time itemprop="dateCreated datePublished" datetime="2026-07-20T05:32:16.637Z" title="更新于 2026-07-20 13:32:16">2026-07-20</time></header><p>用AI（ChatGPT、Claude 等）改简历，已经是不少求职者的默认动作。但很多人得到的结果是：一份看起来很「专业」、却连自己都觉得陌生的简历，投出去依然零回复。</p>
+<p>问题往往不在AI，而在你给它的指令。你让它「帮我写一份简历」，它只能按训练数据里的平均样子给你一份平均的简历——而平均的简历，正是HR划掉最快的那一类。</p>
+<p>想让AI真正帮上忙，得先明白一件事：<strong>AI的产出质量，取决于你对HR筛选规则的理解有多深。</strong> 你懂HR在看什么，才能把指令下得足够具体；指令足够具体，AI才能替你产出对的东西。</p>
+<p>所以这篇文章分两层：先讲清HR侧的几条底层规则（大量来自一位做了10年招聘的从业者复盘，数字仅供参考，不同行业会有差异），再把每条规则翻译成可以直接复制的提示词。</p>
+<hr>
+<h2 id="一、先搞懂：HR在7秒内到底在看什么"><a href="#一、先搞懂：HR在7秒内到底在看什么" class="headerlink" title="一、先搞懂：HR在7秒内到底在看什么"></a>一、先搞懂：HR在7秒内到底在看什么</h2><p>改简历之前，你得先接受一个前提：<strong>你的简历不是写给自己看的，是写给一个上午要处理近百份简历、每份平均只停留几秒的人看的。</strong></p>
+<p>据那位招聘从业者的复盘，他筛简历时视线只在8个落点上停留，任意两项不达标就划掉，看下一份。这套「快速评分」的心智模型，几乎不会写在任何招聘网站上，但它真实地决定了你的简历会不会被点开。</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/resume-hr-scan-8items.webp" alt="HR 7秒筛简历的8项快速评分表"></p>
+<p>对你有用的结论只有一条：<strong>简历的前半屏，必须在几秒内回答清楚「你是谁、你解决过什么、你拿过什么结果」，并且用的是JD里会出现的词。</strong> 做不到这点，后面写得再详细也没人看到。</p>
+<p>这也是为什么后面所有提示词，都会反复强调「让HR在6秒内抓住重点」——这不是修辞，是筛选机制本身。</p>
+<hr>
+<h2 id="二、简历的结构：每一栏放什么"><a href="#二、简历的结构：每一栏放什么" class="headerlink" title="二、简历的结构：每一栏放什么"></a>二、简历的结构：每一栏放什么</h2><p>一份互联网行业的简历，通常包含6个模块。顺序也重要，因为视线是从上往下扫的：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>放什么</th>
+<th>注意</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>个人信息</td>
+<td>姓名、手机、邮箱、城市</td>
+<td>邮箱用 Gmail&#x2F;Outlook；跨城求职注明「可到岗+接受出差」</td>
+</tr>
+<tr>
+<td>个人简介</td>
+<td>年限+方向、核心能力、代表成果</td>
+<td>决定HR是否往下读，务必用JD的语言</td>
+</tr>
+<tr>
+<td>工作经历</td>
+<td>成就句（本文重点）</td>
+<td>HR停留最久，也是多数人写得最差的一栏</td>
+</tr>
+<tr>
+<td>项目经历</td>
+<td>高复杂度、能体现能力的项目</td>
+<td>应届&#x2F;1-3年经验用它替代工作经历的空缺</td>
+</tr>
+<tr>
+<td>教育背景</td>
+<td>学校+专业+时间+学历</td>
+<td>名校&#x2F;高GPA可加粗突出，别写高中及以下</td>
+</tr>
+<tr>
+<td>技能证书</td>
+<td>硬技能→工具→证书→语言</td>
+<td>只写与岗位相关的，别堆砌</td>
+</tr>
+</tbody></table>
+<p>个人简介一栏值得单独说，因为它决定了HR会不会继续读。反面写法是「性格开朗、工作踏实、学习能力强」——每个候选人都能这么写，等于没写。正面写法是把三件事说清楚：</p>
+<blockquote>
+<p>3年电商增长运营，主做存量用户复购、私域转化、产研协同。<br>主导用户分层+会员券包策略，3个月次月复购率+18%。<br>推动产研上线优惠券自动触达工具，活动 ROI 从 1.7 提升到 2.4。</p>
+</blockquote>
+<p>四行字，回答了「你是谁、你做什么、你拿过什么结果」，且全是JD里会出现的词。</p>
+<hr>
+<h2 id="三、核心技能：把「职责」改写成「成就句」"><a href="#三、核心技能：把「职责」改写成「成就句」" class="headerlink" title="三、核心技能：把「职责」改写成「成就句」"></a>三、核心技能：把「职责」改写成「成就句」</h2><p>这是整份简历最重要、也最能靠AI提效的一栏。前提是你得先懂公式，否则AI只会帮你把流水账润色成更漂亮的流水账。</p>
+<h3 id="3-1-失败的写法长什么样"><a href="#3-1-失败的写法长什么样" class="headerlink" title="3.1 失败的写法长什么样"></a>3.1 失败的写法长什么样</h3><blockquote>
+<p>负责线上活动运营，维护用户社群，做数据统计，配合各部门完成工作。</p>
+</blockquote>
+<p>全是动词、没有结果、没有数字、看不出你解决了什么问题。这种句子读起来像「只执行命令的打杂人员」，HR会直接跳过。</p>
+<h3 id="3-2-STAR：搭骨架"><a href="#3-2-STAR：搭骨架" class="headerlink" title="3.2 STAR：搭骨架"></a>3.2 STAR：搭骨架</h3><p>简历写作最经典的方法论是STAR：背景（Situation）、任务（Task）、行动（Action）、结果（Result）。但在简历里不能1:1平铺，因为每行只有1-2行空间。原则是：<strong>S+T+A压缩到前半句甚至省略，R必须完整、量化、带数据。</strong></p>
+<ul>
+<li>❌ 负责公司官网 SEO 优化，包括关键词研究、内容优化等。</li>
+<li>✅ 主导官网 SEO 重构，覆盖 200+ 关键词，6个月自然流量从 1.2 万增至 5.8 万&#x2F;月（+383%）。</li>
+</ul>
+<h3 id="3-3-X-Y-Z：强化结果"><a href="#3-3-X-Y-Z：强化结果" class="headerlink" title="3.3 X-Y-Z：强化结果"></a>3.3 X-Y-Z：强化结果</h3><p>一个更简洁的公式：<strong>实现了X（目标&#x2F;背景），通过Y（核心动作），达成了Z（可量化结果）。</strong></p>
+<blockquote>
+<p>实现官网自然流量翻倍，通过主导 SEO 重构、覆盖 200+ 关键词、协同内容团队产出 50+ 优化文章，6个月内自然流量从 1.2 万&#x2F;月增至 5.8 万&#x2F;月（+383%），获客成本降低 42%。</p>
+</blockquote>
+<p>它的好处是目标→动作→结果一目了然，HR扫一眼就能抓到关键词，尤其适合3年以上、需要突出独立操盘能力的候选人。建议先用STAR搭骨架，再用X-Y-Z强化结果，两者不是替代关系。</p>
+<h3 id="3-4-量化四象限：找不到数字时从这四个维度挖"><a href="#3-4-量化四象限：找不到数字时从这四个维度挖" class="headerlink" title="3.4 量化四象限：找不到数字时从这四个维度挖"></a>3.4 量化四象限：找不到数字时从这四个维度挖</h3><p>很多人卡在「我不知道该写什么数字」。从规模、时间&#x2F;效率、财务&#x2F;业务、用户&#x2F;产品这四个维度里挖，多数岗位都能找到量化点：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/resume-quant-quadrant.webp" alt="量化四象限：从规模、时间、财务、用户四个维度挖数字"></p>
+<p><strong>边界提醒：</strong> 实在没有数字时，退而写「规模+结果」（如「独立负责X项目，按时交付，获客户好评」）；数字可以估算但必须合理，因为面试时HR一定会追问口径，说不清来源的数字绝对不要写。这条是硬底线，也是下面「防造假」部分的核心。</p>
+<h3 id="3-5-让AI帮你改：把公式写进提示词"><a href="#3-5-让AI帮你改：把公式写进提示词" class="headerlink" title="3.5 让AI帮你改：把公式写进提示词"></a>3.5 让AI帮你改：把公式写进提示词</h3><p>懂了公式，AI才知道你要什么。把上面的规则直接下达给它：</p>
+<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「你是有10年经验、熟悉ATS的资深招聘专家。下面是我某段工作的原始描述：[粘贴]。<br>请按以下规则改写成成就句：</p>
+<ol>
+<li>用 STAR 压缩+X-Y-Z 强化，S+T+A 放前半句，结果单独占半句；</li>
+<li>每条控制在 1-2 行，必须包含从「规模&#x2F;时间&#x2F;财务&#x2F;用户」四个维度中挖出的数字；</li>
+<li>只在我提供的事实范围内改写，<strong>不添加我没有的经历，不编造数字</strong>；</li>
+<li>如果某条缺少可量化的结果，直接标注出来，提示我补充，而不是替我编。」</li>
+</ol>
+</blockquote>
+<p>第4点很关键——它把AI从「帮你圆谎」变成「帮你发现漏洞」。</p>
+<hr>
+<h2 id="四、实战篇：不同经验段的「角色化提示词」"><a href="#四、实战篇：不同经验段的「角色化提示词」" class="headerlink" title="四、实战篇：不同经验段的「角色化提示词」"></a>四、实战篇：不同经验段的「角色化提示词」</h2><p>不同发展阶段，简历侧重点完全不同。给AI提问前，先为它<strong>赋予专业角色</strong>，再叠加对应阶段的规则。</p>
+<h3 id="4-1-应届生-实习生（0-1-年）：主打高潜力"><a href="#4-1-应届生-实习生（0-1-年）：主打高潜力" class="headerlink" title="4.1 应届生&#x2F;实习生（0-1 年）：主打高潜力"></a>4.1 应届生&#x2F;实习生（0-1 年）：主打高潜力</h3><p>工作经历模块替换为「实习&#x2F;项目经历」，重点写「你做了什么」而非「你参与了」——被动描述是应届生最容易被划掉的原因。</p>
+<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「结合我的学校项目、实习和自由职业经历[粘贴]，帮我强化展示<strong>潜力、学习速度和可转移技能</strong>。<br>每段用『公司全称+岗位+时间+3-4条成就句』的结构，成就句必须带结果数字；把最强的学业成绩（GPA&#x2F;竞赛&#x2F;科研）前置以证明学习能力；避免不必要的细节。」</p>
+</blockquote>
+<h3 id="4-2-工作-1-3-年（初级）：主打独立完成"><a href="#4-2-工作-1-3-年（初级）：主打独立完成" class="headerlink" title="4.2 工作 1-3 年（初级）：主打独立完成"></a>4.2 工作 1-3 年（初级）：主打独立完成</h3><p>每段写3-5条成就句，重点体现「独立完成」和「成果可量化」。最近1-2段写5条，更早的写3条，删掉所有纯职责描述。</p>
+<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「你是资深招聘专家。请把我以下经历[粘贴]改写为成就句，每条突出『我独立完成了什么+可量化的结果』，删除所有没有结果的职责性描述，每条1-2行。」</p>
+</blockquote>
+<h3 id="4-3-管理层-高管（5-年以上）：主打影响力"><a href="#4-3-管理层-高管（5-年以上）：主打影响力" class="headerlink" title="4.3 管理层&#x2F;高管（5 年以上）：主打影响力"></a>4.3 管理层&#x2F;高管（5 年以上）：主打影响力</h3><p>突出「带团队」和「战略级成果」，体现从执行者到决策者的转变。量化重点是管理规模（X人团队）、业务规模（GMV&#x2F;营收）、影响范围（X个部门&#x2F;国家）。</p>
+<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「你是服务过全球公司的高管猎头。请为我突出<strong>领导力、战略布局、影响范围、决策权</strong>：我管理的团队规模、预算大小、对业务增长的贡献。<br>每段4-5条，至少1-2条体现带团队或负责业务线。语气充满信心、低调但有力，绝对结果导向。」</p>
+</blockquote>
+<h3 id="4-4-简历体检：让AI做一回「毒舌招聘官」"><a href="#4-4-简历体检：让AI做一回「毒舌招聘官」" class="headerlink" title="4.4 简历体检：让AI做一回「毒舌招聘官」"></a>4.4 简历体检：让AI做一回「毒舌招聘官」</h3><p>写完后，用对立视角自查一遍：</p>
+<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「你是严厉但公平的招聘专家。请从ATS和人类HR两个视角，按『6秒筛选规则』批评我的简历[粘贴]。列出：1.优点 2.弱点 3.淘汰风险 4.具体改进建议。」</p>
+</blockquote>
+<hr>
+<h2 id="五、投递篇：简历写对了，只是成功了一半"><a href="#五、投递篇：简历写对了，只是成功了一半" class="headerlink" title="五、投递篇：简历写对了，只是成功了一半"></a>五、投递篇：简历写对了，只是成功了一半</h2><p>简历再好，投递方式不对也白搭。这一段AI能帮的是「研究」，不是「代劳」。</p>
+<p><strong>海投 vs 定投。</strong> 一份针对岗位定制过的简历，回调率通常明显高于通用简历。与其每天海投几十份，不如把时间花在「研究JD+改简历」上，定投少量真正匹配的岗位。可以让AI帮你对比JD与你的经历，找出匹配点和缺口。</p>
+<p><strong>投递前把JD拆成三列。</strong> 拿到JD别急着投，花10-15分钟拆成：<strong>硬门槛词、核心任务词、业务结果词</strong>。你的简历要三类全覆盖——不是机械塞词，而是让经历围绕这些词重新组织。</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/resume-jd-3columns.webp" alt="把 JD 拆成硬门槛词、核心任务词、业务结果词三列"></p>
+<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「把这份JD[粘贴]拆成三列：硬门槛词（学历&#x2F;年限&#x2F;证书）、核心任务词（日常要做什么）、业务结果词（要拿什么结果）。再对照我的简历[粘贴]，指出哪些词没覆盖到，建议我怎么调整。」</p>
+</blockquote>
+<p><strong>警惕「幽灵岗位」。</strong> 有相当比例的招聘帖并不在积极招人（HC冻结、收储备简历、内部早有人选）。出现这些信号就谨慎投入：发帖超30天仍在招、描述像模板、薪资跨度极大、职级模糊、多平台JD一字不差、HR不回任何岗位细节。这类岗位不值得你花一小时精修。</p>
+<p><strong>投递前，尽量找个内部人聊5分钟。</strong> JD是写给所有人看的，团队真实的痛点从不写在JD里。通过校友群、脉脉、小红书找到在职的人，先聊业务、再顺势要内推（一上来就问「能不能内推我」容易被拒）。问清三件事，就能拿到JD不会告诉你的真相，据此决定简历哪段经历前置：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/resume-insider-3questions.webp" alt="向内部人问的三个问题，以及各自能挖到什么"></p>
+<p><strong>投递后3-5天做一次二次激活。</strong> 已读不回时，补一条100字以内的短消息，只做一件事——把你与JD的匹配点重新放到HR面前，别写长。</p>
+<p><strong>接到电话前，准备好高频问题的答案。</strong> 电话筛选不是聊天，是HR帮业务方做最后的风险排除。下面5个高频问题各自在测什么、标准思路是什么，提前把答案写成文字，练到1分钟内能自然讲完：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/resume-phone-5questions.webp" alt="电话筛选5个高频问题：HR在测什么与标准思路"></p>
+<hr>
+<h2 id="六、防造假：优化-≠-造假"><a href="#六、防造假：优化-≠-造假" class="headerlink" title="六、防造假：优化 ≠ 造假"></a>六、防造假：优化 ≠ 造假</h2><p>用AI改简历，最大的风险是改出一个连自己都不认识的「史诗级大牛」，这在背调或面试时是致命伤。守住几条底线：</p>
+<ol>
+<li><strong>拒绝无中生有。</strong> 明确告诉AI「帮我重新表述得更清晰、更有影响力，但绝不添加我没有的技能和经历，不夸大结果，不编造数字」。</li>
+<li><strong>任务转化价值，而非捏造业绩。</strong> 做的是螺丝钉的工作，就让AI「突出具体价值和实际责任」，而不是凭空造一个假KPI。</li>
+<li><strong>消除空洞语言。</strong> AI爱堆「协同推进、深度赋能」这类词，也爱用「显著、大幅、有效」代替数字。要求它「清除空洞短语，用简单、专业、HR易懂的措辞替换，形容词一律换成具体数字」。</li>
+<li><strong>最终道德审查。</strong> 定稿前让AI把关：<blockquote>
+<p><strong>💡 提示词模板：</strong><br>「诚实分析我的最终简历：1.哪些内容清晰可信？2.哪些看起来像过度夸大或AI生成？3.如何在<strong>绝对不撒谎的前提下</strong>进一步改进？」</p>
+</blockquote>
+</li>
+</ol>
+<p>顺带列出多数人都在犯的5个误区，改简历时逐条对照：只写职责不写成果、用形容词代替数字、每条写成小作文（超过3行HR就跳过）、数字靠夸大（追问即穿帮）、把10年前的初级经历全部罗列（5年以上只保留高含金量的1-2段）。</p>
+<hr>
+<h2 id="七、简历自检清单（建议收藏）"><a href="#七、简历自检清单（建议收藏）" class="headerlink" title="七、简历自检清单（建议收藏）"></a>七、简历自检清单（建议收藏）</h2><p>把全文压成一张可直接照做的清单，分「写之前、写之中、写之后」：</p>
+<p><strong>写之前</strong></p>
+<ol>
+<li>拿到JD，先拆成三列：硬门槛词、核心任务词、业务结果词。</li>
+<li>判断是不是「幽灵岗位」，是就往后放。</li>
+<li>简历第一行必须出现JD里的精确岗位名（投「商业化产品」就别写「产品经理」）。</li>
+<li>第一屏只回答三个问题：你是谁、你解决过什么、你拿过什么结果。</li>
+<li>全文至少出现5个与JD完全匹配的关键词。</li>
+</ol>
+<p><strong>写之中</strong><br>6. 工作经历只写成就句，不写职责描述，每条1-2行。<br>7. 先用STAR压缩，再用X-Y-Z强化结果。<br>8. 每条成就句都有数字，从规模&#x2F;时间&#x2F;财务&#x2F;用户四个维度挖。<br>9. 删掉所有「显著&#x2F;大幅&#x2F;有效」，换成具体数字。<br>10. 早期经历（5年以上）只留高含金量的1-2段。</p>
+<p><strong>写之后</strong><br>11. 定投优先于海投，把时间花在研究JD和改简历上。<br>12. 投递后3-5天做一次二次激活。<br>13. 接电话前准备好高频问题的答案，每个不超过1分钟。<br>14. 文件命名用「岗位名+姓名+年限」，别用「个人简历」。<br>15. 导出PDF（多数ATS接受度更好），别用Word以免格式解析错乱。<br>16. 用「毒舌招聘官」提示词和「道德审查」提示词各过一遍再投。</p>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>AI是能极大提升求职效率的杠杆，但它放大的是你原本的东西——你懂HR的规则，它就帮你把真实价值说清楚；你不懂，它就帮你把平庸包装得更平庸。</p>
+<p>所以真正的顺序是：先花一个周末，按上面的清单把简历改一遍，搞清楚每一条经历值多少分；再让AI帮你把它表达得更准。把重点放在「如何更清晰地传递你的真正价值」，而不是「如何用漂亮的辞藻掩盖不足」。</p>
+<blockquote>
+<p>本文的HR侧规则与数据，部分整理自 X 用户 <a target="_blank" rel="noopener" href="https://x.com/ai_suxiaole/status/2069669311187423691">@ai_suxiaole</a> 对一位10年招聘从业者的复盘，具体数字因行业而异，仅供参考。</p>
+</blockquote>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/17120/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/17120/')">用AI打造完美简历：先懂HR怎么筛，再谈提示词怎么写</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/17120/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">29</span></a><a class="post-meta__box__tags" href="/tags/%E7%AE%80%E5%8E%86%E4%BC%98%E5%8C%96/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>简历优化<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/%E6%B1%82%E8%81%8C%E6%8A%80%E5%B7%A7/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>求职技巧<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/ChatGPT%E6%8F%90%E7%A4%BA%E8%AF%8D/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>ChatGPT提示词<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/63925/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/multi-agent-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">OpenClaw 多 Agent 架构深度解析：任务隔离、权限与协作</div></div></a></div><div class="next-post pull-right"><a href="/posts/63952/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/skills-layers-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/63952/" title="OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/skills-layers-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-18</div><div class="title">OpenClaw Skills 分层机制深度解析：加载优先级与多 Agent 共享</div></div></a></div><div><a href="/posts/63871/" title="OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/control-plane-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-05</div><div class="title">OpenClaw 控制平面深度解析：Gateway 如何用 WebSocket 统一多端</div></div></a></div><div><a href="/posts/63844/" title="OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 记忆系统深度解析：Markdown 存储、混合检索与压缩</div></div></a></div><div><a href="/posts/63898/" title="OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/system-prompt-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-06</div><div class="title">OpenClaw 系统提示词深度解析：上下文拼装与 Token 成本</div></div></a></div><div><a href="/posts/63820/" title="OpenClaw 技术架构深度解析"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/openclaw-official-banner.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-03</div><div class="title">OpenClaw 技术架构深度解析</div></div></a></div><div><a href="/posts/64738/" title="Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 技术架构深度解析：从一次工具调用到可恢复、可验证的 Agent</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E6%90%9E%E6%87%82%EF%BC%9AHR%E5%9C%A87%E7%A7%92%E5%86%85%E5%88%B0%E5%BA%95%E5%9C%A8%E7%9C%8B%E4%BB%80%E4%B9%88"><span class="toc-number">1.</span> <span class="toc-text">一、先搞懂：HR在7秒内到底在看什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E7%AE%80%E5%8E%86%E7%9A%84%E7%BB%93%E6%9E%84%EF%BC%9A%E6%AF%8F%E4%B8%80%E6%A0%8F%E6%94%BE%E4%BB%80%E4%B9%88"><span class="toc-number">2.</span> <span class="toc-text">二、简历的结构：每一栏放什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%A0%B8%E5%BF%83%E6%8A%80%E8%83%BD%EF%BC%9A%E6%8A%8A%E3%80%8C%E8%81%8C%E8%B4%A3%E3%80%8D%E6%94%B9%E5%86%99%E6%88%90%E3%80%8C%E6%88%90%E5%B0%B1%E5%8F%A5%E3%80%8D"><span class="toc-number">3.</span> <span class="toc-text">三、核心技能：把「职责」改写成「成就句」</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E5%A4%B1%E8%B4%A5%E7%9A%84%E5%86%99%E6%B3%95%E9%95%BF%E4%BB%80%E4%B9%88%E6%A0%B7"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 失败的写法长什么样</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-STAR%EF%BC%9A%E6%90%AD%E9%AA%A8%E6%9E%B6"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 STAR：搭骨架</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-X-Y-Z%EF%BC%9A%E5%BC%BA%E5%8C%96%E7%BB%93%E6%9E%9C"><span class="toc-number">3.3.</span> <span class="toc-text">3.3 X-Y-Z：强化结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E9%87%8F%E5%8C%96%E5%9B%9B%E8%B1%A1%E9%99%90%EF%BC%9A%E6%89%BE%E4%B8%8D%E5%88%B0%E6%95%B0%E5%AD%97%E6%97%B6%E4%BB%8E%E8%BF%99%E5%9B%9B%E4%B8%AA%E7%BB%B4%E5%BA%A6%E6%8C%96"><span class="toc-number">3.4.</span> <span class="toc-text">3.4 量化四象限：找不到数字时从这四个维度挖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E8%AE%A9AI%E5%B8%AE%E4%BD%A0%E6%94%B9%EF%BC%9A%E6%8A%8A%E5%85%AC%E5%BC%8F%E5%86%99%E8%BF%9B%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="toc-number">3.5.</span> <span class="toc-text">3.5 让AI帮你改：把公式写进提示词</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E6%88%98%E7%AF%87%EF%BC%9A%E4%B8%8D%E5%90%8C%E7%BB%8F%E9%AA%8C%E6%AE%B5%E7%9A%84%E3%80%8C%E8%A7%92%E8%89%B2%E5%8C%96%E6%8F%90%E7%A4%BA%E8%AF%8D%E3%80%8D"><span class="toc-number">4.</span> <span class="toc-text">四、实战篇：不同经验段的「角色化提示词」</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%BA%94%E5%B1%8A%E7%94%9F-%E5%AE%9E%E4%B9%A0%E7%94%9F%EF%BC%880-1-%E5%B9%B4%EF%BC%89%EF%BC%9A%E4%B8%BB%E6%89%93%E9%AB%98%E6%BD%9C%E5%8A%9B"><span class="toc-number">4.1.</span> <span class="toc-text">4.1 应届生&#x2F;实习生（0-1 年）：主打高潜力</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%B7%A5%E4%BD%9C-1-3-%E5%B9%B4%EF%BC%88%E5%88%9D%E7%BA%A7%EF%BC%89%EF%BC%9A%E4%B8%BB%E6%89%93%E7%8B%AC%E7%AB%8B%E5%AE%8C%E6%88%90"><span class="toc-number">4.2.</span> <span class="toc-text">4.2 工作 1-3 年（初级）：主打独立完成</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E7%AE%A1%E7%90%86%E5%B1%82-%E9%AB%98%E7%AE%A1%EF%BC%885-%E5%B9%B4%E4%BB%A5%E4%B8%8A%EF%BC%89%EF%BC%9A%E4%B8%BB%E6%89%93%E5%BD%B1%E5%93%8D%E5%8A%9B"><span class="toc-number">4.3.</span> <span class="toc-text">4.3 管理层&#x2F;高管（5 年以上）：主打影响力</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E7%AE%80%E5%8E%86%E4%BD%93%E6%A3%80%EF%BC%9A%E8%AE%A9AI%E5%81%9A%E4%B8%80%E5%9B%9E%E3%80%8C%E6%AF%92%E8%88%8C%E6%8B%9B%E8%81%98%E5%AE%98%E3%80%8D"><span class="toc-number">4.4.</span> <span class="toc-text">4.4 简历体检：让AI做一回「毒舌招聘官」</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%8A%95%E9%80%92%E7%AF%87%EF%BC%9A%E7%AE%80%E5%8E%86%E5%86%99%E5%AF%B9%E4%BA%86%EF%BC%8C%E5%8F%AA%E6%98%AF%E6%88%90%E5%8A%9F%E4%BA%86%E4%B8%80%E5%8D%8A"><span class="toc-number">5.</span> <span class="toc-text">五、投递篇：简历写对了，只是成功了一半</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%98%B2%E9%80%A0%E5%81%87%EF%BC%9A%E4%BC%98%E5%8C%96-%E2%89%A0-%E9%80%A0%E5%81%87"><span class="toc-number">6.</span> <span class="toc-text">六、防造假：优化 ≠ 造假</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E7%AE%80%E5%8E%86%E8%87%AA%E6%A3%80%E6%B8%85%E5%8D%95%EF%BC%88%E5%BB%BA%E8%AE%AE%E6%94%B6%E8%97%8F%EF%BC%89"><span class="toc-number">7.</span> <span class="toc-text">七、简历自检清单（建议收藏）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AF%AD"><span class="toc-number">8.</span> <span class="toc-text">结语</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统">杨植麟 GTC 演讲深度拆解：Kimi 如何训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-subagent-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派">从零构建 Agent 框架（三）：子 Agent：上下文隔离与任务委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-engineering-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理"/></a><div class="content"><a class="title" href="/posts/65800/" title="从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理">从零构建 Agent 框架（二）：工程化 Agent 循环：预算、消息边界与状态管理</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/grok-build-agent-harness-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手">Grok Build 源码深度解析：从 Agent 循环到上下文压缩，读懂生产级编码助手</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/python-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用"/></a><div class="content"><a class="title" href="/posts/65700/" title="从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用">从零构建 Agent 框架（一）：用 Python 实现对话循环与工具调用</a><time datetime="2026-07-15T12:30:00.000Z" title="发表于 2026-07-15 20:30:00">2026-07-15</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">70</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">15</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>29</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>30</sup></a><a href="/tags/Agent-%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">Agent 架构<sup>3</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>7</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>3</sup></a><a href="/tags/%E5%AE%89%E5%85%A8/" style="font-size: 0.88rem;">安全<sup>3</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>5</sup></a><a href="/tags/%E6%83%85%E6%84%9F/" style="font-size: 0.88rem;">情感<sup>3</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>5</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>
