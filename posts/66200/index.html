@@ -1,0 +1,899 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>怎样手写一个可验证的 Agent 图工作流 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,工作流,多智能体,工程实践,状态机,Python"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="怎样手写一个可验证的 Agent 图工作流"><meta name="application-name" content="怎样手写一个可验证的 Agent 图工作流"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="怎样手写一个可验证的 Agent 图工作流"><meta property="og:url" content="https://blog.asaakii.com/posts/66200/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="从一次测试失败的修复任务开始，不依赖框架手写一个带状态、分支、重试、并行研究、检查点和路径测试的 Agent 图工作流。理解什么时候该继续使用 Loop，什么时候才值得把职责拆成 Graph。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp"><meta name="description" content="从一次测试失败的修复任务开始，不依赖框架手写一个带状态、分支、重试、并行研究、检查点和路径测试的 Agent 图工作流。理解什么时候该继续使用 Loop，什么时候才值得把职责拆成 Graph。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/66200/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: '怎样手写一个可验证的 Agent 图工作流',
+  postAI: '',
+  pageFillDescription: '一、先把几个词说清, 二、不要因为任务长就上 Graph, 2.1 节点的权限不同, 2.2 节点的输入不同, 2.3 下游要等待多个独立结果, 2.4 失败后需要可恢复, 三、从 State 开始不要先写 Agent, 四、给每个节点写一份小合同, 五、验证节点不负责安慰人它只负责给出证据, 六、验证也会失真：给优化循环留一个外部观察者, 6.1 每个主指标都该有一条护栏, 6.2 冻结规则不要放进可写 State, 6.3 审计环跑得比执行环慢, 七、边才是控制流。把每一种出口写出来, 八、把节点和边接起来：一个很小的图运行时, 九、一步一步看状态怎样变化, 十、接入 LLM 后节点应该怎样写, 十一、并行不是同时跑几个 Agent 那么简单, 十二、检查点不是存一下聊天记录, 十三、怎样测试一张图, 十四、把这个小运行时映射到 LangGraph, 十五、几个很常见的错误, 为了多 Agent而拆节点, 让所有节点读写全部 State, 把路由都交给模型, 用另一个模型给第一个模型盖章, 只存最终答案不存失败路径, 一开始就并行写文件, 十六、给初学者的练习顺序, 图只是责任清单的一种写法, 参考资料下午五点报了一条失败预期得到实际得到你把任务交给编码它很快读了测试改了一个金额计算函数又跑了一遍测试结果第一条测试过了另外两条折扣测试开始失败这时最常见的处理方式是把报错继续塞回同一个对话里让模型再试一次小任务通常没问题可任务稍微复杂一点那个对话会开始承担太多职责它既要判断故障范围又要找资料提出方案改文件跑测试决定是否继续还得记住哪些命令已经执行过失败时你只能看到一段越来越长的聊天记录很难回答几个很实际的问题它是在什么证据下改了这个文件哪一步允许写入谁能阻止写入测试失败后为什么又改了一次而不是停下来如果进程中途退出能从哪一步继续图工作流把这些混在一起的责任拆开任务被分成有边界的节点状态分支重试和停止条件也变成程序能执行的规则本文会从零写一个小型运行时它不调用真实模型也不改真实文件这样刚接触的读者可以先把控制流看清等最后一节你会知道怎样把其中的换成和受限工具并能看懂里的为什么正好对应这些代码一先把几个词说清这篇文章里的四个词会反复出现先别急着记术语先看它们在修复任务中分别是什么词在本文中指什么例子同一角色根据新观察不断重复处理读报错修改再跑测试只承担一种职责的步骤只运行测试不改代码从一个步骤走向下一个步骤的规则测试通过走失败走节点之间传递保存并恢复的信息报错计划改动摘要测试结果重试次数一个本身也可以画成图它有一个工作节点和一条回到自己的边测试失败用户任务诊断修改验证完成再试一次从图的角度看只是最简单的形状把它展开后诊断修改验证各自有输入和输出程序也能在它们之间插入检查并行或人工审批多是另一件事一个节点可以调用也可以只是普通函数测试命令数据库查询或者一个等待人工确认的暂停点把每个节点都换成往往没有好处固定的路径校验预算比较和测试退出码本来就应该由代码决定的官方抽象也是如此是共享状态是读取状态并返回更新的函数决定下一个节点节点不要求是模型二不要因为任务长就上网上常见一种说法一个多跑几轮就该升级成这个判断不可靠让查三个文件汇总一段说明可能走了六轮工具调用却仍然只需要一个它使用同一份上下文同一种权限同一个验收条件相反给生产环境改支付配置也许只走两步却应该被拆开因为读取配置生成修改建议提交变更和人工批准的风险完全不同我会用下面四个信号判断要不要拆图节点的权限不同只读诊断与写文件不应共用一套工具前者可以反复探索后者应该少而慎重如果一个节点只需要和就不要顺手把部署命令和生产凭据一起给它节点的输入不同审阅一个补丁时审阅者通常只需要任务要求测试结果和项目规范不需要继承执行的全部思考过程把长对话原样交给它审阅者更容易顺着上游的判断走而不是检查补丁本身下游要等待多个独立结果排查故障时可以并行读取错误日志依赖版本和最近的代码变更修复节点却必须等这些结果回来或者清楚知道哪一项缺失这里的价值在于写出汇合条件而不是为了同时调用几个模型失败后需要可恢复如果任务在测试失败处停止你希望下一次只重跑修复和验证而不是让模型重新读完所有文件此时需要检查点和可序列化状态将用于恢复回放分支和故障处理用不用框架是后话先把状态设计出来才有意义下面的任务满足这些条件诊断是只读的执行会产生副作用验证由确定性命令完成失败后最多修两次仍然不通过就交给人它适合做成一张很小的图输入检查诊断只读计划只输出方案执行唯一写入者验证测试与检查验证结果通过结束并保存证据可修复且未超预算修复风险高超预算暂停等待人工处理这张图没有把修复拆成三个听起来很专业的角色节点是否该独立取决于它有没有不同的输入权限输出或停止条件两个节点合并后什么都不损失就把它们放在一起三从开始不要先写许多工作流项目一开始先写之后才补状态最后会得到一个大字典研究结果模型草稿命令输出错误字符串用户消息全堆在一起节点看见什么能改什么全靠开发者记忆先写状态会麻烦一点但能让问题暴露得更早下面用描述本文的任务状态代码可以放进一个空文件可以直接运行只读工具得到的事实不能把模型猜测写进这里这份结构里有几个看上去不起眼的选择只放工具看到的事实比如测试输出文件摘要的结果模型提出的猜测不应伪装成事实所以计划单独放在也不是一句测试通过它需要留下执行了什么命令退出码是多少关键输出是什么和由运行时治理不要让模型自己写我已经重试两次或这个改动风险很低然后把它当成系统状态模型可以给出建议最后写入这些字段的应该是受控代码或人工审批最后的很朴素它只是给初学者看的运行轨迹生产系统会把它替换为结构化事件时间戳和持久化日志先把发生过什么留下来才能调试为什么走错路四给每个节点写一份小合同图工作流中的节点不是一段它至少要说清楚四件事读取哪些状态字段可以调用哪些工具是否能产生副作用修改哪些状态字段成功失败或无法继续时交给哪条边为了避免一开始就接模型下面先用固定函数模拟诊断计划和执行它们不会真的访问磁盘输出却和真实系统应保存的信息相同入口节点只检查任务范围不做分析也不写文件用户没有提供任务描述拒绝空任务工作目录不在允许范围内工作目录越界等待人工决定输入通过进入只读诊断真实版本应只暴露和受限的测试日志读取工具工作区没有未提交改动收集到测试实现和工作区状态这里替换成后它也只能输出计划不能直接改文件诊断证据不完整不能生成修复方案缺少关键证据检查金额计算的舍入时机保留现有折扣语义只修改现有测试仅用于验证不在本轮任务中改写生成最小修复计划唯一允许写入的节点真实版本应在这里调用受限没有计划禁止写入拒绝无计划执行高风险任务需要批准高风险任务没有写入已应用修复并记录变更文件不写也不改节点少时这种划分像是多写了几行代码节点多了以后它能帮你追出一条错误结论到底在哪一步进入状态同一个理由也解释了为什么审阅常常应当只读它可以提出这个补丁会破坏税费计算把问题写成一条真正修改文件仍由执行节点负责这样你不会得到三个同时写同一个文件然后试图从聊天记录里找出冲突来源五验证节点不负责安慰人它只负责给出证据自己说已经修好没有意义验证节点要把结论建立在外部可重跑的证据上这里模拟两种结果第一次验证失败第二次通过真实版本可运行类型检查或业务探针仍失败被处理为测试失败留下可定位的错误测试通过修复节点只根据验证证据处理不重新编造整个任务针对补充舍入规则保留上一轮已确认的订单总额修复根据测试失败进行第次修复注意没有把失败结果覆盖掉在下一次验证时会被更新事件列表仍然留着上一次失败实际项目最好把验证结果做成列表再单独保存本文为了控制代码长度只保存最新结果和文本事件验证范围也要提前写清只跑一个失败测试不代表没有回归跑完整测试集也不代表业务正确不同任务需要不同组合单测静态检查构建迁移演练截图对比或人工验收系统必须分开记录模型说完成和外部证据支持完成六验证也会失真给优化循环留一个外部观察者到这里工作流已经有了一个看似完整的闭环诊断计划执行验证失败后修复可它还存在一个很现实的漏洞它把的退出码当作唯一的成功信号而执行节点正试图让这个信号变成如果执行节点能改测试它可以把断言从改成然后非常诚实地报告测试通过即便禁止它改测试也还有别的投机方式缩小测试范围跳过慢用例只验证最初报错的函数或者把错误吞掉运行时没有坏它完全按我们写的指标在优化坏的是这个指标已经不再代表订单金额计算正确这就是反馈系统里常见的问题当某个数字成了优化目标它很容易失去原本的测量意义放到工作流里测试通过工单关闭回答速度评测分数都可能发生同样的事一个只盯着它自己的成功条件时往往看不见这种偏离解决办法不是再加一个会说看起来不错的审阅而是为优化环增加独立的观察和约束人定义任务目标与不可突破的边界快速执行环诊断修改测试修复主指标目标测试是否通过独立审计环保留测试策略检查主指标与护栏都通过是允许结束否停止回滚或人工处理每个主指标都该有一条护栏主指标回答这个任务完成了吗护栏回答它是不是用不该用的方式完成了两者必须来自不同角度场景主指标护栏或反指标修复指定失败测试通过保留回归测试通过未改测试断言没有新增跳过标记客服工单被解决用户是否重新打开工单升级率抽样人工判定代码生成构建通过静态检查依赖漏洞扫描变更规模和评审结果检索问答回答耗时低引用是否可访问关键事实是否来自允许的数据源人工抽检护栏不是越多越好每多一个指标都会增加成本也可能与主目标冲突开始时挑最容易被投机的那一条即可订单示例里最直接的护栏是执行节点没有测试目录的写权限验证节点运行一组执行节点从未见过的保留测试审计节点检查中有没有删除断言增加或修改测试收敛条件这里的保留测试和机器学习里的集合很像优化节点可以看见任务描述失败输出和允许的源代码但不该看见所有验收样例否则它学到的可能是怎样让这组样例变绿而不是怎样修正底层行为保留测试不必神秘可以是代码审查者维护的一组回归用例也可以是线上灰度中的独立样本冻结规则不要放进可写允许路径必须运行的测试命令哪些目录禁止改写这些规则不属于任务产物它们是运行时配置应该由调用方或人工维护而不是让计划节点更新不会替代操作系统权限也拦不住一段恶意直接绕过对象限制但它把一个设计选择写得很明确执行读取不能更新真实系统还要在工具层检查路径在或隔离环境中执行命令并把版本写入一条很实用的规则是优化节点能修改的东西不应同时定义它如何被判定成功修复节点可以改业务代码验证策略保留测试和批准规则由它外面的层拥有否则图里的每一层都能彼此确认却没有哪一层还在检查现实审计环跑得比执行环慢每一次工具调用都跑全量审计会很贵也会把简单任务拖得很慢可以让不同反馈环以不同节奏运行快速执行环在每次任务中运行负责受限修改和针对性测试发布前审计环运行保留测试检查和安全扫描更慢的质量环按周或按版本抽取真实任务检查通过率是否仍然代表用户感受到的成功人负责重新确认目标本身例如客服团队不能只因为关闭率上升就宣布系统变好还要检查用户是否解决问题快环解决眼前任务慢环检查快环是不是在朝错误方向加速两者不该共享同一份可随时修改的评分标准七边才是控制流把每一种出口写出来前面的节点只修改状态并没有自己决定工作流何时结束把判断集中到路由函数才能清楚看见规则来自哪里验证节点没有返回结果验证命令退出码为已达到模型与工具调用预算已达到最大修复次数验证报告涉及权限问题测试失败但仍在允许的修复预算内多数路由都不需要模型决定退出码重试次数预算和权限命中都是确定条件用更稳定也更容易测试只有这个错误是依赖服务暂时不可用还是代码逻辑错误这类需要理解文本语义的分支才适合交给受限的模型分类器即使用模型分类也不要让它任意输出下一步让它只能在里选一个并要求返回它引用的路由层再检查这个枚举和证据是否有效模型负责解释运行时负责授权路由函数返回看起来有点奇怪因为验证失败后流程不是回到完整的诊断和计划而是进入下面的运行器会根据当前和验证结果将它分发到正确函数你也可以把加进枚举代码会更直白本文保留较少状态值方便先理解图的本质八把节点和边接起来一个很小的图运行时接下来才轮到运行器它的职责很窄读取当前状态执行一个节点根据节点结果选择下一个节点并在终态预算或人工暂停处停止运行器在节点开始前发现预算耗尽预算耗尽路由到未知状态入口只需要构造状态并运行修复订单金额舍入测试并确认相关测试通过最终状态路由原因改动文件验证结果运行轨迹这段程序运行后会经历下面这条路径第一次测试失败实际调用第二次测试通过它看起来仍然是一个循环没错很多图运行时的底层也会有循环或调度器的区别不在于有没有而在于循环不再把所有行为混成一个大函数节点状态和边都已经成为独立对象可以单独检查替换和测试九一步一步看状态怎样变化初学者读代码容易只盯着或工具调用忽略状态已经怎么变了下面把刚才这次运行压缩成一张表步骤节点新增或修改的状态为什么能进入下一步工作目录在允许范围内任务非空三条只读诊断完成有最小修复方案关键文件证据齐全有计划且不是高风险任务第一份失败测试退出码为写入重试原因未超预算未达到重试上限更新计划和改动记录验证失败属于可修复问题第二份成功测试退出码为外部验证通过以后某个任务说改错文件你不必靠模型回忆可以查第步执行节点拿到了什么查第步是否包含了错误文件查路由有没有绕过高风险分支也要注意一个边界这个例子里状态对象是可变的节点会直接修改它教学代码这样写最容易读生产中更常见的做法是让节点返回一个例如由运行时统一合并到状态这能更方便地做审计和并发也能防止节点悄悄改了不属于它的字段的节点就是返回状态更新再由状态和决定怎样合并十接入后节点应该怎样写把上面的换成模型调用并不等于把整个原封不动塞进模型看到越多信息越容易抓住无关细节也越难判断哪一条是事实哪一条是旧计划计划节点只需要一个很小的上下文投影真实可以把这份对象序列化后发送给模型并要求模型返回收到回复后不能直接相信它要检查是否都在允许列表中是否为空是否符合任何一个检查失败都把错误作为新的或转人工处理而不是让模型直接调用编辑工具执行节点也不应该得到计划节点的全部权限它需要的能力可能只有读取计划编辑白名单文件运行一条指定测试读取部署删除目录读取环境变量等工具默认不在这个节点的能力集中一个最小的权限表可以写成这样节点可以读取可以写入可以执行代码测试日志无只读查询受限测试日志已投影的无无计划和目标文件业务代码白名单文件受限编辑变更摘要和测试文件无测试构建全部必要证据按审批决定按审批决定这张表不会因为提示词写了规则就自动生效提示词只能说明约束工具注册表工作目录限制容器或审批系统才负责执行模型就算幻觉出执行层没有这个工具它也做不了十一并行不是同时跑几个那么简单现在回到诊断阶段我们之前顺序收集测试实现和如果三个读取任务互不依赖可以并行但必须先回答两个问题结果怎样写回状态某个分支失败时是否还继续下面用模拟三个只读任务为了演示顺序问题第三个任务最快完成第二个任务最慢完成读取失败的返回顺序与传入顺序一致不是完成顺序测试读取最先结束结果列表仍按的固定顺序写回调度略有不同下一次运行的状态排列也不会跟着漂移如果你用的是多个子道理相同它们可以并发完成主工作流保存结果时应使用稳定的任务或原始调用顺序而不是谁先返回就先写谁否则复现一次故障时你连后面的到底看见了哪份先前状态都说不清还要设计失败策略对于我们的修复任务读不到也许只需要标记警告读不到失败测试文件则不应继续计划可以把这种规则明确写成测试文件缺失实现文件缺失读取失败继续但任何并行任务超时取消剩余任务并写入事件并行读通常比较容易并行写复杂得多两个执行节点同时修改同一个文件最后保存的内容取决于调度而不是业务规则除非你已经有文件锁合并和冲突处理否则让写入节点串行运行通常比事后处理乱掉的工作区便宜十二检查点不是存一下聊天记录运行到一半进程崩了下一次重跑时最糟糕的选择是把任务从头再做一遍你会重复消耗模型调用也可能在不知道上一轮已经写过文件的情况下再次写入检查点应该保存的是可以恢复的任务事实而不是一整段未经筛选的聊天文本对于本文的状态最小实现可以每执行完一个节点就写一次在每个节点之后加上就能在进入前保存当前进度恢复时也不能盲目继续应该重新确认工作目录检查上次记录的变更是否仍然存在必要时重新运行验证外部世界会变化保存下来的状态只能说明当时看见了什么不能保证今天仍然成立另一个常被忽略的问题是版本半年后你给新增字段或者把改名成旧检查点可能无法读取至少给持久化内容加一个和再为旧版本提供迁移函数没有这些支持恢复只是开发环境里的一次演示十三怎样测试一张图测试图工作流时不能只问最后有没有输出正确文本路径本身也是产品行为先为路由写最小单元测试它们不需要模型也不需要真实文件再测节点权限这里不必真的运行沙箱可以给工具函数一个会记录调用的断言诊断节点从不触发写入工具执行节点拿不到白名单之外的路径接入真实工具后这些测试仍要留在执行层不能只检查里有没有写请谨慎操作最后测端到端轨迹本文的模拟场景应该固定走到事件中必须有一次失败验证一次修复一次成功验证另一个场景把设为预期停在并且不再进行第二次写入这样的测试会抓住很多肉眼看不出的错误例如路由函数把写成导致系统多改了一次文件评测模型节点时还要再加一层为诊断计划和审阅准备固定分别检查是否引用了提供的而不是编造文件内容是否遵守了输出是否拒绝越权文件或危险操作在同一种失败输入下是否选择了允许的路由枚举当证据不足时是否转向澄清或人工处理而不是编造修复的正确性通常不是一个分数模型输出可以评估工具结果可以断言路径是否越权也可以断言把它们混成一句通过率很难知道下一次该修修工具还是修路由十四把这个小运行时映射到看完手写版本后再看框架会轻松很多下面不是另一套新概念只是名称对应本文代码中常见的对应物常用或模型注册的节点函数的条件路由持久化的编译后的图运行时与调度器框架会帮你处理图的编译状态合并并发流式事件和接口但它不会替你回答业务问题是覆盖还是追加测试失败后能改几次哪个节点有写权限何时必须人工审批这些决定仍然需要你在状态节点和边里写出来如果你还没用过不要急着把本文所有函数翻译成先拿第三节的状态第四节的节点合同第六节的路由规则画在纸上能在不运行程序时说明每个字段的写入者和每条边的条件再上框架会快得多十五几个很常见的错误为了多而拆节点把总结拆成抓取切块摘要二次摘要润色审阅六个节点看起来像一张复杂图实际只是增加了调用次数和状态传递若同一个模型同一份上下文同一套工具就能完成保持一个更好让所有节点读写全部这是最容易把图做成共享泥潭的方式诊断节点不需要改预算审阅节点不需要写变更文件执行节点也不需要覆盖原始请求把字段所有权写进接口和测试后期会少很多莫名其妙的回归把路由都交给模型模型可以解释复杂错误但不该决定已知的硬边界预算耗尽测试退出码白名单命中人工审批都是程序规则让模型决定这些结果既不稳定也不容易复现用另一个模型给第一个模型盖章审阅必须看到独立证据没有测试没有规则清单没有来源第二个模型只是用不同措辞重复第一个模型的判断它可以发现一些表达问题却不能把猜测变成验证只存最终答案不存失败路径图系统最有价值的信息常常在失败处哪条工具调用超时哪次验证失败状态在哪个版本被污染只保存最终文本等于在故障发生后扔掉证据一开始就并行写文件并行读取并行调研通常安全并行写同一个工作区要面对锁文件冲突和合并先把唯一写入者做对再考虑把独立写操作放到隔离环境中十六给初学者的练习顺序想动手跑一遍可以按下面的顺序增加难度把第四节到第七节的代码复制到一个文件中确认模拟任务会经历一次失败和一次修复后结束修改让它连续失败三次观察任务为什么会停在而不是无限循环给增加一个规则请求里出现或时直接进入这一步能体会到权限路由为什么不该交给模型把的固定换成受限工作目录里的真实文件读取但仍然不要加入写文件工具只替换让模型从投影后的中返回计划先打印并校验不让它执行最后才把接到一个允许修改临时目录的编辑工具并让跑测试每一步都保留前一步的测试很多人第一次接模型后发现路径乱了就开始不断改更有效的做法是先问状态有没有缺字段路由有没有让模型承担确定判断执行器有没有放开不该有的工具模型只是图里的一个节点别让它成为所有问题的解释图只是责任清单的一种写法一张好的图不会让人觉得节点真多读者应该能顺着它回答发生了什么谁做了什么凭什么继续失败后停在哪里仍然是最常用的起点把它做得有预算有验证有工具边界已经能解决很多任务职责分开状态需要恢复分支需要解释并行需要汇合时再把它展开成图里写下的是运行时测试和后续维护者都能检查的责任参考资料选题来源从到小白完整教程关于指标失真独立审计与外部锚点的思考的条件边与并行执行恢复与回放可对照阅读工作流深度解析如何收紧的决策权动态工作流深度解析从零构建框架三子',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-27 23:30:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>48</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>50</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>25</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Python/" style="font-size: 1.05rem;">Python<sup>4</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>4</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 1.05rem;">工作流<sup>4</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 1.05rem;">工程化<sup>18</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>7</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>23</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">10</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">12</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/02/"><span class="card-archive-list-date">2026年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">15</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/09/"><span class="card-archive-list-date">2023年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>工作流</span></a><a class="article-meta__tags" href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>多智能体</span></a><a class="article-meta__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>工程实践</span></a><a class="article-meta__tags" href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>状态机</span></a><a class="article-meta__tags" href="/tags/Python/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Python</span></a></span></div></div><h1 class="post-title" itemprop="name headline">怎样手写一个可验证的 Agent 图工作流</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-07-27T12:30:00.000Z" title="发表于 2026-07-27 20:30:00">2026-07-27</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-27T15:30:00.000Z" title="更新于 2026-07-27 23:30:00">2026-07-27</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">9.6k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>33分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/66200/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" tabindex="-1" itemprop="url">工作流</a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" tabindex="-1" itemprop="url">多智能体</a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" tabindex="-1" itemprop="url">工程实践</a><a href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" tabindex="-1" itemprop="url">状态机</a><a href="/tags/Python/" tabindex="-1" itemprop="url">Python</a><h1 id="CrawlerTitle" itemprop="name headline">怎样手写一个可验证的 Agent 图工作流</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-07-27T12:30:00.000Z" title="发表于 2026-07-27 20:30:00">2026-07-27</time><time itemprop="dateCreated datePublished" datetime="2026-07-27T15:30:00.000Z" title="更新于 2026-07-27 23:30:00">2026-07-27</time></header><p>下午五点，CI 报了一条失败：<code>test_order_total_rounding</code> 预期得到 <code>19.99</code>，实际得到 <code>20.00</code>。你把任务交给编码 Agent，它很快读了测试、改了一个金额计算函数、又跑了一遍测试。结果第一条测试过了，另外两条折扣测试开始失败。</p>
+<p>这时最常见的处理方式，是把报错继续塞回同一个对话里，让模型再试一次。小任务通常没问题。可任务稍微复杂一点，那个对话会开始承担太多职责：它既要判断故障范围，又要找资料、提出方案、改文件、跑测试、决定是否继续，还得记住哪些命令已经执行过。失败时你只能看到一段越来越长的聊天记录，很难回答几个很实际的问题：</p>
+<ul>
+<li>它是在什么证据下改了这个文件？</li>
+<li>哪一步允许写入，谁能阻止写入？</li>
+<li>测试失败后为什么又改了一次，而不是停下来？</li>
+<li>如果进程中途退出，能从哪一步继续？</li>
+</ul>
+<p>图工作流把这些混在一起的责任拆开。任务被分成有边界的节点，状态、分支、重试和停止条件也变成程序能执行的规则。</p>
+<p>本文会从零写一个小型运行时。它不调用真实模型，也不改真实文件，这样刚接触 Agent 的读者可以先把控制流看清。等最后一节，你会知道怎样把其中的 <code>plan_fix()</code>、<code>apply_fix()</code> 换成 LLM 和受限工具，并能看懂 LangGraph 里的 State、Node、Edge 为什么正好对应这些代码。</p>
+<h2 id="一、先把几个词说清"><a href="#一、先把几个词说清" class="headerlink" title="一、先把几个词说清"></a>一、先把几个词说清</h2><p>这篇文章里的四个词会反复出现，先别急着记术语，先看它们在修复任务中分别是什么。</p>
+<table>
+<thead>
+<tr>
+<th>词</th>
+<th>在本文中指什么</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Loop</td>
+<td>同一角色根据新观察不断重复处理</td>
+<td>“读报错，修改，再跑测试”</td>
+</tr>
+<tr>
+<td>Node</td>
+<td>只承担一种职责的步骤</td>
+<td><code>verify</code> 只运行测试，不改代码</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>从一个步骤走向下一个步骤的规则</td>
+<td>测试通过走 <code>finish</code>，失败走 <code>repair</code></td>
+</tr>
+<tr>
+<td>State</td>
+<td>节点之间传递、保存并恢复的信息</td>
+<td>报错、计划、改动摘要、测试结果、重试次数</td>
+</tr>
+</tbody></table>
+<p>一个 Loop 本身也可以画成图。它有一个工作节点和一条回到自己的边：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">                     测试失败</span><br><span class="line">                         │</span><br><span class="line">                         ▼</span><br><span class="line">用户任务 → [诊断、修改、验证] ────→ 完成</span><br><span class="line">                         ▲</span><br><span class="line">                         │</span><br><span class="line">                     再试一次</span><br></pre></td></tr></table></figure>
+
+<p>从图的角度看，Loop 只是最简单的形状。把它展开后，”诊断”、”修改”、”验证” 各自有输入和输出，程序也能在它们之间插入检查、并行或人工审批。</p>
+<p>多 Agent 是另一件事。一个节点可以调用 LLM，也可以只是普通函数、测试命令、数据库查询，或者一个等待人工确认的暂停点。把每个节点都换成 Agent 往往没有好处。固定的路径校验、预算比较和测试退出码，本来就应该由代码决定。</p>
+<p>LangGraph 的官方抽象也是如此：State 是共享状态，Node 是读取状态并返回更新的函数，Edge 决定下一个节点；节点不要求是模型。<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/graph-api">Graph API overview</a></p>
+<h2 id="二、不要因为任务长就上-Graph"><a href="#二、不要因为任务长就上-Graph" class="headerlink" title="二、不要因为任务长就上 Graph"></a>二、不要因为任务长就上 Graph</h2><p>网上常见一种说法：一个 Loop 多跑几轮就该升级成 Graph。这个判断不可靠。</p>
+<p>让 Agent 查三个文件、汇总一段说明，可能走了六轮工具调用，却仍然只需要一个 Loop。它使用同一份上下文、同一种权限、同一个验收条件。相反，”给生产环境改支付配置”也许只走两步，却应该被拆开，因为读取配置、生成修改建议、提交变更和人工批准的风险完全不同。</p>
+<p>我会用下面四个信号判断要不要拆图。</p>
+<h3 id="2-1-节点的权限不同"><a href="#2-1-节点的权限不同" class="headerlink" title="2.1 节点的权限不同"></a>2.1 节点的权限不同</h3><p>只读诊断与写文件不应共用一套工具。前者可以反复探索，后者应该少而慎重。如果一个节点只需要 <code>read_file</code> 和 <code>search_logs</code>，就不要顺手把 <code>write_file</code>、部署命令和生产凭据一起给它。</p>
+<h3 id="2-2-节点的输入不同"><a href="#2-2-节点的输入不同" class="headerlink" title="2.2 节点的输入不同"></a>2.2 节点的输入不同</h3><p>审阅一个补丁时，审阅者通常只需要任务要求、diff、测试结果和项目规范，不需要继承执行 Agent 的全部思考过程。把长对话原样交给它，审阅者更容易顺着上游的判断走，而不是检查补丁本身。</p>
+<h3 id="2-3-下游要等待多个独立结果"><a href="#2-3-下游要等待多个独立结果" class="headerlink" title="2.3 下游要等待多个独立结果"></a>2.3 下游要等待多个独立结果</h3><p>排查故障时，可以并行读取错误日志、依赖版本和最近的代码变更。修复节点却必须等这些结果回来，或者清楚知道哪一项缺失。这里的价值在于写出汇合条件，而不是为了同时调用几个模型。</p>
+<h3 id="2-4-失败后需要可恢复"><a href="#2-4-失败后需要可恢复" class="headerlink" title="2.4 失败后需要可恢复"></a>2.4 失败后需要可恢复</h3><p>如果任务在”测试失败”处停止，你希望下一次只重跑修复和验证，而不是让模型重新读完所有文件。此时需要检查点和可序列化状态。LangGraph 将 checkpoint 用于恢复、回放、分支和故障处理；用不用框架是后话，先把状态设计出来才有意义。<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/persistence">Persistence</a></p>
+<p>下面的任务满足这些条件：诊断是只读的，执行会产生副作用，验证由确定性命令完成，失败后最多修两次，仍然不通过就交给人。它适合做成一张很小的图。</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  A[&quot;输入检查&quot;] --&gt; B[&quot;诊断\n只读&quot;]
+  B --&gt; C[&quot;计划\n只输出方案&quot;]
+  C --&gt; D[&quot;执行\n唯一写入者&quot;]
+  D --&gt; E[&quot;验证\n测试与检查&quot;]
+  E --&gt; F{&quot;验证结果&quot;}
+  F --&gt;|&quot;通过&quot;| G[&quot;结束并保存证据&quot;]
+  F --&gt;|&quot;可修复且未超预算&quot;| H[&quot;修复&quot;]
+  H --&gt; E
+  F --&gt;|&quot;风险高 &#x2F; 超预算&quot;| I[&quot;暂停，等待人工处理&quot;]
+  </pre></div>
+
+<p>这张图没有把”修复”拆成三个听起来很专业的角色。节点是否该独立，取决于它有没有不同的输入、权限、输出或停止条件。两个节点合并后什么都不损失，就把它们放在一起。</p>
+<h2 id="三、从-State-开始，不要先写-Agent"><a href="#三、从-State-开始，不要先写-Agent" class="headerlink" title="三、从 State 开始，不要先写 Agent"></a>三、从 State 开始，不要先写 Agent</h2><p>许多工作流项目一开始先写 prompt，之后才补状态。最后会得到一个大字典：研究结果、模型草稿、命令输出、错误字符串、用户消息全堆在一起。节点看见什么、能改什么，全靠开发者记忆。</p>
+<p>先写状态会麻烦一点，但能让问题暴露得更早。下面用 <code>dataclass</code> 描述本文的任务状态。代码可以放进一个空文件 <code>graph_agent.py</code>，Python 3.11 可以直接运行。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> __future__ <span class="keyword">import</span> annotations</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> asdict, dataclass, field</span><br><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> StrEnum</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Stage</span>(<span class="title class_ inherited__">StrEnum</span>):</span><br><span class="line">    INTAKE = <span class="string">&quot;intake&quot;</span></span><br><span class="line">    DIAGNOSE = <span class="string">&quot;diagnose&quot;</span></span><br><span class="line">    PLAN = <span class="string">&quot;plan&quot;</span></span><br><span class="line">    EXECUTE = <span class="string">&quot;execute&quot;</span></span><br><span class="line">    VERIFY = <span class="string">&quot;verify&quot;</span></span><br><span class="line">    HUMAN = <span class="string">&quot;human&quot;</span></span><br><span class="line">    DONE = <span class="string">&quot;done&quot;</span></span><br><span class="line">    FAILED = <span class="string">&quot;failed&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Observation</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;只读工具得到的事实，不能把模型猜测写进这里。&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    source: <span class="built_in">str</span></span><br><span class="line">    content: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Verification</span>:</span><br><span class="line">    command: <span class="built_in">str</span></span><br><span class="line">    exit_code: <span class="built_in">int</span></span><br><span class="line">    summary: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TaskState</span>:</span><br><span class="line">    task_id: <span class="built_in">str</span></span><br><span class="line">    request: <span class="built_in">str</span></span><br><span class="line">    workspace: <span class="built_in">str</span></span><br><span class="line">    stage: Stage = Stage.INTAKE</span><br><span class="line">    observations: <span class="built_in">list</span>[Observation] = field(default_factory=<span class="built_in">list</span>)</span><br><span class="line">    plan: <span class="built_in">str</span> | <span class="literal">None</span> = <span class="literal">None</span></span><br><span class="line">    changed_files: <span class="built_in">list</span>[<span class="built_in">str</span>] = field(default_factory=<span class="built_in">list</span>)</span><br><span class="line">    verification: Verification | <span class="literal">None</span> = <span class="literal">None</span></span><br><span class="line">    retries: <span class="built_in">int</span> = <span class="number">0</span></span><br><span class="line">    max_retries: <span class="built_in">int</span> = <span class="number">2</span></span><br><span class="line">    spent_turns: <span class="built_in">int</span> = <span class="number">0</span></span><br><span class="line">    max_turns: <span class="built_in">int</span> = <span class="number">12</span></span><br><span class="line">    risk: <span class="type">Literal</span>[<span class="string">&quot;low&quot;</span>, <span class="string">&quot;high&quot;</span>] = <span class="string">&quot;low&quot;</span></span><br><span class="line">    route_reason: <span class="built_in">str</span> | <span class="literal">None</span> = <span class="literal">None</span></span><br><span class="line">    events: <span class="built_in">list</span>[<span class="built_in">str</span>] = field(default_factory=<span class="built_in">list</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这份结构里有几个看上去不起眼的选择。</p>
+<p><code>observations</code> 只放工具看到的事实。比如测试输出、文件摘要、<code>git diff</code> 的结果。模型提出的猜测不应伪装成事实，所以计划单独放在 <code>plan</code>。<code>verification</code> 也不是一句”测试通过”，它需要留下执行了什么命令、退出码是多少、关键输出是什么。</p>
+<p><code>retries</code>、<code>spent_turns</code> 和 <code>risk</code> 由运行时治理。不要让模型自己写”我已经重试两次”或”这个改动风险很低”，然后把它当成系统状态。模型可以给出建议，最后写入这些字段的应该是受控代码或人工审批。</p>
+<p>最后的 <code>events</code> 很朴素，它只是给初学者看的运行轨迹。生产系统会把它替换为结构化事件、trace ID、时间戳和持久化日志。先把”发生过什么”留下来，才能调试为什么走错路。</p>
+<h2 id="四、给每个节点写一份小合同"><a href="#四、给每个节点写一份小合同" class="headerlink" title="四、给每个节点写一份小合同"></a>四、给每个节点写一份小合同</h2><p>图工作流中的节点不是”一段 prompt”。它至少要说清楚四件事：</p>
+<ol>
+<li>读取哪些状态字段。</li>
+<li>可以调用哪些工具，是否能产生副作用。</li>
+<li>修改哪些状态字段。</li>
+<li>成功、失败或无法继续时交给哪条边。</li>
+</ol>
+<p>为了避免一开始就接模型，下面先用固定函数模拟诊断、计划和执行。它们不会真的访问磁盘，输出却和真实系统应保存的信息相同。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">log</span>(<span class="params">state: TaskState, message: <span class="built_in">str</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    state.events.append(<span class="string">f&quot;<span class="subst">&#123;state.stage&#125;</span>: <span class="subst">&#123;message&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">intake</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;入口节点只检查任务范围，不做分析，也不写文件。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> state.request.strip():</span><br><span class="line">        state.stage = Stage.FAILED</span><br><span class="line">        state.route_reason = <span class="string">&quot;用户没有提供任务描述&quot;</span></span><br><span class="line">        log(state, <span class="string">&quot;拒绝空任务&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> state.workspace.startswith(<span class="string">&quot;workspace/&quot;</span>):</span><br><span class="line">        state.stage = Stage.HUMAN</span><br><span class="line">        state.risk = <span class="string">&quot;high&quot;</span></span><br><span class="line">        state.route_reason = <span class="string">&quot;工作目录不在允许范围内&quot;</span></span><br><span class="line">        log(state, <span class="string">&quot;工作目录越界，等待人工决定&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    state.stage = Stage.DIAGNOSE</span><br><span class="line">    log(state, <span class="string">&quot;输入通过，进入只读诊断&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">diagnose</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;真实版本应只暴露 read_file、search 和受限的测试日志读取工具。&quot;&quot;&quot;</span></span><br><span class="line">    state.observations.extend([</span><br><span class="line">        Observation(<span class="string">&quot;tests/test_orders.py&quot;</span>, <span class="string">&quot;test_order_total_rounding: 19.99 != 20.00&quot;</span>),</span><br><span class="line">        Observation(<span class="string">&quot;src/pricing.py&quot;</span>, <span class="string">&quot;total = round(subtotal * (1 - discount), 2)&quot;</span>),</span><br><span class="line">        Observation(<span class="string">&quot;git diff --stat&quot;</span>, <span class="string">&quot;工作区没有未提交改动&quot;</span>),</span><br><span class="line">    ])</span><br><span class="line">    state.spent_turns += <span class="number">2</span></span><br><span class="line">    state.stage = Stage.PLAN</span><br><span class="line">    log(state, <span class="string">&quot;收集到测试、实现和工作区状态&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">plan_fix</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;这里替换成 LLM 后，它也只能输出计划，不能直接改文件。&quot;&quot;&quot;</span></span><br><span class="line">    sources = &#123;item.source <span class="keyword">for</span> item <span class="keyword">in</span> state.observations&#125;</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;tests/test_orders.py&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> sources <span class="keyword">or</span> <span class="string">&quot;src/pricing.py&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> sources:</span><br><span class="line">        state.stage = Stage.HUMAN</span><br><span class="line">        state.route_reason = <span class="string">&quot;诊断证据不完整，不能生成修复方案&quot;</span></span><br><span class="line">        log(state, <span class="string">&quot;缺少关键证据&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    state.plan = (</span><br><span class="line">        <span class="string">&quot;检查金额计算的舍入时机；保留现有折扣语义；&quot;</span></span><br><span class="line">        <span class="string">&quot;只修改 src/pricing.py；现有测试仅用于验证，不在本轮任务中改写。&quot;</span></span><br><span class="line">    )</span><br><span class="line">    state.spent_turns += <span class="number">1</span></span><br><span class="line">    state.stage = Stage.EXECUTE</span><br><span class="line">    log(state, <span class="string">&quot;生成最小修复计划&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">execute</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;唯一允许写入的节点。真实版本应在这里调用受限 edit_file。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> state.plan <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        state.stage = Stage.HUMAN</span><br><span class="line">        state.route_reason = <span class="string">&quot;没有计划，禁止写入&quot;</span></span><br><span class="line">        log(state, <span class="string">&quot;拒绝无计划执行&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> state.risk == <span class="string">&quot;high&quot;</span>:</span><br><span class="line">        state.stage = Stage.HUMAN</span><br><span class="line">        state.route_reason = <span class="string">&quot;高风险任务需要批准&quot;</span></span><br><span class="line">        log(state, <span class="string">&quot;高风险任务没有写入&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    state.changed_files.append(<span class="string">&quot;src/pricing.py&quot;</span>)</span><br><span class="line">    state.spent_turns += <span class="number">2</span></span><br><span class="line">    state.stage = Stage.VERIFY</span><br><span class="line">    log(state, <span class="string">&quot;已应用修复并记录变更文件&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><code>diagnose()</code> 不写 <code>plan</code>，<code>plan_fix()</code> 也不改 <code>changed_files</code>。节点少时，这种划分像是多写了几行代码；节点多了以后，它能帮你追出一条错误结论到底在哪一步进入状态。</p>
+<p>同一个理由也解释了为什么审阅 Agent 常常应当只读。它可以提出”这个补丁会破坏税费计算”，把问题写成一条 review observation；真正修改文件仍由执行节点负责。这样你不会得到三个 Agent 同时写同一个文件，然后试图从聊天记录里找出冲突来源。</p>
+<h2 id="五、验证节点不负责安慰人，它只负责给出证据"><a href="#五、验证节点不负责安慰人，它只负责给出证据" class="headerlink" title="五、验证节点不负责安慰人，它只负责给出证据"></a>五、验证节点不负责安慰人，它只负责给出证据</h2><p>Agent 自己说”已经修好”没有意义。验证节点要把结论建立在外部可重跑的证据上。这里模拟两种结果：第一次验证失败，第二次通过。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">verify</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;真实版本可运行 pytest、lint、类型检查或业务 API 探针。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> state.retries == <span class="number">0</span>:</span><br><span class="line">        state.verification = Verification(</span><br><span class="line">            command=<span class="string">&quot;pytest tests/test_orders.py -q&quot;</span>,</span><br><span class="line">            exit_code=<span class="number">1</span>,</span><br><span class="line">            summary=<span class="string">&quot;test_discount_rounding 仍失败：18.675 被处理为 18.67&quot;</span>,</span><br><span class="line">        )</span><br><span class="line">        log(state, <span class="string">&quot;测试失败，留下可定位的错误&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    state.verification = Verification(</span><br><span class="line">        command=<span class="string">&quot;pytest tests/test_orders.py -q&quot;</span>,</span><br><span class="line">        exit_code=<span class="number">0</span>,</span><br><span class="line">        summary=<span class="string">&quot;3 passed&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    log(state, <span class="string">&quot;测试通过&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">repair</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;修复节点只根据验证证据处理，不重新编造整个任务。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">assert</span> state.verification <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    state.retries += <span class="number">1</span></span><br><span class="line">    state.plan = (</span><br><span class="line">        <span class="string">&quot;针对 discount_rounding 补充 Decimal 舍入规则，&quot;</span></span><br><span class="line">        <span class="string">&quot;保留上一轮已确认的订单总额修复。&quot;</span></span><br><span class="line">    )</span><br><span class="line">    state.changed_files.append(<span class="string">&quot;src/pricing.py&quot;</span>)</span><br><span class="line">    state.spent_turns += <span class="number">2</span></span><br><span class="line">    state.stage = Stage.VERIFY</span><br><span class="line">    log(state, <span class="string">f&quot;根据测试失败进行第 <span class="subst">&#123;state.retries&#125;</span> 次修复&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>注意 <code>repair()</code> 没有把失败结果覆盖掉。<code>verification</code> 在下一次验证时会被更新，事件列表仍然留着上一次失败。实际项目最好把验证结果做成 append-only 列表，再单独保存 <code>latest_verification_id</code>。本文为了控制代码长度，只保存最新结果和文本事件。</p>
+<p>验证范围也要提前写清。只跑一个失败测试，不代表没有回归；跑完整测试集也不代表业务正确。不同任务需要不同组合：单测、静态检查、构建、迁移演练、截图对比或人工验收。系统必须分开记录”模型说完成”和”外部证据支持完成”。</p>
+<h2 id="六、验证也会失真：给优化循环留一个外部观察者"><a href="#六、验证也会失真：给优化循环留一个外部观察者" class="headerlink" title="六、验证也会失真：给优化循环留一个外部观察者"></a>六、验证也会失真：给优化循环留一个外部观察者</h2><p>到这里，工作流已经有了一个看似完整的闭环：诊断、计划、执行、验证、失败后修复。可它还存在一个很现实的漏洞。它把 <code>pytest</code> 的退出码当作唯一的成功信号，而执行节点正试图让这个信号变成 0。</p>
+<p>如果执行节点能改测试，它可以把断言从 <code>19.99</code> 改成 <code>20.00</code>，然后非常诚实地报告测试通过。即便禁止它改测试，也还有别的投机方式：缩小测试范围、跳过慢用例、只验证最初报错的函数，或者把错误吞掉。运行时没有坏，它完全按我们写的指标在优化。坏的是这个指标已经不再代表“订单金额计算正确”。</p>
+<p>这就是反馈系统里常见的 Goodhart 问题：当某个数字成了优化目标，它很容易失去原本的测量意义。放到 Agent 工作流里，”测试通过”、”工单关闭”、”回答速度”、”评测分数”都可能发生同样的事。一个 Loop 只盯着它自己的成功条件时，往往看不见这种偏离。</p>
+<p>解决办法不是再加一个会说”看起来不错”的审阅 Agent，而是为优化环增加独立的观察和约束。</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  H[&quot;人定义任务目标与不可突破的边界&quot;] --&gt; L[&quot;快速执行环\n诊断 → 修改 → 测试 → 修复&quot;]
+  L --&gt; M[&quot;主指标\n目标测试是否通过&quot;]
+  L --&gt; A[&quot;独立审计环\n保留测试、diff、策略检查&quot;]
+  A --&gt; G{&quot;主指标与护栏都通过？&quot;}
+  G --&gt;|&quot;是&quot;| D[&quot;允许结束&quot;]
+  G --&gt;|&quot;否&quot;| R[&quot;停止、回滚或人工处理&quot;]
+  A --&gt; H
+  </pre></div>
+
+<h3 id="6-1-每个主指标都该有一条护栏"><a href="#6-1-每个主指标都该有一条护栏" class="headerlink" title="6.1 每个主指标都该有一条护栏"></a>6.1 每个主指标都该有一条护栏</h3><p>主指标回答”这个任务完成了吗”，护栏回答”它是不是用不该用的方式完成了”。两者必须来自不同角度。</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>主指标</th>
+<th>护栏或反指标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>修复 bug</td>
+<td>指定失败测试通过</td>
+<td>保留回归测试通过、diff 未改测试断言、没有新增跳过标记</td>
+</tr>
+<tr>
+<td>客服 Agent</td>
+<td>工单被解决</td>
+<td>用户是否重新打开工单、升级率、抽样人工判定</td>
+</tr>
+<tr>
+<td>代码生成</td>
+<td>构建通过</td>
+<td>静态检查、依赖漏洞扫描、变更规模和评审结果</td>
+</tr>
+<tr>
+<td>检索问答</td>
+<td>回答耗时低</td>
+<td>引用是否可访问、关键事实是否来自允许的数据源、人工抽检</td>
+</tr>
+</tbody></table>
+<p>护栏不是越多越好。每多一个指标都会增加成本，也可能与主目标冲突。开始时挑最容易被投机的那一条即可。订单示例里最直接的护栏是：执行节点没有测试目录的写权限；验证节点运行一组执行节点从未见过的保留测试；审计节点检查 diff 中有没有删除断言、增加 <code>skip</code> 或修改测试收敛条件。</p>
+<p>这里的”保留测试”和机器学习里的 held-out 集合很像。优化节点可以看见任务描述、失败输出和允许的源代码，但不该看见所有验收样例。否则它学到的可能是怎样让这组样例变绿，而不是怎样修正底层行为。保留测试不必神秘，可以是代码审查者维护的一组回归用例，也可以是线上灰度中的独立样本。</p>
+<h3 id="6-2-冻结规则不要放进可写-State"><a href="#6-2-冻结规则不要放进可写-State" class="headerlink" title="6.2 冻结规则不要放进可写 State"></a>6.2 冻结规则不要放进可写 State</h3><p><code>max_retries</code>、允许路径、必须运行的测试命令、哪些目录禁止改写，这些规则不属于任务产物。它们是运行时配置，应该由调用方或人工维护，而不是让计划节点更新。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EvaluationPolicy</span>:</span><br><span class="line">    allowed_write_paths: <span class="built_in">tuple</span>[<span class="built_in">str</span>, ...] = (<span class="string">&quot;src/pricing.py&quot;</span>,)</span><br><span class="line">    required_commands: <span class="built_in">tuple</span>[<span class="built_in">str</span>, ...] = (</span><br><span class="line">        <span class="string">&quot;pytest tests/test_orders.py -q&quot;</span>,</span><br><span class="line">        <span class="string">&quot;pytest tests/regression_orders.py -q&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    forbidden_diff_markers: <span class="built_in">tuple</span>[<span class="built_in">str</span>, ...] = (<span class="string">&quot;pytest.mark.skip&quot;</span>, <span class="string">&quot;assert True&quot;</span>)</span><br><span class="line">    max_changed_files: <span class="built_in">int</span> = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p><code>frozen=True</code> 不会替代操作系统权限，也拦不住一段恶意 Python 直接绕过对象限制。但它把一个设计选择写得很明确：执行 Agent 读取 policy，不能更新 policy。真实系统还要在工具层检查路径，在 CI 或隔离环境中执行命令，并把 policy 版本写入 trace。</p>
+<p>一条很实用的规则是：优化节点能修改的东西，不应同时定义它如何被判定成功。修复节点可以改业务代码；验证策略、保留测试和批准规则由它外面的层拥有。否则图里的每一层都能彼此确认，却没有哪一层还在检查现实。</p>
+<h3 id="6-3-审计环跑得比执行环慢"><a href="#6-3-审计环跑得比执行环慢" class="headerlink" title="6.3 审计环跑得比执行环慢"></a>6.3 审计环跑得比执行环慢</h3><p>每一次工具调用都跑全量审计会很贵，也会把简单任务拖得很慢。可以让不同反馈环以不同节奏运行：</p>
+<ul>
+<li>快速执行环在每次任务中运行，负责受限修改和针对性测试。</li>
+<li>发布前审计环运行保留测试、diff 检查和安全扫描。</li>
+<li>更慢的质量环按周或按版本抽取真实任务，检查”通过率”是否仍然代表用户感受到的成功。</li>
+<li>人负责重新确认目标本身。例如，客服团队不能只因为关闭率上升就宣布系统变好，还要检查用户是否解决问题。</li>
+</ul>
+<p>快环解决眼前任务，慢环检查快环是不是在朝错误方向加速。两者不该共享同一份可随时修改的评分标准。</p>
+<h2 id="七、边才是控制流。把每一种出口写出来"><a href="#七、边才是控制流。把每一种出口写出来" class="headerlink" title="七、边才是控制流。把每一种出口写出来"></a>七、边才是控制流。把每一种出口写出来</h2><p>前面的节点只修改状态，并没有自己决定工作流何时结束。把判断集中到路由函数，才能清楚看见规则来自哪里。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">route_after_verify</span>(<span class="params">state: TaskState</span>) -&gt; Stage:</span><br><span class="line">    result = state.verification</span><br><span class="line">    <span class="keyword">if</span> result <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        state.route_reason = <span class="string">&quot;验证节点没有返回结果&quot;</span></span><br><span class="line">        <span class="keyword">return</span> Stage.HUMAN</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> result.exit_code == <span class="number">0</span>:</span><br><span class="line">        state.route_reason = <span class="string">&quot;验证命令退出码为 0&quot;</span></span><br><span class="line">        <span class="keyword">return</span> Stage.DONE</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> state.spent_turns &gt;= state.max_turns:</span><br><span class="line">        state.route_reason = <span class="string">&quot;已达到模型与工具调用预算&quot;</span></span><br><span class="line">        <span class="keyword">return</span> Stage.HUMAN</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> state.retries &gt;= state.max_retries:</span><br><span class="line">        state.route_reason = <span class="string">&quot;已达到最大修复次数&quot;</span></span><br><span class="line">        <span class="keyword">return</span> Stage.HUMAN</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;permission&quot;</span> <span class="keyword">in</span> result.summary.lower():</span><br><span class="line">        state.risk = <span class="string">&quot;high&quot;</span></span><br><span class="line">        state.route_reason = <span class="string">&quot;验证报告涉及权限问题&quot;</span></span><br><span class="line">        <span class="keyword">return</span> Stage.HUMAN</span><br><span class="line"></span><br><span class="line">    state.route_reason = <span class="string">&quot;测试失败，但仍在允许的修复预算内&quot;</span></span><br><span class="line">    <span class="keyword">return</span> Stage.EXECUTE</span><br></pre></td></tr></table></figure>
+
+<p>多数路由都不需要模型决定。退出码、重试次数、预算和权限命中都是确定条件，用 <code>if</code> 更稳定，也更容易测试。只有”这个错误是依赖服务暂时不可用，还是代码逻辑错误”这类需要理解文本语义的分支，才适合交给受限的模型分类器。</p>
+<p>即使用模型分类，也不要让它任意输出下一步。让它只能在 <code>repair</code>、<code>clarify</code>、<code>human_review</code> 里选一个，并要求返回它引用的 observation ID。路由层再检查这个枚举和证据是否有效。模型负责解释，运行时负责授权。</p>
+<p>路由函数返回 <code>Stage.EXECUTE</code> 看起来有点奇怪。因为验证失败后，流程不是回到完整的诊断和计划，而是进入 <code>repair()</code>。下面的运行器会根据当前 <code>stage</code> 和验证结果将它分发到正确函数。你也可以把 <code>REPAIR</code> 加进枚举，代码会更直白。本文保留较少状态值，方便先理解图的本质。</p>
+<h2 id="八、把节点和边接起来：一个很小的图运行时"><a href="#八、把节点和边接起来：一个很小的图运行时" class="headerlink" title="八、把节点和边接起来：一个很小的图运行时"></a>八、把节点和边接起来：一个很小的图运行时</h2><p>接下来才轮到运行器。它的职责很窄：读取当前状态，执行一个节点，根据节点结果选择下一个节点，并在终态、预算或人工暂停处停止。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">run_graph</span>(<span class="params">state: TaskState</span>) -&gt; TaskState:</span><br><span class="line">    <span class="keyword">while</span> state.stage <span class="keyword">not</span> <span class="keyword">in</span> &#123;Stage.DONE, Stage.HUMAN, Stage.FAILED&#125;:</span><br><span class="line">        <span class="keyword">if</span> state.spent_turns &gt;= state.max_turns:</span><br><span class="line">            state.stage = Stage.HUMAN</span><br><span class="line">            state.route_reason = <span class="string">&quot;运行器在节点开始前发现预算耗尽&quot;</span></span><br><span class="line">            log(state, <span class="string">&quot;预算耗尽&quot;</span>)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> state.stage == Stage.INTAKE:</span><br><span class="line">            intake(state)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> state.stage == Stage.DIAGNOSE:</span><br><span class="line">            diagnose(state)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> state.stage == Stage.PLAN:</span><br><span class="line">            plan_fix(state)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> state.stage == Stage.EXECUTE:</span><br><span class="line">            <span class="keyword">if</span> state.verification <span class="keyword">and</span> state.verification.exit_code != <span class="number">0</span>:</span><br><span class="line">                repair(state)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                execute(state)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> state.stage == Stage.VERIFY:</span><br><span class="line">            verify(state)</span><br><span class="line">            next_stage = route_after_verify(state)</span><br><span class="line">            state.stage = next_stage</span><br><span class="line">            log(state, <span class="string">f&quot;路由到 <span class="subst">&#123;next_stage&#125;</span>: <span class="subst">&#123;state.route_reason&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;未知状态: <span class="subst">&#123;state.stage&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> state</span><br></pre></td></tr></table></figure>
+
+<p>入口只需要构造状态并运行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    state = TaskState(</span><br><span class="line">        task_id=<span class="string">&quot;fix-order-rounding-001&quot;</span>,</span><br><span class="line">        request=<span class="string">&quot;修复订单金额舍入测试，并确认相关测试通过&quot;</span>,</span><br><span class="line">        workspace=<span class="string">&quot;workspace/demo-shop&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    result = run_graph(state)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;最终状态:&quot;</span>, result.stage)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;路由原因:&quot;</span>, result.route_reason)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;改动文件:&quot;</span>, result.changed_files)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;验证结果:&quot;</span>, result.verification)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;运行轨迹:&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n&quot;</span>.join(result.events))</span><br></pre></td></tr></table></figure>
+
+<p>这段程序运行后会经历下面这条路径：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">INTAKE</span><br><span class="line">  → DIAGNOSE</span><br><span class="line">  → PLAN</span><br><span class="line">  → EXECUTE</span><br><span class="line">  → VERIFY          第一次测试失败</span><br><span class="line">  → EXECUTE          实际调用 repair()</span><br><span class="line">  → VERIFY          第二次测试通过</span><br><span class="line">  → DONE</span><br></pre></td></tr></table></figure>
+
+<p>它看起来仍然是一个 <code>while</code> 循环。没错，很多图运行时的底层也会有循环或调度器。Graph 的区别不在于有没有 <code>while</code>，而在于循环不再把所有行为混成一个大函数。节点、状态和边都已经成为独立对象，可以单独检查、替换和测试。</p>
+<h2 id="九、一步一步看状态怎样变化"><a href="#九、一步一步看状态怎样变化" class="headerlink" title="九、一步一步看状态怎样变化"></a>九、一步一步看状态怎样变化</h2><p>初学者读 Agent 代码容易只盯着 prompt 或工具调用，忽略状态已经怎么变了。下面把刚才这次运行压缩成一张表。</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>节点</th>
+<th>新增或修改的状态</th>
+<th>为什么能进入下一步</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>intake</td>
+<td><code>stage=DIAGNOSE</code></td>
+<td>工作目录在允许范围内，任务非空</td>
+</tr>
+<tr>
+<td>2</td>
+<td>diagnose</td>
+<td>三条 <code>observations</code>，<code>spent_turns=2</code></td>
+<td>只读诊断完成</td>
+</tr>
+<tr>
+<td>3</td>
+<td>plan</td>
+<td><code>plan</code> 有最小修复方案</td>
+<td>关键文件证据齐全</td>
+</tr>
+<tr>
+<td>4</td>
+<td>execute</td>
+<td><code>changed_files=[pricing.py]</code></td>
+<td>有计划，且不是高风险任务</td>
+</tr>
+<tr>
+<td>5</td>
+<td>verify</td>
+<td>第一份失败 <code>verification</code></td>
+<td>测试退出码为 1</td>
+</tr>
+<tr>
+<td>6</td>
+<td>route</td>
+<td><code>route_reason</code> 写入重试原因</td>
+<td>未超预算，未达到重试上限</td>
+</tr>
+<tr>
+<td>7</td>
+<td>repair</td>
+<td><code>retries=1</code>，更新计划和改动记录</td>
+<td>验证失败属于可修复问题</td>
+</tr>
+<tr>
+<td>8</td>
+<td>verify</td>
+<td>第二份成功 <code>verification</code></td>
+<td>测试退出码为 0</td>
+</tr>
+<tr>
+<td>9</td>
+<td>route</td>
+<td><code>stage=DONE</code></td>
+<td>外部验证通过</td>
+</tr>
+</tbody></table>
+<p>以后某个任务说”Agent 改错文件”，你不必靠模型回忆。可以查第 4 步执行节点拿到了什么 plan，查第 2 步 observations 是否包含了错误文件，查路由有没有绕过高风险分支。</p>
+<p>也要注意一个边界：这个例子里状态对象是可变的，节点会直接修改它。教学代码这样写最容易读。生产中更常见的做法是让节点返回一个 patch，例如 <code>&#123;&quot;plan&quot;: &quot;...&quot;&#125;</code>，由运行时统一合并到状态。这能更方便地做审计和并发 reducer，也能防止节点悄悄改了不属于它的字段。LangGraph 的节点就是返回状态更新，再由状态 schema 和 reducer 决定怎样合并。<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/graph-api">Graph API overview</a></p>
+<h2 id="十、接入-LLM-后，节点应该怎样写"><a href="#十、接入-LLM-后，节点应该怎样写" class="headerlink" title="十、接入 LLM 后，节点应该怎样写"></a>十、接入 LLM 后，节点应该怎样写</h2><p>把上面的 <code>plan_fix()</code> 换成模型调用，并不等于把整个 <code>state</code> 原封不动塞进 prompt。模型看到越多信息，越容易抓住无关细节，也越难判断哪一条是事实、哪一条是旧计划。</p>
+<p>计划节点只需要一个很小的上下文投影：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">plan_context</span>(<span class="params">state: TaskState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;request&quot;</span>: state.request,</span><br><span class="line">        <span class="string">&quot;observations&quot;</span>: [asdict(item) <span class="keyword">for</span> item <span class="keyword">in</span> state.observations],</span><br><span class="line">        <span class="string">&quot;previous_verification&quot;</span>: (</span><br><span class="line">            asdict(state.verification) <span class="keyword">if</span> state.verification <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">        ),</span><br><span class="line">        <span class="string">&quot;allowed_files&quot;</span>: [<span class="string">&quot;src/pricing.py&quot;</span>],</span><br><span class="line">        <span class="string">&quot;required_output&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;hypothesis&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;steps&quot;</span>: [<span class="string">&quot;string&quot;</span>],</span><br><span class="line">            <span class="string">&quot;files_to_change&quot;</span>: [<span class="string">&quot;string&quot;</span>],</span><br><span class="line">            <span class="string">&quot;risks&quot;</span>: [<span class="string">&quot;string&quot;</span>],</span><br><span class="line">        &#125;,</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>真实 <code>plan_fix()</code> 可以把这份对象序列化后发送给模型，并要求模型返回 JSON。收到回复后不能直接相信它：要检查 <code>files_to_change</code> 是否都在允许列表中，<code>steps</code> 是否为空，JSON 是否符合 schema。任何一个检查失败，都把错误作为新的 observation 或转人工处理，而不是让模型直接调用编辑工具。</p>
+<p>执行节点也不应该得到计划节点的全部权限。它需要的能力可能只有：读取计划、编辑白名单文件、运行一条指定测试、读取 diff。部署、删除目录、读取环境变量等工具默认不在这个节点的能力集中。</p>
+<p>一个最小的权限表可以写成这样：</p>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>可以读取</th>
+<th>可以写入</th>
+<th>可以执行</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>diagnose</td>
+<td>代码、测试、日志</td>
+<td>无</td>
+<td>只读查询、受限测试日志</td>
+</tr>
+<tr>
+<td>plan</td>
+<td>已投影的 observations</td>
+<td>无</td>
+<td>无</td>
+</tr>
+<tr>
+<td>execute</td>
+<td>计划和目标文件</td>
+<td>业务代码白名单文件</td>
+<td>受限编辑</td>
+</tr>
+<tr>
+<td>verify</td>
+<td>变更摘要和测试文件</td>
+<td>无</td>
+<td>测试、lint、构建</td>
+</tr>
+<tr>
+<td>human</td>
+<td>全部必要证据</td>
+<td>按审批决定</td>
+<td>按审批决定</td>
+</tr>
+</tbody></table>
+<p>这张表不会因为提示词写了规则就自动生效。提示词只能说明约束，工具注册表、工作目录限制、容器或审批系统才负责执行。模型就算幻觉出 <code>delete_database</code>，执行层没有这个工具，它也做不了。</p>
+<h2 id="十一、并行不是同时跑几个-Agent-那么简单"><a href="#十一、并行不是同时跑几个-Agent-那么简单" class="headerlink" title="十一、并行不是同时跑几个 Agent 那么简单"></a>十一、并行不是同时跑几个 Agent 那么简单</h2><p>现在回到诊断阶段。我们之前顺序收集测试、实现和 <code>git diff</code>。如果三个读取任务互不依赖，可以并行，但必须先回答两个问题：结果怎样写回状态，某个分支失败时是否还继续。</p>
+<p>下面用 <code>asyncio</code> 模拟三个只读任务。为了演示顺序问题，第三个任务最快完成，第二个任务最慢完成。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">read_test</span>() -&gt; Observation:</span><br><span class="line">    <span class="keyword">await</span> asyncio.sleep(<span class="number">0.02</span>)</span><br><span class="line">    <span class="keyword">return</span> Observation(<span class="string">&quot;tests/test_orders.py&quot;</span>, <span class="string">&quot;rounding assertion failed&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">read_implementation</span>() -&gt; Observation:</span><br><span class="line">    <span class="keyword">await</span> asyncio.sleep(<span class="number">0.06</span>)</span><br><span class="line">    <span class="keyword">return</span> Observation(<span class="string">&quot;src/pricing.py&quot;</span>, <span class="string">&quot;uses binary float before rounding&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">inspect_diff</span>() -&gt; Observation:</span><br><span class="line">    <span class="keyword">await</span> asyncio.sleep(<span class="number">0.01</span>)</span><br><span class="line">    <span class="keyword">return</span> Observation(<span class="string">&quot;git diff --stat&quot;</span>, <span class="string">&quot;working tree clean&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">diagnose_in_parallel</span>(<span class="params">state: TaskState</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    jobs = [read_test(), read_implementation(), inspect_diff()]</span><br><span class="line">    results = <span class="keyword">await</span> asyncio.gather(*jobs, return_exceptions=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> name, result <span class="keyword">in</span> <span class="built_in">zip</span>([<span class="string">&quot;test&quot;</span>, <span class="string">&quot;implementation&quot;</span>, <span class="string">&quot;diff&quot;</span>], results):</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(result, Exception):</span><br><span class="line">            state.events.append(<span class="string">f&quot;diagnose: <span class="subst">&#123;name&#125;</span> 读取失败: <span class="subst">&#123;result&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            state.observations.append(result)</span><br></pre></td></tr></table></figure>
+
+<p><code>asyncio.gather()</code> 的返回顺序与传入顺序一致，不是完成顺序。测试读取最先结束，结果列表仍按 <code>test</code>、<code>implementation</code>、<code>diff</code> 的固定顺序写回。调度略有不同，下一次运行的状态排列也不会跟着漂移。</p>
+<p>如果你用的是多个子 Agent，道理相同。它们可以并发完成，主工作流保存结果时应使用稳定的任务 ID 或原始调用顺序，而不是谁先返回就先写谁。否则复现一次故障时，你连”后面的 Agent 到底看见了哪份先前状态”都说不清。</p>
+<p>还要设计失败策略。对于我们的修复任务，读不到 <code>git diff</code> 也许只需要标记警告；读不到失败测试文件则不应继续计划。可以把这种规则明确写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">测试文件缺失                 → HUMAN</span><br><span class="line">实现文件缺失                 → HUMAN</span><br><span class="line">git diff 读取失败             → 继续，但 risk=high</span><br><span class="line">任何并行任务超时             → 取消剩余任务并写入 timeout 事件</span><br></pre></td></tr></table></figure>
+
+<p>并行读通常比较容易。并行写复杂得多。两个执行节点同时修改同一个文件，最后保存的内容取决于调度而不是业务规则。除非你已经有 worktree、文件锁、patch 合并和冲突处理，否则让写入节点串行运行，通常比事后处理乱掉的工作区便宜。</p>
+<h2 id="十二、检查点不是“存一下聊天记录”"><a href="#十二、检查点不是“存一下聊天记录”" class="headerlink" title="十二、检查点不是“存一下聊天记录”"></a>十二、检查点不是“存一下聊天记录”</h2><p>运行到一半进程崩了，下一次重跑时最糟糕的选择是把任务从头再做一遍。你会重复消耗模型调用，也可能在不知道上一轮已经写过文件的情况下再次写入。</p>
+<p>检查点应该保存的是可以恢复的任务事实，而不是一整段未经筛选的聊天文本。对于本文的状态，最小实现可以每执行完一个节点就写一次 JSON：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_checkpoint</span>(<span class="params">state: TaskState, path: Path</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    payload = asdict(state)</span><br><span class="line">    payload[<span class="string">&quot;stage&quot;</span>] = state.stage.value</span><br><span class="line">    path.write_text(</span><br><span class="line">        json.dumps(payload, ensure_ascii=<span class="literal">False</span>, indent=<span class="number">2</span>),</span><br><span class="line">        encoding=<span class="string">&quot;utf-8&quot;</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_checkpoint</span>(<span class="params">path: Path</span>) -&gt; TaskState:</span><br><span class="line">    raw = json.loads(path.read_text(encoding=<span class="string">&quot;utf-8&quot;</span>))</span><br><span class="line">    raw[<span class="string">&quot;stage&quot;</span>] = Stage(raw[<span class="string">&quot;stage&quot;</span>])</span><br><span class="line">    raw[<span class="string">&quot;observations&quot;</span>] = [Observation(**item) <span class="keyword">for</span> item <span class="keyword">in</span> raw[<span class="string">&quot;observations&quot;</span>]]</span><br><span class="line">    <span class="keyword">if</span> raw[<span class="string">&quot;verification&quot;</span>] <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        raw[<span class="string">&quot;verification&quot;</span>] = Verification(**raw[<span class="string">&quot;verification&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> TaskState(**raw)</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>run_graph()</code> 每个节点之后加上 <code>save_checkpoint(state, checkpoint_path)</code>，就能在进入 <code>VERIFY</code> 前保存当前进度。恢复时也不能盲目继续：应该重新确认工作目录、检查上次记录的变更是否仍然存在、必要时重新运行验证。外部世界会变化，保存下来的状态只能说明”当时看见了什么”，不能保证今天仍然成立。</p>
+<p>另一个常被忽略的问题是版本。半年后你给 <code>TaskState</code> 新增字段，或者把 <code>Stage.EXECUTE</code> 改名成 <code>Stage.APPLY_PATCH</code>，旧检查点可能无法读取。至少给持久化内容加一个 <code>schema_version</code> 和 <code>workflow_version</code>，再为旧版本提供迁移函数。没有这些，”支持恢复”只是开发环境里的一次演示。</p>
+<h2 id="十三、怎样测试一张图"><a href="#十三、怎样测试一张图" class="headerlink" title="十三、怎样测试一张图"></a>十三、怎样测试一张图</h2><p>测试图工作流时，不能只问最后有没有输出正确文本。路径本身也是产品行为。</p>
+<p>先为路由写最小单元测试。它们不需要模型，也不需要真实文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">make_failed_state</span>(<span class="params">*, retries: <span class="built_in">int</span>, spent_turns: <span class="built_in">int</span></span>) -&gt; TaskState:</span><br><span class="line">    <span class="keyword">return</span> TaskState(</span><br><span class="line">        task_id=<span class="string">&quot;test&quot;</span>,</span><br><span class="line">        request=<span class="string">&quot;fix&quot;</span>,</span><br><span class="line">        workspace=<span class="string">&quot;workspace/demo&quot;</span>,</span><br><span class="line">        retries=retries,</span><br><span class="line">        spent_turns=spent_turns,</span><br><span class="line">        verification=Verification(<span class="string">&quot;pytest&quot;</span>, <span class="number">1</span>, <span class="string">&quot;assertion failed&quot;</span>),</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_failed_verification_enters_repair</span>() -&gt; <span class="literal">None</span>:</span><br><span class="line">    state = make_failed_state(retries=<span class="number">0</span>, spent_turns=<span class="number">3</span>)</span><br><span class="line">    <span class="keyword">assert</span> route_after_verify(state) == Stage.EXECUTE</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_retry_limit_enters_human_review</span>() -&gt; <span class="literal">None</span>:</span><br><span class="line">    state = make_failed_state(retries=<span class="number">2</span>, spent_turns=<span class="number">3</span>)</span><br><span class="line">    <span class="keyword">assert</span> route_after_verify(state) == Stage.HUMAN</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_budget_limit_enters_human_review</span>() -&gt; <span class="literal">None</span>:</span><br><span class="line">    state = make_failed_state(retries=<span class="number">0</span>, spent_turns=<span class="number">12</span>)</span><br><span class="line">    <span class="keyword">assert</span> route_after_verify(state) == Stage.HUMAN</span><br></pre></td></tr></table></figure>
+
+<p>再测节点权限。这里不必真的运行沙箱，可以给工具函数一个会记录调用的 fake executor，断言诊断节点从不触发写入工具，执行节点拿不到白名单之外的路径。接入真实工具后，这些测试仍要留在执行层，不能只检查 prompt 里有没有写”请谨慎操作”。</p>
+<p>最后测端到端轨迹。本文的模拟场景应该固定走到 <code>DONE</code>，事件中必须有一次失败验证、一次修复、一次成功验证。另一个场景把 <code>max_retries</code> 设为 0，预期停在 <code>HUMAN</code>，并且不再进行第二次写入。这样的测试会抓住很多肉眼看不出的错误，例如路由函数把 <code>&gt;=</code> 写成 <code>&gt;</code>，导致系统多改了一次文件。</p>
+<p>评测模型节点时还要再加一层。为诊断、计划和审阅准备固定 fixture，分别检查：</p>
+<ul>
+<li>是否引用了提供的 observation，而不是编造文件内容；</li>
+<li>是否遵守了输出 JSON schema；</li>
+<li>是否拒绝越权文件或危险操作；</li>
+<li>在同一种失败输入下，是否选择了允许的路由枚举；</li>
+<li>当证据不足时，是否转向澄清或人工处理，而不是编造修复。</li>
+</ul>
+<p>Agent 的正确性通常不是一个分数。模型输出可以评估，工具结果可以断言，路径是否越权也可以断言。把它们混成一句”通过率 85%”，很难知道下一次该修 prompt、修工具还是修路由。</p>
+<h2 id="十四、把这个小运行时映射到-LangGraph"><a href="#十四、把这个小运行时映射到-LangGraph" class="headerlink" title="十四、把这个小运行时映射到 LangGraph"></a>十四、把这个小运行时映射到 LangGraph</h2><p>看完手写版本后，再看框架会轻松很多。下面不是另一套新概念，只是名称对应：</p>
+<table>
+<thead>
+<tr>
+<th>本文代码</th>
+<th>LangGraph 中常见的对应物</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TaskState</code></td>
+<td>State schema，常用 <code>TypedDict</code>、dataclass 或 Pydantic 模型</td>
+</tr>
+<tr>
+<td><code>intake</code>、<code>diagnose</code>、<code>verify</code></td>
+<td><code>add_node()</code> 注册的节点函数</td>
+</tr>
+<tr>
+<td><code>route_after_verify()</code></td>
+<td><code>add_conditional_edges()</code> 的条件路由</td>
+</tr>
+<tr>
+<td><code>Stage.DONE</code></td>
+<td><code>END</code></td>
+</tr>
+<tr>
+<td><code>save_checkpoint()</code></td>
+<td>checkpointer 持久化的 state snapshot</td>
+</tr>
+<tr>
+<td><code>run_graph()</code></td>
+<td>编译后的图运行时与调度器</td>
+</tr>
+</tbody></table>
+<p>框架会帮你处理图的编译、状态合并、并发 super-step、流式事件和 checkpointer 接口，但它不会替你回答业务问题：<code>verification</code> 是覆盖还是追加？测试失败后能改几次？哪个节点有写权限？何时必须人工审批？这些决定仍然需要你在状态、节点和边里写出来。</p>
+<p>如果你还没用过 LangGraph，不要急着把本文所有函数翻译成 API。先拿第三节的状态、第四节的节点合同、第六节的路由规则画在纸上。能在不运行程序时说明每个字段的写入者和每条边的条件，再上框架会快得多。</p>
+<h2 id="十五、几个很常见的错误"><a href="#十五、几个很常见的错误" class="headerlink" title="十五、几个很常见的错误"></a>十五、几个很常见的错误</h2><h3 id="为了“多-Agent”而拆节点"><a href="#为了“多-Agent”而拆节点" class="headerlink" title="为了“多 Agent”而拆节点"></a>为了“多 Agent”而拆节点</h3><p>把总结 PDF 拆成抓取、切块、摘要、二次摘要、润色、审阅六个 LLM 节点，看起来像一张复杂图，实际只是增加了调用次数和状态传递。若同一个模型、同一份上下文、同一套工具就能完成，保持一个 Loop 更好。</p>
+<h3 id="让所有节点读写全部-State"><a href="#让所有节点读写全部-State" class="headerlink" title="让所有节点读写全部 State"></a>让所有节点读写全部 State</h3><p>这是最容易把图做成共享泥潭的方式。诊断节点不需要改预算，审阅节点不需要写变更文件，执行节点也不需要覆盖原始请求。把字段所有权写进接口和测试，后期会少很多莫名其妙的回归。</p>
+<h3 id="把路由都交给模型"><a href="#把路由都交给模型" class="headerlink" title="把路由都交给模型"></a>把路由都交给模型</h3><p>模型可以解释复杂错误，但不该决定已知的硬边界。预算耗尽、测试退出码、白名单命中、人工审批都是程序规则。让模型决定这些，结果既不稳定也不容易复现。</p>
+<h3 id="用另一个模型给第一个模型盖章"><a href="#用另一个模型给第一个模型盖章" class="headerlink" title="用另一个模型给第一个模型盖章"></a>用另一个模型给第一个模型盖章</h3><p>审阅必须看到独立证据。没有测试、没有规则清单、没有来源，第二个模型只是用不同措辞重复第一个模型的判断。它可以发现一些表达问题，却不能把猜测变成验证。</p>
+<h3 id="只存最终答案，不存失败路径"><a href="#只存最终答案，不存失败路径" class="headerlink" title="只存最终答案，不存失败路径"></a>只存最终答案，不存失败路径</h3><p>图系统最有价值的信息常常在失败处：哪条工具调用超时，哪次验证失败，状态在哪个版本被污染。只保存最终文本，等于在故障发生后扔掉证据。</p>
+<h3 id="一开始就并行写文件"><a href="#一开始就并行写文件" class="headerlink" title="一开始就并行写文件"></a>一开始就并行写文件</h3><p>并行读取、并行调研通常安全。并行写同一个工作区要面对锁、worktree、文件冲突和合并。先把唯一写入者做对，再考虑把独立写操作放到隔离环境中。</p>
+<h2 id="十六、给初学者的练习顺序"><a href="#十六、给初学者的练习顺序" class="headerlink" title="十六、给初学者的练习顺序"></a>十六、给初学者的练习顺序</h2><p>想动手跑一遍，可以按下面的顺序增加难度。</p>
+<ol>
+<li>把第四节到第七节的代码复制到一个文件中，确认模拟任务会经历一次失败和一次修复后结束。</li>
+<li>修改 <code>verify()</code>，让它连续失败三次，观察任务为什么会停在 <code>HUMAN</code>，而不是无限循环。</li>
+<li>给 <code>intake()</code> 增加一个规则：请求里出现 <code>deploy</code> 或 <code>delete</code> 时直接进入 <code>HUMAN</code>。这一步能体会到权限路由为什么不该交给模型。</li>
+<li>把 <code>diagnose()</code> 的固定 observation 换成受限工作目录里的真实文件读取，但仍然不要加入写文件工具。</li>
+<li>只替换 <code>plan_fix()</code>，让模型从投影后的 observations 中返回 JSON 计划。先打印并校验 JSON，不让它执行。</li>
+<li>最后才把 <code>execute()</code> 接到一个允许修改临时目录的编辑工具，并让 <code>verify()</code> 跑测试。</li>
+</ol>
+<p>每一步都保留前一步的测试。很多人第一次接模型后发现路径乱了，就开始不断改 prompt。更有效的做法是先问：状态有没有缺字段，路由有没有让模型承担确定判断，执行器有没有放开不该有的工具。模型只是图里的一个节点，别让它成为所有问题的解释。</p>
+<h2 id="图只是责任清单的一种写法"><a href="#图只是责任清单的一种写法" class="headerlink" title="图只是责任清单的一种写法"></a>图只是责任清单的一种写法</h2><p>一张好的 Agent 图不会让人觉得”节点真多”。读者应该能顺着它回答：发生了什么，谁做了什么，凭什么继续，失败后停在哪里。</p>
+<p>Loop 仍然是最常用的起点。把它做得有预算、有验证、有工具边界，已经能解决很多任务。职责分开、状态需要恢复、分支需要解释、并行需要汇合时，再把它展开成 Graph。图里写下的，是运行时、测试和后续维护者都能检查的责任。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>选题来源：<a target="_blank" rel="noopener" href="https://x.com/AdrianPunk115/status/2081268706483814605">Adrian Punk《Graph Engineering：从 0 到 1 小白完整教程》</a></li>
+<li>关于指标失真、独立审计与外部锚点的思考：<a target="_blank" rel="noopener" href="https://x.com/IntuitMachine/status/2078419526354378975">Intuit Machine《What the shift in AI agent architecture is really about》</a></li>
+<li>LangGraph 的 State、Node、Edge、条件边与并行执行：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/graph-api">Graph API overview</a></li>
+<li>Checkpoint、恢复与回放：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/persistence">LangGraph Persistence</a></li>
+<li>可对照阅读：<a href="/posts/39471">LangGraph 工作流深度解析：如何收紧 LLM 的决策权</a> ｜<a href="/posts/65310">Claude Code 动态工作流深度解析</a> ｜<a href="/posts/65900">从零构建 Agent 框架（三）：子 Agent</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/66200/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/66200/')">怎样手写一个可验证的 Agent 图工作流</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/66200/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">50</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">48</span></a><a class="post-meta__box__tags" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>工作流<span class="tagsPageCount">4</span></a><a class="post-meta__box__tags" href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>多智能体<span class="tagsPageCount">4</span></a><a class="post-meta__box__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>工程实践<span class="tagsPageCount">7</span></a><a class="post-meta__box__tags" href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>状态机<span class="tagsPageCount">2</span></a><a class="post-meta__box__tags" href="/tags/Python/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Python<span class="tagsPageCount">4</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/66100/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Kimi 怎样训练大规模 AI 系统</div></div></a></div><div class="next-post pull-right"><a href="/posts/66400/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">怎样把企业售后 Agent 做成可验收的工单闭环</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/39471/" title="LangGraph 怎样收紧 LLM 的决策权"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-04-03-langgraph-decision-boundary-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-03</div><div class="title">LangGraph 怎样收紧 LLM 的决策权</div></div></a></div><div><a href="/posts/63802/" title="Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-15-workflow-vs-agent-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-15</div><div class="title">Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界</div></div></a></div><div><a href="/posts/63925/" title="OpenClaw 怎样隔离多 Agent 任务与权限"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-07-openclaw-multi-agent-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-07</div><div class="title">OpenClaw 怎样隔离多 Agent 任务与权限</div></div></a></div><div><a href="/posts/63952/" title="OpenClaw Skills 怎样决定加载优先级与共享范围"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-18-openclaw-skills-layers-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-18</div><div class="title">OpenClaw Skills 怎样决定加载优先级与共享范围</div></div></a></div><div><a href="/posts/64738/" title="Agent Harness 如何让工具调用可恢复、可验证"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-04-19-agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 如何让工具调用可恢复、可验证</div></div></a></div><div><a href="/posts/65310/" title="Claude Code 如何用子 Agent 并行完成复杂任务"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-06-03-claude-code-dynamic-workflow-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-06-03</div><div class="title">Claude Code 如何用子 Agent 并行完成复杂任务</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E6%8A%8A%E5%87%A0%E4%B8%AA%E8%AF%8D%E8%AF%B4%E6%B8%85"><span class="toc-number">1.</span> <span class="toc-text">一、先把几个词说清</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%B8%8D%E8%A6%81%E5%9B%A0%E4%B8%BA%E4%BB%BB%E5%8A%A1%E9%95%BF%E5%B0%B1%E4%B8%8A-Graph"><span class="toc-number">2.</span> <span class="toc-text">二、不要因为任务长就上 Graph</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E8%8A%82%E7%82%B9%E7%9A%84%E6%9D%83%E9%99%90%E4%B8%8D%E5%90%8C"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 节点的权限不同</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E8%8A%82%E7%82%B9%E7%9A%84%E8%BE%93%E5%85%A5%E4%B8%8D%E5%90%8C"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 节点的输入不同</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E4%B8%8B%E6%B8%B8%E8%A6%81%E7%AD%89%E5%BE%85%E5%A4%9A%E4%B8%AA%E7%8B%AC%E7%AB%8B%E7%BB%93%E6%9E%9C"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 下游要等待多个独立结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-%E5%A4%B1%E8%B4%A5%E5%90%8E%E9%9C%80%E8%A6%81%E5%8F%AF%E6%81%A2%E5%A4%8D"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 失败后需要可恢复</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E4%BB%8E-State-%E5%BC%80%E5%A7%8B%EF%BC%8C%E4%B8%8D%E8%A6%81%E5%85%88%E5%86%99-Agent"><span class="toc-number">3.</span> <span class="toc-text">三、从 State 开始，不要先写 Agent</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E7%BB%99%E6%AF%8F%E4%B8%AA%E8%8A%82%E7%82%B9%E5%86%99%E4%B8%80%E4%BB%BD%E5%B0%8F%E5%90%88%E5%90%8C"><span class="toc-number">4.</span> <span class="toc-text">四、给每个节点写一份小合同</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E9%AA%8C%E8%AF%81%E8%8A%82%E7%82%B9%E4%B8%8D%E8%B4%9F%E8%B4%A3%E5%AE%89%E6%85%B0%E4%BA%BA%EF%BC%8C%E5%AE%83%E5%8F%AA%E8%B4%9F%E8%B4%A3%E7%BB%99%E5%87%BA%E8%AF%81%E6%8D%AE"><span class="toc-number">5.</span> <span class="toc-text">五、验证节点不负责安慰人，它只负责给出证据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%AA%8C%E8%AF%81%E4%B9%9F%E4%BC%9A%E5%A4%B1%E7%9C%9F%EF%BC%9A%E7%BB%99%E4%BC%98%E5%8C%96%E5%BE%AA%E7%8E%AF%E7%95%99%E4%B8%80%E4%B8%AA%E5%A4%96%E9%83%A8%E8%A7%82%E5%AF%9F%E8%80%85"><span class="toc-number">6.</span> <span class="toc-text">六、验证也会失真：给优化循环留一个外部观察者</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%AF%8F%E4%B8%AA%E4%B8%BB%E6%8C%87%E6%A0%87%E9%83%BD%E8%AF%A5%E6%9C%89%E4%B8%80%E6%9D%A1%E6%8A%A4%E6%A0%8F"><span class="toc-number">6.1.</span> <span class="toc-text">6.1 每个主指标都该有一条护栏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E5%86%BB%E7%BB%93%E8%A7%84%E5%88%99%E4%B8%8D%E8%A6%81%E6%94%BE%E8%BF%9B%E5%8F%AF%E5%86%99-State"><span class="toc-number">6.2.</span> <span class="toc-text">6.2 冻结规则不要放进可写 State</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E5%AE%A1%E8%AE%A1%E7%8E%AF%E8%B7%91%E5%BE%97%E6%AF%94%E6%89%A7%E8%A1%8C%E7%8E%AF%E6%85%A2"><span class="toc-number">6.3.</span> <span class="toc-text">6.3 审计环跑得比执行环慢</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%BE%B9%E6%89%8D%E6%98%AF%E6%8E%A7%E5%88%B6%E6%B5%81%E3%80%82%E6%8A%8A%E6%AF%8F%E4%B8%80%E7%A7%8D%E5%87%BA%E5%8F%A3%E5%86%99%E5%87%BA%E6%9D%A5"><span class="toc-number">7.</span> <span class="toc-text">七、边才是控制流。把每一种出口写出来</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%8A%8A%E8%8A%82%E7%82%B9%E5%92%8C%E8%BE%B9%E6%8E%A5%E8%B5%B7%E6%9D%A5%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%BE%88%E5%B0%8F%E7%9A%84%E5%9B%BE%E8%BF%90%E8%A1%8C%E6%97%B6"><span class="toc-number">8.</span> <span class="toc-text">八、把节点和边接起来：一个很小的图运行时</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E4%B8%80%E6%AD%A5%E4%B8%80%E6%AD%A5%E7%9C%8B%E7%8A%B6%E6%80%81%E6%80%8E%E6%A0%B7%E5%8F%98%E5%8C%96"><span class="toc-number">9.</span> <span class="toc-text">九、一步一步看状态怎样变化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%8E%A5%E5%85%A5-LLM-%E5%90%8E%EF%BC%8C%E8%8A%82%E7%82%B9%E5%BA%94%E8%AF%A5%E6%80%8E%E6%A0%B7%E5%86%99"><span class="toc-number">10.</span> <span class="toc-text">十、接入 LLM 后，节点应该怎样写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E5%B9%B6%E8%A1%8C%E4%B8%8D%E6%98%AF%E5%90%8C%E6%97%B6%E8%B7%91%E5%87%A0%E4%B8%AA-Agent-%E9%82%A3%E4%B9%88%E7%AE%80%E5%8D%95"><span class="toc-number">11.</span> <span class="toc-text">十一、并行不是同时跑几个 Agent 那么简单</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E6%A3%80%E6%9F%A5%E7%82%B9%E4%B8%8D%E6%98%AF%E2%80%9C%E5%AD%98%E4%B8%80%E4%B8%8B%E8%81%8A%E5%A4%A9%E8%AE%B0%E5%BD%95%E2%80%9D"><span class="toc-number">12.</span> <span class="toc-text">十二、检查点不是“存一下聊天记录”</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%89%E3%80%81%E6%80%8E%E6%A0%B7%E6%B5%8B%E8%AF%95%E4%B8%80%E5%BC%A0%E5%9B%BE"><span class="toc-number">13.</span> <span class="toc-text">十三、怎样测试一张图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E5%9B%9B%E3%80%81%E6%8A%8A%E8%BF%99%E4%B8%AA%E5%B0%8F%E8%BF%90%E8%A1%8C%E6%97%B6%E6%98%A0%E5%B0%84%E5%88%B0-LangGraph"><span class="toc-number">14.</span> <span class="toc-text">十四、把这个小运行时映射到 LangGraph</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%BA%94%E3%80%81%E5%87%A0%E4%B8%AA%E5%BE%88%E5%B8%B8%E8%A7%81%E7%9A%84%E9%94%99%E8%AF%AF"><span class="toc-number">15.</span> <span class="toc-text">十五、几个很常见的错误</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BA%86%E2%80%9C%E5%A4%9A-Agent%E2%80%9D%E8%80%8C%E6%8B%86%E8%8A%82%E7%82%B9"><span class="toc-number">15.1.</span> <span class="toc-text">为了“多 Agent”而拆节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%A9%E6%89%80%E6%9C%89%E8%8A%82%E7%82%B9%E8%AF%BB%E5%86%99%E5%85%A8%E9%83%A8-State"><span class="toc-number">15.2.</span> <span class="toc-text">让所有节点读写全部 State</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8A%8A%E8%B7%AF%E7%94%B1%E9%83%BD%E4%BA%A4%E7%BB%99%E6%A8%A1%E5%9E%8B"><span class="toc-number">15.3.</span> <span class="toc-text">把路由都交给模型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%A8%E5%8F%A6%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B%E7%BB%99%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B%E7%9B%96%E7%AB%A0"><span class="toc-number">15.4.</span> <span class="toc-text">用另一个模型给第一个模型盖章</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AA%E5%AD%98%E6%9C%80%E7%BB%88%E7%AD%94%E6%A1%88%EF%BC%8C%E4%B8%8D%E5%AD%98%E5%A4%B1%E8%B4%A5%E8%B7%AF%E5%BE%84"><span class="toc-number">15.5.</span> <span class="toc-text">只存最终答案，不存失败路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E5%BC%80%E5%A7%8B%E5%B0%B1%E5%B9%B6%E8%A1%8C%E5%86%99%E6%96%87%E4%BB%B6"><span class="toc-number">15.6.</span> <span class="toc-text">一开始就并行写文件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E5%85%AD%E3%80%81%E7%BB%99%E5%88%9D%E5%AD%A6%E8%80%85%E7%9A%84%E7%BB%83%E4%B9%A0%E9%A1%BA%E5%BA%8F"><span class="toc-number">16.</span> <span class="toc-text">十六、给初学者的练习顺序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%BE%E5%8F%AA%E6%98%AF%E8%B4%A3%E4%BB%BB%E6%B8%85%E5%8D%95%E7%9A%84%E4%B8%80%E7%A7%8D%E5%86%99%E6%B3%95"><span class="toc-number">17.</span> <span class="toc-text">图只是责任清单的一种写法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">18.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样把企业售后 Agent 做成可验收的工单闭环"/></a><div class="content"><a class="title" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环">怎样把企业售后 Agent 做成可验收的工单闭环</a><time datetime="2026-07-29T02:30:00.000Z" title="发表于 2026-07-29 10:30:00">2026-07-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样手写一个可验证的 Agent 图工作流"/></a><div class="content"><a class="title" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流">怎样手写一个可验证的 Agent 图工作流</a><time datetime="2026-07-27T12:30:00.000Z" title="发表于 2026-07-27 20:30:00">2026-07-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kimi 怎样训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统">Kimi 怎样训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-17-agent-framework-subagents-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派">从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-16-grok-build-context-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 如何用 Agent 循环压缩上下文"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文">Grok Build 如何用 Agent 循环压缩上下文</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">54</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">71</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">14</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>48</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>50</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>25</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Python/" style="font-size: 0.88rem;">Python<sup>4</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>4</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 0.88rem;">工作流<sup>4</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 0.88rem;">工程化<sup>18</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>7</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>23</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","head > link[rel=\"shortcut icon\"]","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>

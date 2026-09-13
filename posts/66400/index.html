@@ -1,0 +1,816 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>怎样把企业售后 Agent 做成可验收的工单闭环 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,工程实践,RAG,企业 AI,售后系统,Human-in-the-loop,LLM Eval"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="怎样把企业售后 Agent 做成可验收的工单闭环"><meta name="application-name" content="怎样把企业售后 Agent 做成可验收的工单闭环"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="怎样把企业售后 Agent 做成可验收的工单闭环"><meta property="og:url" content="https://blog.asaakii.com/posts/66400/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="以企业售后工单工作台源码为例，拆解权限、知识检索、结构化 AI 建议、人工确认、固定评测和审计如何组成一条可交付的企业 Agent 闭环，并明确本地 Demo 与生产系统之间的边界。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp"><meta name="description" content="以企业售后工单工作台源码为例，拆解权限、知识检索、结构化 AI 建议、人工确认、固定评测和审计如何组成一条可交付的企业 Agent 闭环，并明确本地 Demo 与生产系统之间的边界。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/66400/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: '怎样把企业售后 Agent 做成可验收的工单闭环',
+  postAI: '',
+  pageFillDescription: '一、先界定第一版要处理什么, 二、先按责任拆系统再决定是否需要多个 Agent, 三、先画工单状态再写 Prompt, 3.1 乐观并发不是技术细节, 四、RAG 的起点是哪一版知识可以被引用, 4.1 给引用设白名单, 4.2 不命中是正常结果不要拿旧片段凑答案, 五、模型返回的是建议对象, 六、人工确认要保留原稿与终稿, 6.1 哪些动作必须停下来等人？, 七、审计记录要能还原一次处理, 八、固定评测用来发现回归, 九、开发过程也要有验收关口, 十、先把仓库作为教学工程跑起来, 十一、用问题检查它是否能进入业务流程, 结语, 参考资料企业售后系统里的模型可以归类工单检索政策起草回复也能把一句未执行的已退款写得像真的后者不是语言问题而是系统没有把事实权限和业务动作分开一套能用于售后流程的需要明确谁可以看数据哪些知识仍然有效什么情况必须停下来等人发生问题后怎样还原过程模型只负责其中一段根据受限上下文给出建议它不能凭生成的文字获得退款外发消息或改订单的权限本文以为样本结合对该系列的阶段复盘梳理一套售后工单工作台的设计方法仓库包含源码合成夹具任务书和阶段证据下文说的仓库实现都指当前分支可读到的代码和文档不表示我已在真实客户数据或公网环境中复验过它仓库也明确把成果定为本地尚不是生产系统一先界定第一版要处理什么做一个企业客服不算完整需求它可能是聊天机器人工单分流知识问答退款审批外呼质检也可能想成为的总入口第一版把这些全塞进去往往只会得到一个展示效果不错责任边界却说不清的页面仓库的第一版把问题压缩为企业售后工单工作台它选择了一个很具体的闭环登录查看有权限的工单检索当前有效的企业知识生成带来源的结构化建议人工编辑确认拒绝或转人工保存终稿和处理结果留下审计记录并能用固定案例回归评测它刻意不做真实退款改订单支付对客户外发消息自由注册复杂多租户和模型直接访问数据库这一点写在总任务书里也和源码中的合成数据边界一致第一版的重点是把责任链补齐比起接了多少模型更该先回答下面这些问题谁能看到这张工单模型看到了哪些数据哪些数据没有给它它的每一个引用是否来自这一轮允许的知识它的草稿和客服最终发出的版本能否区分它说已退款已补发时系统如何拒绝模型或知识库改动后怎样发现一个原本正确的案例变差了这些问题没有答案时生成得越快未经证实的判断就越容易被带到客户面前二先按责任拆系统再决定是否需要多个有些架构图把系统分成协调检索回复审核执行名称很多不代表控制更严权限判断状态流转和写入条件原本可以由代码确定交给模型猜反而增加了不确定性先按责任划分模型角色放在最后考虑客服主管管理员工单工作台服务端鉴权资源范围与写入规则工单与订单摘要知识检索有效版本权限白名单模型适配层结构化建议服务端校验引用风险完成性表述需要人工确认是编辑确认拒绝转人工否受限保存审计追溯固定评测图中只有模型适配层需要调用模型其余环节主要由普通程序和数据库约束责任应由谁决定失败时的正确行为身份角色和资源范围服务端策略拒绝不透露资源是否存在当前可用知识知识版本状态和检索逻辑无可靠来源时不给模型伪装答案分类草稿下一步建议模型在受限上下文中提出结构不合法时进入降级或人工处理退款换货外发等业务执行明确授权的业务系统和人模型不得声称已完成风险升级最终确认服务端规则加人工责任暂停拒绝或转人工审计与评测不可随意改写的记录和固定案例保留失败不用总分不错掩盖退步也不等于在结果旁放一个确认按钮人工确认应是一条状态迁移记录确认人时间原稿人工终稿拒绝或转人工的理由并关联工单版本与运行记录少了这些信息出现争议时很难还原最后的决定由谁作出三先画工单状态再写不少原型先写提示词把客户问题和知识库交给模型再要求它专业地回答但模型输出只是一瞬间售后处理有完整的前后状态仓库的把两类状态分开工单状态包括运行状态则包括等数据模型中还有字段用来处理写入冲突简化后状态关系如下客服领取开始处理请求建议有可靠建议且需审批无来源校验失败降级人工确认终稿拒绝并补充信息转人工队列超出授权或风险升级状态名可以调整边的守卫条件不能含糊不应只因为模型返回了文字就发生至少还要满足输出能被解析为既定的结构所有引用都在本轮检索结果白名单中没有把未执行的操作说成已经完成风险等级经过服务端规则复核当前用户确实有权访问这张工单和相关知识权限不能只靠前端隐藏菜单仓库的授权测试检查了未登录返回不同角色得到伪造或请求头不能提权以及受保护资源对无权限用户不暴露测试不能覆盖现实世界中的全部安全问题但它把权限检查放在了正确的位置服务端乐观并发不是技术细节设想两个客服同时打开一张工单依据旧信息确认了草稿刚刚补充了客户的新地址和新描述如果的保存无条件覆盖系统就制造了一个客服自己也未必发现的数据错误最小接口契约应带上期望版本服务端在事务里做条件更新只有数据库中的才写入并将版本加一若更新条数为就返回冲突让客服刷新后再处理模型不该决定怎样合并冲突这需要了解业务语义的人来判断四的起点是哪一版知识可以被引用售后系统常把理解为上传几个再做向量检索问题是知识不是静态文件退换货规则会更新特殊时期政策可能停用型号故障说明也会更正模型引用旧版本时回复写得再流畅也会得出错误结论知识对象至少要有这些字段文档身份例如退换货政策版本号适用产品地区团队或租户可精确定位的片段标题章节更新时间权限信息仓库的夹具包含同一政策的停用版本和有效版本任务书要求停用知识不进入新的检索它的不只按向量分数排序还计算词法覆盖实体匹配敏感凭据问题的规则加分阈值过滤并最多保留三条结果实现代码传达的原则很直接检索策略可以变但每个入选片段都要能追溯来源给引用设白名单把检索结果放进再写一句请引用资料不能保证模型只引用这些资料它可能编造一个很像内部文档编号的来源也可能按训练记忆补出并不存在的规则更可靠的做法是让代码先生成白名单模型返回后服务端直接做集合校验仓库的采用了这类校验输出必须是固定引用必须属于本轮允许来源没有可靠来源会被拒绝已经退款到账已补发并寄出一类完成性业务描述也会被拒绝产品质量类工单或命中风险词时服务端会把风险升为高风险并要求人工确认这不是防止模型胡说的万能办法规则词表仍会漏判或误判真实业务操作也要由后端系统确认不过它把原本只能靠提示词约束的问题变成了可以写进单元测试的规则不命中是正常结果不要拿旧片段凑答案检索系统不该无论问题是什么都返回排序总会给出前三条但不代表这些内容足以回答政策已停用客户问的是新型号或问题缺少订单信息时正确结果可以是没有可靠来源这时系统可以做三件事告诉客服缺的是订单号产品型号还是地区信息允许客服补充信息后再次检索转给有权限的人处理并把知识缺口记录下来不要让模型用相邻知识拼出一个看似合理的确定答案售后回复要能被政策订单和操作记录支持五模型返回的是建议对象直接返回一段时前端很好展示系统却很难判断分类风险依据和是否需要人工确认再从自然语言里抽取这些字段可靠性只会更差更适合业务系统的方式是要求模型生成受约束的对象例如为保障安全请先停止使用设备设备发烫需要人工核对售后政策核对订单和保修状态转主管确认处置方案结构化输出让前端可以分别展示草稿引用风险和下一步服务端可以校验枚举值长度来源与风险规则评测也能落到字段级例如引用是否正确是否漏判高风险而不是凭印象评价整段文字仓库的校验器限制了来源风险下一步数组和草稿长度解析失败时返回没有可靠来源时它返回明确的人工核验建议而不会编出一个安全答案模型供应商应被隔在适配层后业务层只依赖适配层才处理或其他供应商的请求格式流式事件超时重试和错误码更换模型做对比或冻结版本时业务状态机不必重写六人工确认要保留原稿与终稿客服会补充客户刚提供的信息删去过度承诺调整语气也可能发现模型分错了类系统如果只保存最终发出的文本后续就不知道当时建议了什么也不知道人工为什么改动一个足够小但完整的确认记录可以是可选但对拒绝和转人工建议必填这些字段用于回答维护中绕不开的问题某条不当回复来自模型原稿还是人工编辑哪些知识片段最常被人工改写是否过期或表达不清新让确认率上升是质量真的提升还是客服放松了审查一次投诉发生时能否重建当时的模型知识和人工决策上下文仓库的文档和数据模型围绕原稿终稿确认动作与追溯关系组织完整追溯记录展示了合成工单上的运行记录来源元数据高风险确认终稿审计与评测如何关联它没有接通真实外发或退款渠道文章也不把这部分写成已实现能力哪些动作必须停下来等人不要指望一条很长的高风险覆盖所有场景业务和安全团队应维护清晰可更新的风险清单第一版可以从下表起步场景模型能做什么必须由谁确认常见使用说明给出有来源的草稿客服确认后发送或按制度自动化退换货补偿发票提示适用规则与所缺信息有相应授权的客服或主管产品冒烟发烫破损给出安全提示与转交建议主管专项安全流程要求验证码密码银行卡身份证拒绝索取并提示正规渠道不应由模型继续推进改地址补发退款对外发送只能提出待执行建议已授权业务系统与人工这不是通用合规清单不同地区行业和公司有不同政策应由实际业务负责人维护模型可以总结证据并提出建议但不能凭一段生成文本获得更高权限七审计记录要能还原一次处理客服问这条建议为什么出现时单独存一段请求日志不够需要能串起谁读取了什么系统检索到什么模型用了什么版本校验是否放行人工做了什么以及结果落在哪张工单上建议为每次请求生成每次模型运行生成并让它们贯穿审计不等于把所有数据写进日志客户正文联系方式口令和完整模型上下文都可能含有敏感信息审计只应保留复核决策所需的最小元数据对敏感字段脱敏分级访问并规定保留期限仓库的授权测试检查了会话只保存哈希审计同时覆盖允许与拒绝结果审计摘要不含密码或等敏感字段真实企业仍要按自己的数据分类和法律义务评审八固定评测用来发现回归这次模型回答感觉更好不能作为发布依据模型嵌入模型分块方式检索阈值或知识库版本任意改一项都可能让某些历史场景变差售后的最小评测集不必从几千题开始先做到个覆盖关键路径的合成案例更容易维护每个案例最好包含输入工单与授权上下文允许或禁止的知识来源预期分类风险等级是否转人工不可出现的越权或完成性表述人工可读的失败说明不要只看一个总分至少分成四层层问题例子检索找到的依据对吗新政策是否压过已停用旧政策结构输出能消费吗枚举来源格式是否合法安全是否越权或漏判风险是否把退款承诺为已到账业务建议是否有用分类优先级下一步是否合理仓库的运行比较记录了一个很实际的结果候选版本的总通过数更高却有一个原本通过的案例退步界面因此要显示和案例级失败原因安全案例还要单独设门槛只看百分比会掩盖这类退步发布门可以很简单任一关键安全案例失败就不自动通过非关键业务案例可以保留待审查项但要写清责任人和修复计划模型有随机性不等于可以忽略失败它要求记录模型参数知识快照和运行次数九开发过程也要有验收关口仓库没有让从一页需求直接跳到生成完整网站它把开发拆为到工程与数据访问登录与权限工单知识检索流式输出人工复核固定评测审计管理全链路验收部署方案与模拟上线每个阶段都要求任务书自动测试页面或后端证据已知限制和人工冻结这个过程也适用于其他行业定义业务目标与不做什么写接口状态与验收契约实现当前最小阶段自动测试失败路径人工看页面证据与限制可接受否补充约束修复记录失败是冻结阶段产物进入下一阶段执行人做选择不表示人只负责点确认人负责范围权限风险阈值接受标准以及是否允许进入下一阶段可以查资料生成候选实现跑测试整理证据没有这些判断只会更快地产生不受约束的代码对于第一次做这类项目的团队我建议按下面顺序开工写一页范围声明目标用户唯一主路径明确不做的动作成功与失败怎样判定画出工单和运行的状态机并列出每条边的守卫条件定义角色到资源的权限矩阵先写越权测试再写页面用合成脱敏的数据搭建知识生命周期保留停用和更新案例固定模型输出在服务端校验来源风险和业务断言先实现人工确认拒绝和转人工再考虑自动发送建一组可重复运行的安全与业务评测案例任何改动都跑比较最后再谈外部渠道真实订单和部署不要反过来十先把仓库作为教学工程跑起来仓库的给出了本地流程启动复制环境文件安装依赖执行迁移导入合成数据与知识建立索引然后分别启动和中的默认账户也全部使用域名和统一演示口令环境变量可按在本地运行之后另开终端启动需要后台任务时再运行没有配置模型密钥时先检查权限知识版本失败和人工路径真实模型验证需要在本地配置密钥密钥不应提交进仓库能在本地跑通不等于可以部署为企业生产服务仓库的交付审计明确写的是已验证的本地不是公网生产上线它没有完成云环境兼容性验证线上备份恢复告警和值班企业私有网络和真实客户数据治理代码即使部署到公网这些责任也不会自动补齐真正要走向生产还需要单独立项解决身份接入租户隔离最小权限与权限审计真实订单退款和消息渠道的幂等性审批与回滚数据最小化脱敏保留与删除策略模型供应商区域数据使用条款与故障降级密钥管理网络隔离备份恢复演练监控告警和事件响应负载成本限流队列积压模型超时及人工接管预案这些项目需要单独计划和验证它们决定了错误回复越权访问或数据损失发生后由谁负责处理十一用问题检查它是否能进入业务流程准备下一次演示前可以用下面十个问题反向验收无权限用户请求一张工单时系统会不会泄露该工单是否存在知识文档停用后新的运行还能不能引用它模型编出一个不存在的文档编号服务端会怎么处理模型说已经退款而业务系统没有执行退款结果会是什么两人并发编辑同一工单旧版本能否悄悄覆盖新版本高风险草稿被拒绝或转人工时是否保存了原因和状态而不是只消失能否定位一条最终回复对应的模型知识版本和人工确认人修改检索阈值后能否知道哪个固定案例退步了模型超时返回坏检索没有结果时客服还能否安全继续工作如果今天下线模型服务哪些业务仍可运行哪些必须明确转人工如果大部分问题只能回答应该可以系统还不适合被称为企业先把答案落实为接口契约自动测试审计字段和演练记录再扩展能力结语可靠的售后应限制模型能看到的数据也限制模型建议能进入哪些业务环节授权当前有效的知识和结构化输入约束前者校验人工确认审计和评测约束后者这个仓库是一个教学样本它从工单主路径出发把权限受约束生成人工复核回归评测和证据化开发连接起来它没有证明自己已经能处理真实客户数据更不是生产平台它提供的启发很朴素先设计停止条件失败路径和责任人再提高的自主程度有了这些基础再接入更多渠道工具调用和模型才是在扩展一条可以检查的业务闭环参考资料企业售后工单工作台源码与本地运行说明第一版开发总任务书输出校验实现部署范围与完成度审计系列阶段复盘原文',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-07-29 10:30:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>48</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>50</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>25</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Python/" style="font-size: 1.05rem;">Python<sup>4</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>4</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 1.05rem;">工作流<sup>4</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 1.05rem;">工程化<sup>18</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>7</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>23</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">10</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">12</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/02/"><span class="card-archive-list-date">2026年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">15</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/09/"><span class="card-archive-list-date">2023年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>工程实践</span></a><a class="article-meta__tags" href="/tags/RAG/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>RAG</span></a><a class="article-meta__tags" href="/tags/%E4%BC%81%E4%B8%9A-AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>企业 AI</span></a><a class="article-meta__tags" href="/tags/%E5%94%AE%E5%90%8E%E7%B3%BB%E7%BB%9F/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>售后系统</span></a><a class="article-meta__tags" href="/tags/Human-in-the-loop/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Human-in-the-loop</span></a><a class="article-meta__tags" href="/tags/LLM-Eval/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>LLM Eval</span></a></span></div></div><h1 class="post-title" itemprop="name headline">怎样把企业售后 Agent 做成可验收的工单闭环</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-07-29T02:30:00.000Z" title="发表于 2026-07-29 10:30:00">2026-07-29</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-07-29T02:30:00.000Z" title="更新于 2026-07-29 10:30:00">2026-07-29</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">6.2k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>19分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/66400/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%AE%9E%E8%B7%B5/" itemprop="url">Agent 实践</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" tabindex="-1" itemprop="url">工程实践</a><a href="/tags/RAG/" tabindex="-1" itemprop="url">RAG</a><a href="/tags/%E4%BC%81%E4%B8%9A-AI/" tabindex="-1" itemprop="url">企业 AI</a><a href="/tags/%E5%94%AE%E5%90%8E%E7%B3%BB%E7%BB%9F/" tabindex="-1" itemprop="url">售后系统</a><a href="/tags/Human-in-the-loop/" tabindex="-1" itemprop="url">Human-in-the-loop</a><a href="/tags/LLM-Eval/" tabindex="-1" itemprop="url">LLM Eval</a><h1 id="CrawlerTitle" itemprop="name headline">怎样把企业售后 Agent 做成可验收的工单闭环</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-07-29T02:30:00.000Z" title="发表于 2026-07-29 10:30:00">2026-07-29</time><time itemprop="dateCreated datePublished" datetime="2026-07-29T02:30:00.000Z" title="更新于 2026-07-29 10:30:00">2026-07-29</time></header><p>企业售后系统里的模型可以归类工单、检索政策、起草回复，也能把一句未执行的“已退款”写得像真的。后者不是语言问题，而是系统没有把事实、权限和业务动作分开。</p>
+<p>一套能用于售后流程的 Agent，需要明确谁可以看数据、哪些知识仍然有效、什么情况必须停下来等人、发生问题后怎样还原过程。模型只负责其中一段：根据受限上下文给出建议。它不能凭生成的文字获得退款、外发消息或改订单的权限。</p>
+<p>本文以 <a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform">Wmengti&#x2F;enterprise-ai-after-sales-service-platform</a> 为样本，结合 <a target="_blank" rel="noopener" href="https://x.com/pangmadee/status/2081917109702213703">pangmadee 对该系列的阶段复盘</a>，梳理一套售后工单 AI 工作台的设计方法。仓库包含源码、合成夹具、任务书和阶段证据。下文说的“仓库实现”，都指当前 <code>main</code> 分支可读到的代码和文档，不表示我已在真实客户数据或公网环境中复验过它。仓库也明确把成果定为本地 L0 Demo，尚不是生产系统。</p>
+<h2 id="一、先界定第一版要处理什么"><a href="#一、先界定第一版要处理什么" class="headerlink" title="一、先界定第一版要处理什么"></a>一、先界定第一版要处理什么</h2><p>“做一个企业客服 Agent”不算完整需求。它可能是聊天机器人、工单分流、知识问答、退款审批、外呼、质检，也可能想成为 CRM 的总入口。第一版把这些全塞进去，往往只会得到一个展示效果不错、责任边界却说不清的页面。</p>
+<p>仓库的第一版把问题压缩为“企业售后工单 AI 工作台”。它选择了一个很具体的闭环：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">登录</span><br><span class="line">  → 查看有权限的工单</span><br><span class="line">  → 检索当前有效的企业知识</span><br><span class="line">  → 生成带来源的结构化建议</span><br><span class="line">  → 人工编辑、确认、拒绝或转人工</span><br><span class="line">  → 保存终稿和处理结果</span><br><span class="line">  → 留下审计记录，并能用固定案例回归评测</span><br></pre></td></tr></table></figure>
+
+<p>它刻意不做真实退款、改订单、支付、对客户外发消息、自由注册、复杂多租户和“模型直接访问数据库”。这一点写在 <a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/docs/taskbooks/D00_%E7%AC%AC%E4%B8%80%E7%89%88%E5%BC%80%E5%8F%91%E6%80%BB%E4%BB%BB%E5%8A%A1%E4%B9%A6_v0.1.md">D00 总任务书</a> 里，也和源码中的合成数据边界一致。</p>
+<p>第一版的重点是把责任链补齐。比起“接了多少模型”，更该先回答下面这些问题：</p>
+<ul>
+<li>谁能看到这张工单？</li>
+<li>模型看到了哪些数据，哪些数据没有给它？</li>
+<li>它的每一个引用是否来自这一轮允许的知识？</li>
+<li>它的草稿和客服最终发出的版本能否区分？</li>
+<li>它说“已退款”“已补发”时，系统如何拒绝？</li>
+<li>模型、Prompt 或知识库改动后，怎样发现一个原本正确的案例变差了？</li>
+</ul>
+<p>这些问题没有答案时，生成得越快，未经证实的判断就越容易被带到客户面前。</p>
+<h2 id="二、先按责任拆系统，再决定是否需要多个-Agent"><a href="#二、先按责任拆系统，再决定是否需要多个-Agent" class="headerlink" title="二、先按责任拆系统，再决定是否需要多个 Agent"></a>二、先按责任拆系统，再决定是否需要多个 Agent</h2><p>有些架构图把系统分成“协调 Agent、检索 Agent、回复 Agent、审核 Agent、执行 Agent”。名称很多不代表控制更严。权限判断、状态流转和写入条件原本可以由代码确定，交给模型猜反而增加了不确定性。</p>
+<p>先按责任划分，模型角色放在最后考虑。</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart LR
+  U[&quot;客服 &#x2F; 主管 &#x2F; 管理员&quot;] --&gt; W[&quot;工单工作台&quot;]
+  W --&gt; A[&quot;服务端鉴权\n资源范围与写入规则&quot;]
+  A --&gt; T[&quot;工单与订单摘要&quot;]
+  A --&gt; R[&quot;知识检索\n有效版本、权限、白名单&quot;]
+  R --&gt; M[&quot;模型适配层\n结构化建议&quot;]
+  M --&gt; V[&quot;服务端校验\n引用、风险、完成性表述&quot;]
+  V --&gt; H{&quot;需要人工确认？&quot;}
+  H --&gt;|&quot;是&quot;| P[&quot;编辑 &#x2F; 确认 &#x2F; 拒绝 &#x2F; 转人工&quot;]
+  H --&gt;|&quot;否&quot;| D[&quot;受限保存&quot;]
+  P --&gt; D
+  D --&gt; L[&quot;审计、追溯、固定评测&quot;]
+  </pre></div>
+
+<p>图中只有“模型适配层”需要调用模型。其余环节主要由普通程序和数据库约束：</p>
+<table>
+<thead>
+<tr>
+<th>责任</th>
+<th>应由谁决定</th>
+<th>失败时的正确行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>身份、角色和资源范围</td>
+<td>服务端策略</td>
+<td>拒绝，不透露资源是否存在</td>
+</tr>
+<tr>
+<td>当前可用知识</td>
+<td>知识版本状态和检索逻辑</td>
+<td>无可靠来源时不给模型伪装答案</td>
+</tr>
+<tr>
+<td>分类、草稿、下一步建议</td>
+<td>模型在受限上下文中提出</td>
+<td>结构不合法时进入降级或人工处理</td>
+</tr>
+<tr>
+<td>退款、换货、外发等业务执行</td>
+<td>明确授权的业务系统和人</td>
+<td>模型不得声称已完成</td>
+</tr>
+<tr>
+<td>风险升级、最终确认</td>
+<td>服务端规则加人工责任</td>
+<td>暂停、拒绝或转人工</td>
+</tr>
+<tr>
+<td>审计与评测</td>
+<td>不可随意改写的记录和固定案例</td>
+<td>保留失败，不用“总分不错”掩盖退步</td>
+</tr>
+</tbody></table>
+<p>Human-in-the-loop 也不等于在结果旁放一个“确认”按钮。人工确认应是一条状态迁移：记录确认人、时间、AI 原稿、人工终稿、拒绝或转人工的理由，并关联工单版本与 AI 运行记录。少了这些信息，出现争议时很难还原最后的决定由谁作出。</p>
+<h2 id="三、先画工单状态，再写-Prompt"><a href="#三、先画工单状态，再写-Prompt" class="headerlink" title="三、先画工单状态，再写 Prompt"></a>三、先画工单状态，再写 Prompt</h2><p>不少原型先写提示词，把客户问题和知识库交给模型，再要求它“专业地回答”。但模型输出只是一瞬间，售后处理有完整的前后状态。</p>
+<p>仓库的 Prisma Schema 把两类状态分开：工单状态包括 <code>OPEN</code>、<code>IN_PROGRESS</code>、<code>WAIT_CONFIRM</code>、<code>ESCALATED</code>、<code>COMPLETED</code>；AI 运行状态则包括 <code>RUNNING</code>、<code>WAIT_CONFIRM</code>、<code>FAILED</code>、<code>FALLBACK</code>、<code>HUMAN_HANDOFF</code>、<code>COMPLETED</code> 等。<a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/packages/database/prisma/schema.prisma">数据模型</a> 中还有 <code>version</code> 字段，用来处理写入冲突。</p>
+<p>简化后，状态关系如下：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  stateDiagram-v2
+  [*] --&gt; OPEN
+  OPEN --&gt; IN_PROGRESS: 客服领取 &#x2F; 开始处理
+  IN_PROGRESS --&gt; AI_RUNNING: 请求建议
+  AI_RUNNING --&gt; WAIT_CONFIRM: 有可靠建议且需审批
+  AI_RUNNING --&gt; IN_PROGRESS: 无来源 &#x2F; 校验失败 &#x2F; 降级
+  WAIT_CONFIRM --&gt; COMPLETED: 人工确认终稿
+  WAIT_CONFIRM --&gt; IN_PROGRESS: 拒绝并补充信息
+  WAIT_CONFIRM --&gt; ESCALATED: 转人工队列
+  IN_PROGRESS --&gt; ESCALATED: 超出授权或风险升级
+  ESCALATED --&gt; [*]
+  COMPLETED --&gt; [*]
+  </pre></div>
+
+<p>状态名可以调整，边的守卫条件不能含糊。<code>AI_RUNNING → WAIT_CONFIRM</code> 不应只因为“模型返回了文字”就发生，至少还要满足：</p>
+<ol>
+<li>输出能被解析为既定的结构；</li>
+<li>所有引用都在本轮检索结果白名单中；</li>
+<li>没有把未执行的操作说成已经完成；</li>
+<li>风险等级经过服务端规则复核；</li>
+<li>当前用户确实有权访问这张工单和相关知识。</li>
+</ol>
+<p>权限不能只靠前端隐藏菜单。仓库的 <a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/apps/api/test/authorization.test.ts">授权测试</a> 检查了未登录返回 401、不同角色得到 200&#x2F;403&#x2F;404、伪造 <code>role=admin</code> 或请求头不能提权，以及受保护资源对无权限用户不暴露。测试不能覆盖现实世界中的全部安全问题，但它把权限检查放在了正确的位置：服务端。</p>
+<h3 id="3-1-乐观并发不是“技术细节”"><a href="#3-1-乐观并发不是“技术细节”" class="headerlink" title="3.1 乐观并发不是“技术细节”"></a>3.1 乐观并发不是“技术细节”</h3><p>设想两个客服同时打开一张工单。A 依据旧信息确认了 AI 草稿；B 刚刚补充了客户的新地址和新描述。如果 A 的保存无条件覆盖 B，系统就制造了一个客服自己也未必发现的数据错误。</p>
+<p>最小接口契约应带上期望版本：</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> <span class="title class_">ConfirmDraftRequest</span> = &#123;</span><br><span class="line">  <span class="attr">ticketId</span>: <span class="built_in">string</span>;</span><br><span class="line">  <span class="attr">expectedVersion</span>: <span class="built_in">number</span>;</span><br><span class="line">  <span class="attr">aiRunId</span>: <span class="built_in">string</span>;</span><br><span class="line">  <span class="attr">finalReply</span>: <span class="built_in">string</span>;</span><br><span class="line">  <span class="attr">action</span>: <span class="string">&quot;CONFIRMED&quot;</span> | <span class="string">&quot;REJECTED&quot;</span> | <span class="string">&quot;HUMAN_HANDOFF&quot;</span>;</span><br><span class="line">  <span class="attr">reason</span>?: <span class="built_in">string</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>服务端在事务里做条件更新：只有数据库中的 <code>version === expectedVersion</code> 才写入，并将版本加一。若更新条数为 0，就返回冲突，让客服刷新后再处理。模型不该决定怎样合并冲突，这需要了解业务语义的人来判断。</p>
+<h2 id="四、RAG-的起点是“哪一版知识可以被引用”"><a href="#四、RAG-的起点是“哪一版知识可以被引用”" class="headerlink" title="四、RAG 的起点是“哪一版知识可以被引用”"></a>四、RAG 的起点是“哪一版知识可以被引用”</h2><p>售后系统常把 RAG 理解为“上传几个 PDF，再做向量检索”。问题是知识不是静态文件。</p>
+<p>退换货规则会更新，特殊时期政策可能停用，型号故障说明也会更正。模型引用旧版本时，回复写得再流畅也会得出错误结论。知识对象至少要有这些字段：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">document_id      文档身份，例如退换货政策</span><br><span class="line">version          版本号</span><br><span class="line">status           processing / available / disabled / failed</span><br><span class="line">effective_scope  适用产品、地区、团队或租户</span><br><span class="line">chunk_id         可精确定位的片段</span><br><span class="line">source_metadata  标题、章节、更新时间、权限信息</span><br></pre></td></tr></table></figure>
+
+<p>仓库的夹具包含同一政策的停用版本和有效版本，任务书要求“停用知识不进入新的检索”。它的 <code>selected-retrieval.ts</code> 不只按向量分数排序，还计算词法覆盖、实体匹配、敏感凭据问题的规则加分、阈值过滤，并最多保留三条结果。<a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/packages/retrieval/src/selected-retrieval.ts">实现代码</a> 传达的原则很直接：检索策略可以变，但每个入选片段都要能追溯来源。</p>
+<h3 id="4-1-给引用设白名单"><a href="#4-1-给引用设白名单" class="headerlink" title="4.1 给引用设白名单"></a>4.1 给引用设白名单</h3><p>把检索结果放进 Prompt，再写一句“请引用资料”，不能保证模型只引用这些资料。它可能编造一个很像内部文档编号的来源，也可能按训练记忆补出并不存在的规则。</p>
+<p>更可靠的做法是让代码先生成白名单：</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> retrieved = <span class="keyword">await</span> <span class="title function_">retrieveAuthorizedKnowledge</span>(&#123;</span><br><span class="line">  <span class="attr">query</span>: ticket.<span class="property">description</span>,</span><br><span class="line">  <span class="attr">userId</span>: actor.<span class="property">id</span>,</span><br><span class="line">  <span class="attr">limit</span>: <span class="number">3</span>,</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> allowedSourceIds = retrieved.<span class="title function_">map</span>(<span class="function">(<span class="params">item</span>) =&gt;</span> item.<span class="property">chunkId</span>);</span><br><span class="line"><span class="keyword">const</span> modelInput = &#123;</span><br><span class="line">  <span class="attr">ticket</span>: <span class="title function_">minimizeTicket</span>(ticket),</span><br><span class="line">  <span class="attr">sources</span>: retrieved.<span class="title function_">map</span>(toPromptSource),</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>模型返回后，服务端直接做集合校验：</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> invalid = suggestion.<span class="property">sources</span>.<span class="title function_">filter</span>(</span><br><span class="line">  <span class="function">(<span class="params">sourceId</span>) =&gt;</span> !allowedSourceIds.<span class="title function_">includes</span>(sourceId),</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (invalid.<span class="property">length</span> &gt; <span class="number">0</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="title function_">reject</span>(<span class="string">&quot;UNVERIFIED_SOURCE&quot;</span>, invalid);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>仓库的 <a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/packages/ai/src/validation.ts"><code>validateAiSuggestion</code></a> 采用了这类校验：输出必须是固定 JSON，引用必须属于本轮允许来源；没有可靠来源会被拒绝；“已经退款到账”“已补发并寄出”一类完成性业务描述也会被拒绝。产品质量类工单或命中风险词时，服务端会把风险升为高风险并要求人工确认。</p>
+<p>这不是防止模型胡说的万能办法。规则词表仍会漏判或误判，真实业务操作也要由后端系统确认。不过它把原本只能靠提示词约束的问题，变成了可以写进单元测试的规则。</p>
+<h3 id="4-2-不命中是正常结果，不要拿旧片段凑答案"><a href="#4-2-不命中是正常结果，不要拿旧片段凑答案" class="headerlink" title="4.2 不命中是正常结果，不要拿旧片段凑答案"></a>4.2 不命中是正常结果，不要拿旧片段凑答案</h3><p>检索系统不该无论问题是什么都返回 Top 3。排序总会给出前三条，但不代表这些内容足以回答。政策已停用、客户问的是新型号，或问题缺少订单信息时，正确结果可以是“没有可靠来源”。</p>
+<p>这时系统可以做三件事：</p>
+<ol>
+<li>告诉客服缺的是订单号、产品型号还是地区信息；</li>
+<li>允许客服补充信息后再次检索；</li>
+<li>转给有权限的人处理，并把“知识缺口”记录下来。</li>
+</ol>
+<p>不要让模型用相邻知识拼出一个看似合理的确定答案。售后回复要能被政策、订单和操作记录支持。</p>
+<h2 id="五、模型返回的是建议对象"><a href="#五、模型返回的是建议对象" class="headerlink" title="五、模型返回的是建议对象"></a>五、模型返回的是建议对象</h2><p>API 直接返回一段 Markdown 时，前端很好展示，系统却很难判断分类、风险、依据和是否需要人工确认。再从自然语言里抽取这些字段，可靠性只会更差。</p>
+<p>更适合业务系统的方式是要求模型生成受约束的对象，例如：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;classification&quot;</span><span class="punctuation">:</span> <span class="string">&quot;product_quality&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;priority&quot;</span><span class="punctuation">:</span> <span class="string">&quot;high&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;sources&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;KB-PROD-003#safety&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;draft_reply&quot;</span><span class="punctuation">:</span> <span class="string">&quot;为保障安全，请先停止使用设备……&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;risk_level&quot;</span><span class="punctuation">:</span> <span class="string">&quot;high&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;risks&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;设备发烫，需要人工核对售后政策&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;requires_human_confirmation&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;next_actions&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;核对订单和保修状态&quot;</span><span class="punctuation">,</span> <span class="string">&quot;转主管确认处置方案&quot;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>结构化输出让前端可以分别展示草稿、引用、风险和下一步；服务端可以校验枚举值、长度、来源与风险规则；评测也能落到字段级，例如引用是否正确、是否漏判高风险，而不是凭印象评价整段文字。</p>
+<p>仓库的 AI 校验器限制了来源、风险、下一步数组和草稿长度，解析失败时返回 <code>STRUCTURE_INVALID</code>。没有可靠来源时，它返回明确的人工核验建议，而不会编出一个“安全答案”。</p>
+<p>模型供应商应被隔在适配层后。业务层只依赖 <code>generateSuggestion(input)</code>，适配层才处理 DeepSeek 或其他供应商的请求格式、流式事件、超时、重试和错误码。更换模型、做 A&#x2F;B 对比或冻结版本时，业务状态机不必重写。</p>
+<h2 id="六、人工确认要保留原稿与终稿"><a href="#六、人工确认要保留原稿与终稿" class="headerlink" title="六、人工确认要保留原稿与终稿"></a>六、人工确认要保留原稿与终稿</h2><p>客服会补充客户刚提供的信息，删去过度承诺，调整语气，也可能发现模型分错了类。系统如果只保存最终发出的文本，后续就不知道 AI 当时建议了什么，也不知道人工为什么改动。</p>
+<p>一个足够小但完整的确认记录可以是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">confirmation_id</span><br><span class="line">ticket_id + ticket_version</span><br><span class="line">ai_run_id + prompt_version + model_version</span><br><span class="line">retrieval_snapshot_id</span><br><span class="line">ai_draft</span><br><span class="line">final_reply</span><br><span class="line">action                 confirmed / rejected / human_handoff</span><br><span class="line">reason                 可选但对拒绝和转人工建议必填</span><br><span class="line">actor_id + confirmed_at</span><br></pre></td></tr></table></figure>
+
+<p>这些字段用于回答维护中绕不开的问题：</p>
+<ul>
+<li>某条不当回复来自模型原稿，还是人工编辑？</li>
+<li>哪些知识片段最常被人工改写，是否过期或表达不清？</li>
+<li>新 Prompt 让“确认率”上升，是质量真的提升，还是客服放松了审查？</li>
+<li>一次投诉发生时，能否重建当时的模型、知识和人工决策上下文？</li>
+</ul>
+<p>仓库的 D06&#x2F;D08 文档和数据模型围绕原稿、终稿、确认动作与追溯关系组织。<a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/docs/evidence/D08/03_%E5%AE%8C%E6%95%B4%E5%B7%A5%E5%8D%95%E8%BF%BD%E6%BA%AF%E8%AE%B0%E5%BD%95.md">完整追溯记录</a> 展示了合成工单上的运行记录、来源元数据、高风险确认、终稿、审计与评测如何关联。它没有接通真实外发或退款渠道，文章也不把这部分写成已实现能力。</p>
+<h3 id="6-1-哪些动作必须停下来等人？"><a href="#6-1-哪些动作必须停下来等人？" class="headerlink" title="6.1 哪些动作必须停下来等人？"></a>6.1 哪些动作必须停下来等人？</h3><p>不要指望一条很长的“高风险 Prompt”覆盖所有场景。业务和安全团队应维护清晰、可更新的风险清单。第一版可以从下表起步：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>模型能做什么</th>
+<th>必须由谁确认</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>常见使用说明</td>
+<td>给出有来源的草稿</td>
+<td>客服确认后发送，或按制度自动化</td>
+</tr>
+<tr>
+<td>退换货、补偿、发票</td>
+<td>提示适用规则与所缺信息</td>
+<td>有相应授权的客服或主管</td>
+</tr>
+<tr>
+<td>产品冒烟、发烫、破损</td>
+<td>给出安全提示与转交建议</td>
+<td>主管 &#x2F; 专项安全流程</td>
+</tr>
+<tr>
+<td>要求验证码、密码、银行卡、身份证</td>
+<td>拒绝索取并提示正规渠道</td>
+<td>不应由模型继续推进</td>
+</tr>
+<tr>
+<td>改地址、补发、退款、对外发送</td>
+<td>只能提出待执行建议</td>
+<td>已授权业务系统与人工</td>
+</tr>
+</tbody></table>
+<p>这不是通用合规清单。不同地区、行业和公司有不同政策，应由实际业务负责人维护。模型可以总结证据并提出建议，但不能凭一段生成文本获得更高权限。</p>
+<h2 id="七、审计记录要能还原一次处理"><a href="#七、审计记录要能还原一次处理" class="headerlink" title="七、审计记录要能还原一次处理"></a>七、审计记录要能还原一次处理</h2><p>客服问“这条建议为什么出现”时，单独存一段请求日志不够。需要能串起谁读取了什么、系统检索到什么、模型用了什么版本、校验是否放行、人工做了什么，以及结果落在哪张工单上。</p>
+<p>建议为每次请求生成 <code>request_id</code>，每次模型运行生成 <code>run_id</code>，并让它们贯穿：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">request_id</span><br><span class="line">  ├─ actor_id / role / authorization outcome</span><br><span class="line">  ├─ ticket_id / ticket_version</span><br><span class="line">  ├─ retrieval_snapshot_id / source ids / knowledge versions</span><br><span class="line">  ├─ ai_run_id / provider / model / prompt version / status</span><br><span class="line">  ├─ validation outcome / forced risk upgrade</span><br><span class="line">  ├─ human confirmation or handoff</span><br><span class="line">  └─ final ticket transition / audit event ids</span><br></pre></td></tr></table></figure>
+
+<p>审计不等于把所有数据写进日志。客户正文、联系方式、Cookie、口令和完整模型上下文都可能含有敏感信息。审计只应保留复核决策所需的最小元数据，对敏感字段脱敏、分级访问，并规定保留期限。仓库的授权测试检查了会话只保存哈希、审计同时覆盖允许与拒绝结果、审计摘要不含密码或 token 等敏感字段。真实企业仍要按自己的数据分类和法律义务评审。</p>
+<h2 id="八、固定评测用来发现回归"><a href="#八、固定评测用来发现回归" class="headerlink" title="八、固定评测用来发现回归"></a>八、固定评测用来发现回归</h2><p>“这次模型回答感觉更好”不能作为发布依据。模型、Prompt、嵌入模型、分块方式、检索阈值或知识库版本任意改一项，都可能让某些历史场景变差。</p>
+<p>售后 Agent 的最小评测集不必从几千题开始。先做 30 到 100 个覆盖关键路径的合成案例，更容易维护。每个案例最好包含：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">case_id</span><br><span class="line">输入工单与授权上下文</span><br><span class="line">允许或禁止的知识来源</span><br><span class="line">预期分类 / 风险等级 / 是否转人工</span><br><span class="line">不可出现的越权或完成性表述</span><br><span class="line">人工可读的失败说明</span><br></pre></td></tr></table></figure>
+
+<p>不要只看一个总分。至少分成四层：</p>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>问题</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>检索</td>
+<td>找到的依据对吗</td>
+<td>新政策是否压过已停用旧政策</td>
+</tr>
+<tr>
+<td>结构</td>
+<td>输出能消费吗</td>
+<td>JSON、枚举、来源格式是否合法</td>
+</tr>
+<tr>
+<td>安全</td>
+<td>是否越权或漏判风险</td>
+<td>是否把退款承诺为已到账</td>
+</tr>
+<tr>
+<td>业务</td>
+<td>建议是否有用</td>
+<td>分类、优先级、下一步是否合理</td>
+</tr>
+</tbody></table>
+<p>仓库的 <a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/docs/evidence/D07/%E6%96%87%E6%A1%A3/03_%E4%B8%A4%E8%BD%AE%E8%BF%90%E8%A1%8C%E4%B8%8E%E6%AF%94%E8%BE%83%E7%BB%93%E6%9E%9C.md">D07 运行比较</a> 记录了一个很实际的结果：候选版本的总通过数更高，却有一个原本通过的案例退步。界面因此要显示 <code>improved</code>、<code>regressed</code> 和案例级失败原因，安全案例还要单独设门槛。只看百分比会掩盖这类退步。</p>
+<p>发布门可以很简单：任一关键安全案例失败，就不自动通过；非关键业务案例可以保留待审查项，但要写清责任人和修复计划。模型有随机性不等于可以忽略失败。它要求记录模型参数、Prompt、知识快照和运行次数。</p>
+<h2 id="九、开发过程也要有验收关口"><a href="#九、开发过程也要有验收关口" class="headerlink" title="九、开发过程也要有验收关口"></a>九、开发过程也要有验收关口</h2><p>仓库没有让 AI 从一页需求直接跳到“生成完整网站”。它把开发拆为 D01 到 D10：工程与数据访问、登录与权限、工单、知识检索、AI 流式输出、人工复核、固定评测、审计管理、全链路验收、部署方案与模拟上线。每个阶段都要求任务书、自动测试、页面或后端证据、已知限制和人工冻结。</p>
+<p>这个过程也适用于其他行业：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+  A[&quot;定义业务目标与不做什么&quot;] --&gt; B[&quot;写接口、状态与验收契约&quot;]
+  B --&gt; C[&quot;AI 实现当前最小阶段&quot;]
+  C --&gt; D[&quot;自动测试 + 失败路径&quot;]
+  D --&gt; E[&quot;人工看页面、证据与限制&quot;]
+  E --&gt; F{&quot;可接受？&quot;}
+  F --&gt;|&quot;否&quot;| G[&quot;补充约束、修复、记录失败&quot;]
+  G --&gt; C
+  F --&gt;|&quot;是&quot;| H[&quot;冻结阶段产物&quot;]
+  H --&gt; I[&quot;进入下一阶段&quot;]
+  </pre></div>
+
+<p>“AI 执行，人做选择”不表示人只负责点确认。人负责范围、权限、风险阈值、接受标准，以及是否允许进入下一阶段；AI 可以查资料、生成候选实现、跑测试、整理证据。没有这些判断，AI 只会更快地产生不受约束的代码。</p>
+<p>对于第一次做这类项目的团队，我建议按下面顺序开工：</p>
+<ol>
+<li>写一页范围声明：目标用户、唯一主路径、明确不做的动作、成功与失败怎样判定。</li>
+<li>画出工单和 AI 运行的状态机，并列出每条边的守卫条件。</li>
+<li>定义角色到资源的权限矩阵，先写越权测试再写页面。</li>
+<li>用合成、脱敏的数据搭建知识生命周期，保留停用和更新案例。</li>
+<li>固定模型输出 schema，在服务端校验来源、风险和业务断言。</li>
+<li>先实现人工确认、拒绝和转人工，再考虑自动发送。</li>
+<li>建一组可重复运行的安全与业务评测案例，任何改动都跑比较。</li>
+<li>最后再谈外部渠道、真实订单和部署，不要反过来。</li>
+</ol>
+<h2 id="十、先把仓库作为教学工程跑起来"><a href="#十、先把仓库作为教学工程跑起来" class="headerlink" title="十、先把仓库作为教学工程跑起来"></a>十、先把仓库作为教学工程跑起来</h2><p>仓库的 README 给出了本地流程：启动 PostgreSQL，复制环境文件，安装依赖，执行迁移，导入合成数据与知识，建立索引，然后分别启动 Web、API 和 Worker。<a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/README.md">README</a> 中的默认账户也全部使用 <code>.test</code> 域名和统一演示口令环境变量。</p>
+<p>可按 README 在本地运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/Wmengti/enterprise-ai-after-sales-service-platform.git</span><br><span class="line"><span class="built_in">cd</span> enterprise-ai-after-sales-service-platform</span><br><span class="line"><span class="built_in">cp</span> .env.example .<span class="built_in">env</span></span><br><span class="line">npm install</span><br><span class="line">docker compose up -d postgres</span><br><span class="line">npm run db:migrate</span><br><span class="line">npm run db:seed</span><br><span class="line">npm run knowledge:seed</span><br><span class="line">npm run knowledge:index</span><br></pre></td></tr></table></figure>
+
+<p>之后另开终端启动 <code>npm run dev:api</code>、<code>npm run dev:web</code>，需要后台任务时再运行 <code>npm run dev:worker</code>。没有配置模型密钥时，先检查权限、知识版本、失败和人工路径。真实模型验证需要在本地配置密钥，密钥不应提交进仓库。</p>
+<p>“能在本地 production build 跑通”不等于“可以部署为企业生产服务”。仓库 D10 的交付审计明确写的是“已验证的 L0 本地 Demo，不是公网生产上线”。它没有完成云环境兼容性验证、线上备份恢复、告警和值班、SLA、企业 SSO、私有网络和真实客户数据治理。代码即使部署到公网，这些责任也不会自动补齐。</p>
+<p>真正要走向生产，还需要单独立项解决：</p>
+<ul>
+<li>身份接入、租户隔离、最小权限与权限审计；</li>
+<li>真实订单、退款和消息渠道的幂等性、审批与回滚；</li>
+<li>数据最小化、脱敏、保留与删除策略；</li>
+<li>模型供应商、区域、数据使用条款与故障降级；</li>
+<li>密钥管理、网络隔离、备份恢复演练、监控告警和事件响应；</li>
+<li>负载、成本、限流、队列积压、模型超时及人工接管预案。</li>
+</ul>
+<p>这些项目需要单独计划和验证。它们决定了错误回复、越权访问或数据损失发生后，由谁负责处理。</p>
+<h2 id="十一、用问题检查它是否能进入业务流程"><a href="#十一、用问题检查它是否能进入业务流程" class="headerlink" title="十一、用问题检查它是否能进入业务流程"></a>十一、用问题检查它是否能进入业务流程</h2><p>准备下一次演示前，可以用下面十个问题反向验收：</p>
+<ol>
+<li>无权限用户请求一张工单时，系统会不会泄露该工单是否存在？</li>
+<li>知识文档停用后，新的 AI 运行还能不能引用它？</li>
+<li>模型编出一个不存在的文档编号，服务端会怎么处理？</li>
+<li>模型说“已经退款”，而业务系统没有执行退款，结果会是什么？</li>
+<li>两人并发编辑同一工单，旧版本能否悄悄覆盖新版本？</li>
+<li>高风险草稿被拒绝或转人工时，是否保存了原因和状态，而不是只消失？</li>
+<li>能否定位一条最终回复对应的模型、Prompt、知识版本和人工确认人？</li>
+<li>修改检索阈值后，能否知道哪个固定案例退步了？</li>
+<li>模型超时、返回坏 JSON、检索没有结果时，客服还能否安全继续工作？</li>
+<li>如果今天下线模型服务，哪些业务仍可运行，哪些必须明确转人工？</li>
+</ol>
+<p>如果大部分问题只能回答“应该可以”，系统还不适合被称为企业 Agent。先把答案落实为接口契约、自动测试、审计字段和演练记录，再扩展能力。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>可靠的售后 Agent 应限制模型能看到的数据，也限制模型建议能进入哪些业务环节。授权、当前有效的知识和结构化输入约束前者；校验、人工确认、审计和评测约束后者。</p>
+<p>这个仓库是一个教学样本。它从工单主路径出发，把权限、RAG、受约束生成、人工复核、回归评测和证据化开发连接起来。它没有证明自己已经能处理真实客户数据，更不是生产平台。它提供的启发很朴素：先设计停止条件、失败路径和责任人，再提高 Agent 的自主程度。</p>
+<p>有了这些基础，再接入更多渠道、工具调用和模型，才是在扩展一条可以检查的业务闭环。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform">企业售后工单 AI 工作台源码与本地运行说明</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/docs/taskbooks/D00_%E7%AC%AC%E4%B8%80%E7%89%88%E5%BC%80%E5%8F%91%E6%80%BB%E4%BB%BB%E5%8A%A1%E4%B9%A6_v0.1.md">D00：第一版开发总任务书</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/packages/ai/src/validation.ts">AI 输出校验实现</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/Wmengti/enterprise-ai-after-sales-service-platform/blob/main/docs/evidence/D10/07_D10%E4%BA%A4%E4%BB%98%E5%AE%8C%E6%88%90%E5%BA%A6%E5%AE%A1%E8%AE%A1.md">D10：部署范围与完成度审计</a></li>
+<li><a target="_blank" rel="noopener" href="https://x.com/pangmadee/status/2081917109702213703">系列阶段复盘原文</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/66400/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/66400/')">怎样把企业售后 Agent 做成可验收的工单闭环</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/66400/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">50</span></a><a class="post-meta__box__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>工程实践<span class="tagsPageCount">7</span></a><a class="post-meta__box__tags" href="/tags/RAG/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>RAG<span class="tagsPageCount">2</span></a><a class="post-meta__box__tags" href="/tags/%E4%BC%81%E4%B8%9A-AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>企业 AI<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/%E5%94%AE%E5%90%8E%E7%B3%BB%E7%BB%9F/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>售后系统<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Human-in-the-loop/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Human-in-the-loop<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/LLM-Eval/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>LLM Eval<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/posts/66200/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">怎样手写一个可验证的 Agent 图工作流</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/64738/" title="Agent Harness 如何让工具调用可恢复、可验证"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-04-19-agent-harness-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-19</div><div class="title">Agent Harness 如何让工具调用可恢复、可验证</div></div></a></div><div><a href="/posts/39471/" title="LangGraph 怎样收紧 LLM 的决策权"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-04-03-langgraph-decision-boundary-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-03</div><div class="title">LangGraph 怎样收紧 LLM 的决策权</div></div></a></div><div><a href="/posts/52907/" title="哪些 Agent 能力值得自己造"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-24-build-agent-capabilities-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-24</div><div class="title">哪些 Agent 能力值得自己造</div></div></a></div><div><a href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-07-27</div><div class="title">怎样手写一个可验证的 Agent 图工作流</div></div></a></div><div><a href="/posts/41836/" title="RAG 系统怎样先修语料再选算法"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-04-08-rag-corpus-first-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-08</div><div class="title">RAG 系统怎样先修语料再选算法</div></div></a></div><div><a href="/posts/27350/" title="Agent 怎样只保留真正需要的上下文"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-04-16-agent-context-selection-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-04-16</div><div class="title">Agent 怎样只保留真正需要的上下文</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E7%95%8C%E5%AE%9A%E7%AC%AC%E4%B8%80%E7%89%88%E8%A6%81%E5%A4%84%E7%90%86%E4%BB%80%E4%B9%88"><span class="toc-number">1.</span> <span class="toc-text">一、先界定第一版要处理什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E6%8C%89%E8%B4%A3%E4%BB%BB%E6%8B%86%E7%B3%BB%E7%BB%9F%EF%BC%8C%E5%86%8D%E5%86%B3%E5%AE%9A%E6%98%AF%E5%90%A6%E9%9C%80%E8%A6%81%E5%A4%9A%E4%B8%AA-Agent"><span class="toc-number">2.</span> <span class="toc-text">二、先按责任拆系统，再决定是否需要多个 Agent</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%85%88%E7%94%BB%E5%B7%A5%E5%8D%95%E7%8A%B6%E6%80%81%EF%BC%8C%E5%86%8D%E5%86%99-Prompt"><span class="toc-number">3.</span> <span class="toc-text">三、先画工单状态，再写 Prompt</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E4%B9%90%E8%A7%82%E5%B9%B6%E5%8F%91%E4%B8%8D%E6%98%AF%E2%80%9C%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E2%80%9D"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 乐观并发不是“技术细节”</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81RAG-%E7%9A%84%E8%B5%B7%E7%82%B9%E6%98%AF%E2%80%9C%E5%93%AA%E4%B8%80%E7%89%88%E7%9F%A5%E8%AF%86%E5%8F%AF%E4%BB%A5%E8%A2%AB%E5%BC%95%E7%94%A8%E2%80%9D"><span class="toc-number">4.</span> <span class="toc-text">四、RAG 的起点是“哪一版知识可以被引用”</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E7%BB%99%E5%BC%95%E7%94%A8%E8%AE%BE%E7%99%BD%E5%90%8D%E5%8D%95"><span class="toc-number">4.1.</span> <span class="toc-text">4.1 给引用设白名单</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E4%B8%8D%E5%91%BD%E4%B8%AD%E6%98%AF%E6%AD%A3%E5%B8%B8%E7%BB%93%E6%9E%9C%EF%BC%8C%E4%B8%8D%E8%A6%81%E6%8B%BF%E6%97%A7%E7%89%87%E6%AE%B5%E5%87%91%E7%AD%94%E6%A1%88"><span class="toc-number">4.2.</span> <span class="toc-text">4.2 不命中是正常结果，不要拿旧片段凑答案</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%A8%A1%E5%9E%8B%E8%BF%94%E5%9B%9E%E7%9A%84%E6%98%AF%E5%BB%BA%E8%AE%AE%E5%AF%B9%E8%B1%A1"><span class="toc-number">5.</span> <span class="toc-text">五、模型返回的是建议对象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E4%BA%BA%E5%B7%A5%E7%A1%AE%E8%AE%A4%E8%A6%81%E4%BF%9D%E7%95%99%E5%8E%9F%E7%A8%BF%E4%B8%8E%E7%BB%88%E7%A8%BF"><span class="toc-number">6.</span> <span class="toc-text">六、人工确认要保留原稿与终稿</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E5%93%AA%E4%BA%9B%E5%8A%A8%E4%BD%9C%E5%BF%85%E9%A1%BB%E5%81%9C%E4%B8%8B%E6%9D%A5%E7%AD%89%E4%BA%BA%EF%BC%9F"><span class="toc-number">6.1.</span> <span class="toc-text">6.1 哪些动作必须停下来等人？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%AE%A1%E8%AE%A1%E8%AE%B0%E5%BD%95%E8%A6%81%E8%83%BD%E8%BF%98%E5%8E%9F%E4%B8%80%E6%AC%A1%E5%A4%84%E7%90%86"><span class="toc-number">7.</span> <span class="toc-text">七、审计记录要能还原一次处理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%9B%BA%E5%AE%9A%E8%AF%84%E6%B5%8B%E7%94%A8%E6%9D%A5%E5%8F%91%E7%8E%B0%E5%9B%9E%E5%BD%92"><span class="toc-number">8.</span> <span class="toc-text">八、固定评测用来发现回归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%BC%80%E5%8F%91%E8%BF%87%E7%A8%8B%E4%B9%9F%E8%A6%81%E6%9C%89%E9%AA%8C%E6%94%B6%E5%85%B3%E5%8F%A3"><span class="toc-number">9.</span> <span class="toc-text">九、开发过程也要有验收关口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%85%88%E6%8A%8A%E4%BB%93%E5%BA%93%E4%BD%9C%E4%B8%BA%E6%95%99%E5%AD%A6%E5%B7%A5%E7%A8%8B%E8%B7%91%E8%B5%B7%E6%9D%A5"><span class="toc-number">10.</span> <span class="toc-text">十、先把仓库作为教学工程跑起来</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E7%94%A8%E9%97%AE%E9%A2%98%E6%A3%80%E6%9F%A5%E5%AE%83%E6%98%AF%E5%90%A6%E8%83%BD%E8%BF%9B%E5%85%A5%E4%B8%9A%E5%8A%A1%E6%B5%81%E7%A8%8B"><span class="toc-number">11.</span> <span class="toc-text">十一、用问题检查它是否能进入业务流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AF%AD"><span class="toc-number">12.</span> <span class="toc-text">结语</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">13.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样把企业售后 Agent 做成可验收的工单闭环"/></a><div class="content"><a class="title" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环">怎样把企业售后 Agent 做成可验收的工单闭环</a><time datetime="2026-07-29T02:30:00.000Z" title="发表于 2026-07-29 10:30:00">2026-07-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样手写一个可验证的 Agent 图工作流"/></a><div class="content"><a class="title" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流">怎样手写一个可验证的 Agent 图工作流</a><time datetime="2026-07-27T12:30:00.000Z" title="发表于 2026-07-27 20:30:00">2026-07-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kimi 怎样训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统">Kimi 怎样训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-17-agent-framework-subagents-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派">从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-16-grok-build-context-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 如何用 Agent 循环压缩上下文"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文">Grok Build 如何用 Agent 循环压缩上下文</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">54</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">71</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">14</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>48</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>50</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>25</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Python/" style="font-size: 0.88rem;">Python<sup>4</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>4</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 0.88rem;">工作流<sup>4</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 0.88rem;">工程化<sup>18</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>7</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>23</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","head > link[rel=\"shortcut icon\"]","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>
