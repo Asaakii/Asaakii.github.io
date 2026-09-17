@@ -1,0 +1,779 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,LLM,架构,工程化,工作流"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界"><meta name="application-name" content="Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界"><meta property="og:url" content="https://blog.asaakii.com/posts/63802/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="拆解普通 LLM App、工作流（Workflow）与自主智能体（Agent）的系统拓扑、控制权归属与工程权衡，通过代码对照说明何时该用确定性 DAG，何时才需要动态闭环。"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-15-workflow-vs-agent-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-15-workflow-vs-agent-cover.webp"><meta name="description" content="拆解普通 LLM App、工作流（Workflow）与自主智能体（Agent）的系统拓扑、控制权归属与工程权衡，通过代码对照说明何时该用确定性 DAG，何时才需要动态闭环。"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/63802/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界',
+  postAI: '',
+  pageFillDescription: '拓扑特征与控制权, 1. 普通 LLM 应用（开环单次调用）, 2. 工作流 Workflow（确定性有向无环图 DAG）, 3. 自主智能体 Agent（动态状态闭环）, 代码对照：控制权如何在代码中体现, 方式 1：工作流实现（步骤写死）, 方式 2：智能体实现（模型按需决定步骤）, 工程对比与权衡, 复合模式：工作流骨架嵌装智能体, 选型判断清单, 小结, 系列导航与参考本文是基础与工程系列专栏的第篇专栏总览参见基础认知与工程架构全景包含多个步骤调用了模型并使用了工具的系统常被统一称为但在架构设计上普通应用工作流与智能体的控制权拓扑和适用场景有明确的边界分清这三者的分工有助于在技术选型时避免把简单流程复杂化或在需要动态决策的场景下把路径写死拓扑特征与控制权从控制论与计算图的角度看这三类系统的执行拓扑与路由控制权存在本质差异普通应用开环单次调用拓扑特征单次请求单次生成无状态流转与环境交互定位类似纯函数适合文本润色翻译单次信息提取等单轮任务输入数据大模型推理输出结果工作流确定性有向无环图拓扑特征执行路径由代码预先定义的有向无环图固定不存在模型自主发起的未定义分支控制权归属归属于代码步骤流转条件分支判断和重试策略全部写在代码逻辑里模型定位模型充当节点上的数据处理器或单步分类器无权自行创建新节点或跳出预设图结构适用场景发票合规核验工单分类流转格式化报表生成等流程明确的流水线业务输入数据步骤字段提取业务规则分支判断命中条件步骤摘要提取命中条件步骤格式转换步骤格式化聚合交付自主智能体动态状态闭环拓扑特征执行路径在运行期动态生成系统接收目标与可用工具集合由模型根据工具返回的真实观测数据现场推断下一步动作控制权归属路由决策权移交给了模型宿主代码负责沙箱环境隔离参数校验状态维护与循环熔断适用场景代码缺陷定位修复复杂故障排查开放式技术调研等搜索空间广阔且路径无法预先穷举的探索型任务用户任务目标装配工作上下文模型决策中枢发起外部动作分派工具执行获取环境观测更新状态机目标完成收敛交付最终结论代码对照控制权如何在代码中体现以分析代码文件中的并发死锁隐患并给出修复建议为例对比两者的实现方式方式工作流实现步骤写死步骤固定读取文件步骤模型单步分类判断分析以下代码是否存在死锁风险返回步骤代码写死的分支控制代码检查通过无死锁风险步骤固定进入修复逻辑根据风险分析给出修改后的代码补丁在这段工作流代码中无论实际情况多复杂流程严格按照读文件分析判断修复的固定步骤走如果死锁风险依赖另一个外部文件中的锁定义该工作流无法自行决定去读取外部文件只能基于当前文件信息做出推断方式智能体实现模型按需决定步骤你是一个代码安全审查助手通过工具探索代码库确认是否存在并发风险并验证修复提供一组原子工具不固化调用顺序模型根据上一轮结果决定是继续读其他文件搜索符号还是完成任务在模式中如果模型在当前文件中看到它可以主动调用进一步排查并在给出修复前调用执行单元测试执行了几步调用了哪些工具由运行时的探索反馈驱动工程对比与权衡架构选型本质上是在确定性与灵活性之间权衡维度工作流智能体执行确定性高步骤固定容易做单步异常兜底与重试波动较大模型决策存在随机性需要设置熔断护栏灵活性与容错低超出预设规则的异常输入通常直接报错高遇到非预期报错时可在循环中换用其他工具尝试自愈成本与延迟稳定可测调用轮数和消耗在上线前即可基本估算波动范围大探索轮数取决于任务难度与报错情况调试与排查直观日志中节点流转清晰复现成本低相对复杂依赖完整的会话消息轨迹回放复合模式工作流骨架嵌装智能体实际业务开发中纯工作流与纯智能体并不是对立的常见做法是结合两者优势的混合架构外层确定性业务工作流接收工单鉴权与参数校验复杂度判断常规标准化任务固定规则流水线波动复杂非标排障受限节点自适应排查统一格式化交付与记录日志后置测试验收测试通过测试未通过外层由工作流保障基础合规入口鉴权参数清洗流程流转和最终结果持久化全部用确定性代码固定内层由受限负责攻坚只在需要多步探索的具体子节点如定位并修复复杂报错中引入同时施加单节点轮数与预算上限后置物理校验收口节点交付结果后由外部代码强制跑一次测试或语法检查通过后才放行至后续流程选型判断清单在决定是否使用前可依次评估以下问题任务步骤能否在开发期穷举能穷举优先采用稳定低延迟好调试不能穷举进入下一步系统是否需要根据工具执行的不可预测返回值来决定下一动向不需要如固定前置检索后再生成采用普通或单步骤链需要如根据报错日志决定看哪个文件适合采用业务对错误和延迟波动的容忍度如何容忍度极低如金融转账校验账单核算采用带人工审批的工作流容忍度中等且需要自动化探索如开发辅助数据分析探索适合引入并配置沙箱与熔断机制小结区别的核心不在于是否调用大模型而在于执行路径由代码预先写死还是由模型在运行期动态探索能用规则或工作流解决的稳定场景不要强行上专用于探索路径不可预知的动态交互任务工业界实践常采用混合架构外层用工作流控制业务流程与安全局部节点用受控解决高复杂度探索确定了使用之后要把一套动态系统在生产环境中搭稳需要拆解出哪些关键子系统下一篇将逐一拆解这些核心模块一个系统的核心组成从系统视角拆解关键模块系列导航与参考专栏总览基础认知与工程架构全景上一篇什么是从工程角度理解的最小定义下一篇一个系统的核心组成从系统视角拆解关键模块知识源自系列课程',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-09-13 16:25:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>48</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>50</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>25</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>6</sup></a><a href="/tags/Python/" style="font-size: 1.05rem;">Python<sup>4</sup></a><a href="/tags/Skills/" style="font-size: 1.05rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>4</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 1.05rem;">工作流<sup>4</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 1.05rem;">工程化<sup>18</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 1.05rem;">工程实践<sup>7</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 1.05rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 1.05rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>23</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">10</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">3</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">6</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">12</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/02/"><span class="card-archive-list-date">2026年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">15</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/09/"><span class="card-archive-list-date">2023年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B7%A5%E7%A8%8B/" itemprop="url">Agent 基础与工程</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/LLM/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>LLM</span></a><a class="article-meta__tags" href="/tags/%E6%9E%B6%E6%9E%84/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>架构</span></a><a class="article-meta__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>工程化</span></a><a class="article-meta__tags" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>工作流</span></a></span></div></div><h1 class="post-title" itemprop="name headline">Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-02-15T02:00:00.000Z" title="发表于 2026-02-15 10:00:00">2026-02-15</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-09-13T08:25:00.000Z" title="更新于 2026-09-13 16:25:00">2026-09-13</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">2.2k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>7分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-15-workflow-vs-agent-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/63802/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/Agent-%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B7%A5%E7%A8%8B/" itemprop="url">Agent 基础与工程</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/LLM/" tabindex="-1" itemprop="url">LLM</a><a href="/tags/%E6%9E%B6%E6%9E%84/" tabindex="-1" itemprop="url">架构</a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" tabindex="-1" itemprop="url">工程化</a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" tabindex="-1" itemprop="url">工作流</a><h1 id="CrawlerTitle" itemprop="name headline">Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-02-15T02:00:00.000Z" title="发表于 2026-02-15 10:00:00">2026-02-15</time><time itemprop="dateCreated datePublished" datetime="2026-09-13T08:25:00.000Z" title="更新于 2026-09-13 16:25:00">2026-09-13</time></header><blockquote>
+<p>本文是「Agent 基础与工程」系列专栏的第 2 篇。专栏总览参见：<a href="/posts/63800">《Agent 基础认知与工程架构全景》</a>。</p>
+</blockquote>
+<hr>
+<p>包含多个步骤、调用了模型并使用了工具的系统，常被统一称为 Agent。但在架构设计上，普通 LLM 应用、工作流（Workflow）与智能体（Agent）的控制权拓扑和适用场景有明确的边界。</p>
+<p>分清这三者的分工，有助于在技术选型时避免把简单流程复杂化，或在需要动态决策的场景下把路径写死。</p>
+<hr>
+<h2 id="拓扑特征与控制权"><a href="#拓扑特征与控制权" class="headerlink" title="拓扑特征与控制权"></a>拓扑特征与控制权</h2><p>从控制论与计算图的角度看，这三类系统的执行拓扑与路由控制权存在本质差异：</p>
+<h3 id="1-普通-LLM-应用（开环单次调用）"><a href="#1-普通-LLM-应用（开环单次调用）" class="headerlink" title="1. 普通 LLM 应用（开环单次调用）"></a>1. 普通 LLM 应用（开环单次调用）</h3><ul>
+<li><strong>拓扑特征</strong>：单次请求，单次生成，无状态流转与环境交互。</li>
+<li><strong>定位</strong>：类似纯函数。适合文本润色、翻译、单次信息提取等单轮任务。</li>
+</ul>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden="">
+  flowchart LR
+    A["输入数据 (Prompt)"] --&gt; B["大模型推理 (LLM)"] --&gt; C["输出结果 (Response)"]
+  </pre></div>
+
+<h3 id="2-工作流-Workflow（确定性有向无环图-DAG）"><a href="#2-工作流-Workflow（确定性有向无环图-DAG）" class="headerlink" title="2. 工作流 Workflow（确定性有向无环图 DAG）"></a>2. 工作流 Workflow（确定性有向无环图 DAG）</h3><ul>
+<li><strong>拓扑特征</strong>：执行路径由代码预先定义的有向无环图（DAG）固定，不存在模型自主发起的未定义分支。</li>
+<li><strong>控制权归属</strong>：归属于代码。步骤流转、条件分支判断和重试策略全部写在代码逻辑里。</li>
+<li><strong>模型定位</strong>：模型充当节点上的数据处理器或单步分类器，无权自行创建新节点或跳出预设图结构。</li>
+<li><strong>适用场景</strong>：发票合规核验、工单分类流转、格式化报表生成等流程明确的流水线业务。</li>
+</ul>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden="">
+  flowchart TD
+    A["输入数据"] --&gt; B["步骤 1: 字段提取"]
+    B --&gt; C{"业务规则分支判断"}
+    C --&gt;|"命中条件 A"| D["步骤 2A: 摘要提取"]
+    C --&gt;|"命中条件 B"| E["步骤 2B: 格式转换"]
+    D --&gt; F["步骤 3: 格式化聚合交付"]
+    E --&gt; F
+  </pre></div>
+
+<h3 id="3-自主智能体-Agent（动态状态闭环）"><a href="#3-自主智能体-Agent（动态状态闭环）" class="headerlink" title="3. 自主智能体 Agent（动态状态闭环）"></a>3. 自主智能体 Agent（动态状态闭环）</h3><ul>
+<li><strong>拓扑特征</strong>：执行路径在运行期动态生成。系统接收目标与可用工具集合，由模型根据工具返回的真实观测数据现场推断下一步动作。</li>
+<li><strong>控制权归属</strong>：路由决策权移交给了模型；宿主代码负责沙箱环境隔离、参数校验、状态维护与循环熔断。</li>
+<li><strong>适用场景</strong>：代码缺陷定位修复、复杂故障排查、开放式技术调研等搜索空间广阔且路径无法预先穷举的探索型任务。</li>
+</ul>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden="">
+  flowchart TD
+    Goal["用户任务目标 (Goal)"] --&gt; Context["装配工作上下文 (Context)"]
+    Context --&gt; Decision{"模型决策中枢 (LLM)"}
+    Decision --&gt;|"发起外部动作"| Tool["分派工具执行 (Tools)"]
+    Tool --&gt; Obs["获取环境观测 (Observation)"]
+    Obs --&gt; State["更新状态机 (State)"]
+    State --&gt; Context
+    Decision --&gt;|"目标完成收敛"| Out["交付最终结论 (Output)"]
+  </pre></div>
+
+<hr>
+<h2 id="代码对照：控制权如何在代码中体现"><a href="#代码对照：控制权如何在代码中体现" class="headerlink" title="代码对照：控制权如何在代码中体现"></a>代码对照：控制权如何在代码中体现</h2><p>以“分析代码文件中的并发死锁隐患并给出修复建议”为例，对比两者的实现方式。</p>
+<h3 id="方式-1：工作流实现（步骤写死）"><a href="#方式-1：工作流实现（步骤写死）" class="headerlink" title="方式 1：工作流实现（步骤写死）"></a>方式 1：工作流实现（步骤写死）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">run_code_review_workflow</span>(<span class="params">file_path: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="comment"># 步骤 1：固定读取文件</span></span><br><span class="line">    code_content = read_file(file_path)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 步骤 2：模型单步分类判断</span></span><br><span class="line">    risk_analysis = call_llm(</span><br><span class="line">        prompt=<span class="string">f"分析以下代码是否存在死锁风险，返回 JSON {{has_risk: bool, detail: str}}:\n<span class="subst">{code_content}</span>"</span></span><br><span class="line">    )</span><br><span class="line">    risk_data = json.loads(risk_analysis)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 步骤 3：代码写死的分支控制</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> risk_data.get(<span class="string">"has_risk"</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"代码检查通过，无死锁风险。"</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 步骤 4：固定进入修复逻辑</span></span><br><span class="line">    fix_plan = call_llm(</span><br><span class="line">        prompt=<span class="string">f"根据风险分析：<span class="subst">{risk_data[<span class="string">'detail'</span>]}</span>，给出修改后的代码补丁:\n<span class="subst">{code_content}</span>"</span></span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> fix_plan</span><br></pre></td></tr></table></figure>
+
+<p>在这段工作流代码中，无论实际情况多复杂，流程严格按照“读文件 <mjx-container class="MathJax" jax="SVG" overflow="overflow"><svg style="vertical-align: -0.023ex;" xmlns="http://www.w3.org/2000/svg" width="2.262ex" height="1.176ex" role="img" focusable="false" viewBox="0 -510 1000 520"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math" data-latex="\to"><g data-mml-node="mo" data-latex="\to"><path data-c="2192" d="M932 234C939 237 943 243 943 250C943 257 939 263 932 266C884 282 839 316 797 368C769 403 750 444 741 491C738 504 730 510 717 510C701 510 693 502 693 485L694 483L694 482C711 395 755 326 828 274L82 274C66 274 58 266 58 250C58 234 66 226 82 226L828 226C755 174 711 105 694 18L694 17L693 15C693-2 701-10 717-10C730-10 738-4 741 9C750 56 769 97 797 132C839 184 884 218 932 234Z"></path></g></g></g></svg></mjx-container> 分析 <mjx-container class="MathJax" jax="SVG" overflow="overflow"><svg style="vertical-align: -0.023ex;" xmlns="http://www.w3.org/2000/svg" width="2.262ex" height="1.176ex" role="img" focusable="false" viewBox="0 -510 1000 520"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math" data-latex="\to"><g data-mml-node="mo" data-latex="\to"><path data-c="2192" d="M932 234C939 237 943 243 943 250C943 257 939 263 932 266C884 282 839 316 797 368C769 403 750 444 741 491C738 504 730 510 717 510C701 510 693 502 693 485L694 483L694 482C711 395 755 326 828 274L82 274C66 274 58 266 58 250C58 234 66 226 82 226L828 226C755 174 711 105 694 18L694 17L693 15C693-2 701-10 717-10C730-10 738-4 741 9C750 56 769 97 797 132C839 184 884 218 932 234Z"></path></g></g></g></svg></mjx-container> 判断 <mjx-container class="MathJax" jax="SVG" overflow="overflow"><svg style="vertical-align: -0.023ex;" xmlns="http://www.w3.org/2000/svg" width="2.262ex" height="1.176ex" role="img" focusable="false" viewBox="0 -510 1000 520"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math" data-latex="\to"><g data-mml-node="mo" data-latex="\to"><path data-c="2192" d="M932 234C939 237 943 243 943 250C943 257 939 263 932 266C884 282 839 316 797 368C769 403 750 444 741 491C738 504 730 510 717 510C701 510 693 502 693 485L694 483L694 482C711 395 755 326 828 274L82 274C66 274 58 266 58 250C58 234 66 226 82 226L828 226C755 174 711 105 694 18L694 17L693 15C693-2 701-10 717-10C730-10 738-4 741 9C750 56 769 97 797 132C839 184 884 218 932 234Z"></path></g></g></g></svg></mjx-container> 修复”的固定步骤走。如果死锁风险依赖另一个外部文件中的锁定义，该工作流无法自行决定去读取外部文件，只能基于当前文件信息做出推断。</p>
+<hr>
+<h3 id="方式-2：智能体实现（模型按需决定步骤）"><a href="#方式-2：智能体实现（模型按需决定步骤）" class="headerlink" title="方式 2：智能体实现（模型按需决定步骤）"></a>方式 2：智能体实现（模型按需决定步骤）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">run_code_review_agent</span>(<span class="params">goal: <span class="built_in">str</span></span>):</span><br><span class="line">    messages = [</span><br><span class="line">        {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>: <span class="string">"你是一个代码安全审查助手。通过工具探索代码库，确认是否存在并发风险并验证修复。"</span>},</span><br><span class="line">        {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: goal}</span><br><span class="line">    ]</span><br><span class="line">    <span class="comment"># 提供一组原子工具，不固化调用顺序</span></span><br><span class="line">    tools = [read_file, search_symbol, run_tests]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        response = call_llm_with_tools(messages, tools)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 模型根据上一轮结果决定：是继续读其他文件、搜索符号，还是完成任务</span></span><br><span class="line">        <span class="keyword">if</span> response.has_tool_calls:</span><br><span class="line">            <span class="keyword">for</span> call <span class="keyword">in</span> response.tool_calls:</span><br><span class="line">                observation = execute_tool(call)</span><br><span class="line">                messages.append({<span class="string">"role"</span>: <span class="string">"tool"</span>, <span class="string">"content"</span>: observation})</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> response.content</span><br></pre></td></tr></table></figure>
+
+<p>在 Agent 模式中，如果模型在当前文件中看到 <code>import lock_utils</code>，它可以主动调用 <code>search_symbol('lock_utils')</code> 进一步排查，并在给出修复前调用 <code>run_tests</code> 执行单元测试。执行了几步、调用了哪些工具，由运行时的探索反馈驱动。</p>
+<hr>
+<h2 id="工程对比与权衡"><a href="#工程对比与权衡" class="headerlink" title="工程对比与权衡"></a>工程对比与权衡</h2><p>架构选型本质上是在确定性与灵活性之间权衡：</p>
+<table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">工作流（Workflow）</th>
+<th align="left">智能体（Agent）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>执行确定性</strong></td>
+<td align="left">高。步骤固定，容易做单步异常兜底与重试。</td>
+<td align="left">波动较大。模型决策存在随机性，需要设置熔断护栏。</td>
+</tr>
+<tr>
+<td align="left"><strong>灵活性与容错</strong></td>
+<td align="left">低。超出预设规则的异常输入通常直接报错。</td>
+<td align="left">高。遇到非预期报错时，可在循环中换用其他工具尝试自愈。</td>
+</tr>
+<tr>
+<td align="left"><strong>成本与延迟</strong></td>
+<td align="left">稳定可测。调用轮数和 Token 消耗在上线前即可基本估算。</td>
+<td align="left">波动范围大。探索轮数取决于任务难度与报错情况。</td>
+</tr>
+<tr>
+<td align="left"><strong>调试与排查</strong></td>
+<td align="left">直观。日志中节点流转清晰，复现成本低。</td>
+<td align="left">相对复杂。依赖完整的会话消息轨迹回放。</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="复合模式：工作流骨架嵌装智能体"><a href="#复合模式：工作流骨架嵌装智能体" class="headerlink" title="复合模式：工作流骨架嵌装智能体"></a>复合模式：工作流骨架嵌装智能体</h2><p>实际业务开发中，纯工作流与纯智能体并不是对立的，常见做法是结合两者优势的混合架构：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden="">
+  flowchart TD
+  subgraph WorkflowLayer["外层：确定性业务工作流"]
+    A["接收工单"] --&gt; B["鉴权与参数校验"]
+    B --&gt; C{"复杂度判断"}
+    C --&gt;|"常规标准化任务"| D["固定规则流水线 (0 波动)"]
+    C --&gt;|"复杂非标排障"| E["受限 Agent 节点 (自适应排查)"]
+    D --&gt; F["统一格式化交付与记录日志"]
+    E --&gt; G["后置测试验收"]
+    G --&gt;|"测试通过"| F
+    G --&gt;|"测试未通过"| E
+  end
+  </pre></div>
+
+<ol>
+<li><strong>外层由工作流保障基础合规</strong>：入口鉴权、参数清洗、流程流转和最终结果持久化全部用确定性代码固定。</li>
+<li><strong>内层由受限 Agent 负责攻坚</strong>：只在需要多步探索的具体子节点（如“定位并修复复杂报错”）中引入 Agent，同时施加单节点轮数与 Token 预算上限。</li>
+<li><strong>后置物理校验收口</strong>：Agent 节点交付结果后，由外部代码强制跑一次测试或语法检查，通过后才放行至后续流程。</li>
+</ol>
+<hr>
+<h2 id="选型判断清单"><a href="#选型判断清单" class="headerlink" title="选型判断清单"></a>选型判断清单</h2><p>在决定是否使用 Agent 前，可依次评估以下问题：</p>
+<ol>
+<li><strong>任务步骤能否在开发期穷举？</strong><ul>
+<li>能穷举：优先采用 Workflow（稳定、低延迟、好调试）。</li>
+<li>不能穷举：进入下一步。</li>
+</ul>
+</li>
+<li><strong>系统是否需要根据工具执行的不可预测返回值来决定下一动向？</strong><ul>
+<li>不需要（如固定前置检索后再生成）：采用普通 RAG 或单步骤链。</li>
+<li>需要（如根据报错日志决定看哪个文件）：适合采用 Agent。</li>
+</ul>
+</li>
+<li><strong>业务对错误和延迟波动的容忍度如何？</strong><ul>
+<li>容忍度极低（如金融转账校验、账单核算）：采用带人工审批的工作流。</li>
+<li>容忍度中等且需要自动化探索（如开发辅助、数据分析探索）：适合引入 Agent，并配置沙箱与熔断机制。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ul>
+<li>区别的核心不在于是否调用大模型，而在于执行路径由代码预先写死（Workflow），还是由模型在运行期动态探索（Agent）。</li>
+<li>能用规则或工作流解决的稳定场景，不要强行上 Agent；Agent 专用于探索路径不可预知的动态交互任务。</li>
+<li>工业界实践常采用混合架构：外层用工作流控制业务流程与安全，局部节点用受控 Agent 解决高复杂度探索。</li>
+</ul>
+<p>确定了使用 Agent 之后，要把一套动态系统在生产环境中搭稳，需要拆解出哪些关键子系统？</p>
+<p>下一篇将逐一拆解这些核心模块：<a href="/posts/63803/">《一个 Agent 系统的核心组成：从系统视角拆解关键模块》</a>。</p>
+<hr>
+<h2 id="系列导航与参考"><a href="#系列导航与参考" class="headerlink" title="系列导航与参考"></a>系列导航与参考</h2><ul>
+<li>专栏总览：<a href="/posts/63800">《Agent 基础认知与工程架构全景》</a></li>
+<li>上一篇：<a href="/posts/63801/">《什么是 Agent：从工程角度理解 Agent 的最小定义》</a></li>
+<li>下一篇：<a href="/posts/63803/">《一个 Agent 系统的核心组成：从系统视角拆解关键模块》</a></li>
+<li>知识源自：<a target="_blank" rel="noopener" href="https://onefly.top/zero2Agent/learn-agent-basic/02-workflow-vs-agent/index.html">zero2Agent 系列课程《02-workflow-vs-agent》</a></li>
+</ul>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/63802/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/63802/')">Workflow 和 Agent 的区别：理清工作流、LLM App 与智能体的工程边界</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/63802/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">50</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">48</span></a><a class="post-meta__box__tags" href="/tags/LLM/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>LLM<span class="tagsPageCount">25</span></a><a class="post-meta__box__tags" href="/tags/%E6%9E%B6%E6%9E%84/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>架构<span class="tagsPageCount">23</span></a><a class="post-meta__box__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>工程化<span class="tagsPageCount">18</span></a><a class="post-meta__box__tags" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>工作流<span class="tagsPageCount">4</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/63801/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-01-agent-minimum-definition-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">什么是 Agent：从工程角度理解 Agent 的最小定义</div></div></a></div><div class="next-post pull-right"><a href="/posts/63803/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-16-agent-system-components-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">一个 Agent 系统的核心组成：从系统视角拆解关键模块</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/63801/" title="什么是 Agent：从工程角度理解 Agent 的最小定义"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-01-agent-minimum-definition-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-14</div><div class="title">什么是 Agent：从工程角度理解 Agent 的最小定义</div></div></a></div><div><a href="/posts/63803/" title="一个 Agent 系统的核心组成：从系统视角拆解关键模块"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-16-agent-system-components-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-16</div><div class="title">一个 Agent 系统的核心组成：从系统视角拆解关键模块</div></div></a></div><div><a href="/posts/63804/" title="为什么很多 Agent Demo 一落地就不稳定：从工程视角看原型到生产的断层"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-17-agent-demo-to-production-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-17</div><div class="title">为什么很多 Agent Demo 一落地就不稳定：从工程视角看原型到生产的断层</div></div></a></div><div><a href="/posts/63805/" title="大模型 API 输入输出与 Tool Calling：从协议交互到完整工具调用循环"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-18-tool-calling-loop-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-18</div><div class="title">大模型 API 输入输出与 Tool Calling：从协议交互到完整工具调用循环</div></div></a></div><div><a href="/posts/63806/" title="Context、State 与 Memory：从消息轨迹理清上下文、状态与长期记忆"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-19-context-state-memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-19</div><div class="title">Context、State 与 Memory：从消息轨迹理清上下文、状态与长期记忆</div></div></a></div><div><a href="/posts/63807/" title="Planning、Reflection、RAG 分别解决什么问题：分清 Agent 系统的职责边界"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-02-20-planning-reflection-rag-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-02-20</div><div class="title">Planning、Reflection、RAG 分别解决什么问题：分清 Agent 系统的职责边界</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8B%93%E6%89%91%E7%89%B9%E5%BE%81%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%9D%83"><span class="toc-number">1.</span> <span class="toc-text">拓扑特征与控制权</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%99%AE%E9%80%9A-LLM-%E5%BA%94%E7%94%A8%EF%BC%88%E5%BC%80%E7%8E%AF%E5%8D%95%E6%AC%A1%E8%B0%83%E7%94%A8%EF%BC%89"><span class="toc-number">1.1.</span> <span class="toc-text">1. 普通 LLM 应用（开环单次调用）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%B7%A5%E4%BD%9C%E6%B5%81-Workflow%EF%BC%88%E7%A1%AE%E5%AE%9A%E6%80%A7%E6%9C%89%E5%90%91%E6%97%A0%E7%8E%AF%E5%9B%BE-DAG%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">2. 工作流 Workflow（确定性有向无环图 DAG）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E8%87%AA%E4%B8%BB%E6%99%BA%E8%83%BD%E4%BD%93-Agent%EF%BC%88%E5%8A%A8%E6%80%81%E7%8A%B6%E6%80%81%E9%97%AD%E7%8E%AF%EF%BC%89"><span class="toc-number">1.3.</span> <span class="toc-text">3. 自主智能体 Agent（动态状态闭环）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E5%AF%B9%E7%85%A7%EF%BC%9A%E6%8E%A7%E5%88%B6%E6%9D%83%E5%A6%82%E4%BD%95%E5%9C%A8%E4%BB%A3%E7%A0%81%E4%B8%AD%E4%BD%93%E7%8E%B0"><span class="toc-number">2.</span> <span class="toc-text">代码对照：控制权如何在代码中体现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F-1%EF%BC%9A%E5%B7%A5%E4%BD%9C%E6%B5%81%E5%AE%9E%E7%8E%B0%EF%BC%88%E6%AD%A5%E9%AA%A4%E5%86%99%E6%AD%BB%EF%BC%89"><span class="toc-number">2.1.</span> <span class="toc-text">方式 1：工作流实现（步骤写死）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F-2%EF%BC%9A%E6%99%BA%E8%83%BD%E4%BD%93%E5%AE%9E%E7%8E%B0%EF%BC%88%E6%A8%A1%E5%9E%8B%E6%8C%89%E9%9C%80%E5%86%B3%E5%AE%9A%E6%AD%A5%E9%AA%A4%EF%BC%89"><span class="toc-number">2.2.</span> <span class="toc-text">方式 2：智能体实现（模型按需决定步骤）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E7%A8%8B%E5%AF%B9%E6%AF%94%E4%B8%8E%E6%9D%83%E8%A1%A1"><span class="toc-number">3.</span> <span class="toc-text">工程对比与权衡</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%8D%E5%90%88%E6%A8%A1%E5%BC%8F%EF%BC%9A%E5%B7%A5%E4%BD%9C%E6%B5%81%E9%AA%A8%E6%9E%B6%E5%B5%8C%E8%A3%85%E6%99%BA%E8%83%BD%E4%BD%93"><span class="toc-number">4.</span> <span class="toc-text">复合模式：工作流骨架嵌装智能体</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%89%E5%9E%8B%E5%88%A4%E6%96%AD%E6%B8%85%E5%8D%95"><span class="toc-number">5.</span> <span class="toc-text">选型判断清单</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B3%BB%E5%88%97%E5%AF%BC%E8%88%AA%E4%B8%8E%E5%8F%82%E8%80%83"><span class="toc-number">7.</span> <span class="toc-text">系列导航与参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样把企业售后 Agent 做成可验收的工单闭环"/></a><div class="content"><a class="title" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环">怎样把企业售后 Agent 做成可验收的工单闭环</a><time datetime="2026-07-29T02:30:00.000Z" title="发表于 2026-07-29 10:30:00">2026-07-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样手写一个可验证的 Agent 图工作流"/></a><div class="content"><a class="title" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流">怎样手写一个可验证的 Agent 图工作流</a><time datetime="2026-07-27T12:30:00.000Z" title="发表于 2026-07-27 20:30:00">2026-07-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kimi 怎样训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统">Kimi 怎样训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-17-agent-framework-subagents-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派">从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-16-grok-build-context-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 如何用 Agent 循环压缩上下文"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文">Grok Build 如何用 Agent 循环压缩上下文</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">54</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">71</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">14</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>48</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>50</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>9</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>25</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>6</sup></a><a href="/tags/Python/" style="font-size: 0.88rem;">Python<sup>4</sup></a><a href="/tags/Skills/" style="font-size: 0.88rem;">Skills<sup>6</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>14</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>4</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 0.88rem;">工作流<sup>4</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 0.88rem;">工程化<sup>18</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="font-size: 0.88rem;">工程实践<sup>7</sup></a><a href="/tags/%E6%8F%90%E7%A4%BA%E8%AF%8D/" style="font-size: 0.88rem;">提示词<sup>3</sup></a><a href="/tags/%E6%95%99%E7%A8%8B/" style="font-size: 0.88rem;">教程<sup>5</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>23</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><script>(function(){var OFFSET={busuanzi_site_uv:1280,busuanzi_site_pv:8642};function patch(){Object.keys(OFFSET).forEach(function(id){var el=document.getElementById(id);if(!el||el.dataset.busuanziOffset)return;var n=parseInt(el.innerText.replace(/[^\d]/g,""),10);if(isNaN(n))return;el.innerText=(n+OFFSET[id]).toLocaleString("en-US");el.dataset.busuanziOffset="1"})}function watch(){var t=setInterval(patch,300);setTimeout(function(){clearInterval(t)},20000)}watch();document.addEventListener("pjax:complete",watch)})();</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","head > link[rel=\"shortcut icon\"]","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script async data-pjax src="https://cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js"></script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>
