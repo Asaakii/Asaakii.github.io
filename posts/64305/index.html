@@ -1,0 +1,634 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统 | Asaakiiの个人博客</title><meta name="keywords" content="Agent,AI,OpenClaw,上下文管理,记忆系统,ContextEngine,Compaction"><meta name="author" content="Asaakii"><meta name="copyright" content="Asaakii"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f7f9fe"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-touch-fullscreen" content="yes"><meta name="apple-mobile-web-app-title" content="OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统"><meta name="application-name" content="OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="#f7f9fe"><meta property="og:type" content="article"><meta property="og:title" content="OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统"><meta property="og:url" content="https://blog.asaakii.com/posts/64305/index.html"><meta property="og:site_name" content="Asaakiiの个人博客"><meta property="og:description" content="在构建长周期运行的 Agent 时，上下文窗口（Context Window）始终是昂贵且有限的物理边界。一个未经设计的 Agent 在经历十几轮多文件交互后，就会迅速因为上下文溢出而崩溃，或者把最初的用户约束和架构规范遗忘殆尽。 Agent 的“记忆”绝对不是数据库里无节制追加的消息列表。Open"><meta property="og:locale" content="zh-CN"><meta property="og:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-18-openclaw-agent-contextengine-cover.webp"><meta property="article:author" content="Asaakii"><meta property="article:tag" content="个人博客,技术经验,生活日常,感悟记录,数码装备,摄影相册"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-18-openclaw-agent-contextengine-cover.webp"><meta name="description" content="在构建长周期运行的 Agent 时，上下文窗口（Context Window）始终是昂贵且有限的物理边界。一个未经设计的 Agent 在经历十几轮多文件交互后，就会迅速因为上下文溢出而崩溃，或者把最初的用户约束和架构规范遗忘殆尽。 Agent 的“记忆”绝对不是数据库里无节制追加的消息列表。Open"><link rel="shortcut icon" href="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"><link rel="canonical" href="https://blog.asaakii.com/posts/64305/"><link rel="preconnect" href="//cdn.cbd.int"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/anzhiyu-theme-static@1.0.0/swiper/swiper.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  linkPageTop: {"enable":true,"title":"与数百名博主无限进步","addFriendPlaceholder":"昵称（请勿包含博客等字样）：\n网站地址（要求博客地址，请勿提交个人主页）：\n头像图片url（请提供尽可能清晰的图片，我会上传到我自己的图床）：\n描述：\n站点截图（可选）：\n"},
+  peoplecanvas: undefined,
+  postHeadAiDescription: {"enable":true,"gptName":"AnZhiYu","mode":"local","switchBtn":false,"btnLink":"https://afdian.net/item/886a79d4db6711eda42a52540025c377","randomNum":3,"basicWordCount":1000,"key":"xxxx","Referer":"https://xx.xx/"},
+  diytitle: {"enable":true,"leaveTitle":"🌙 暂时掉线，去摘星星啦~","backTitle":"☀️ 满载星光，欢迎归来！"},
+  LA51: undefined,
+  greetingBox: {"enable":true,"default":"晚上好👋","list":[{"greeting":"该睡觉啦，晚安😴","startTime":0,"endTime":5},{"greeting":"早上好鸭👋, 祝你一天好心情！","startTime":5,"endTime":9},{"greeting":"上午好👋, 状态很好，鼓励一下～","startTime":10,"endTime":10},{"greeting":"11点多啦, 在坚持一下就吃饭啦～","startTime":11,"endTime":11},{"greeting":"午安👋, 宝贝","startTime":12,"endTime":14},{"greeting":"🌈充实的一天辛苦啦！","startTime":14,"endTime":18},{"greeting":"19点喽, 奖励一顿丰盛的大餐吧🍔。","startTime":19,"endTime":19},{"greeting":"晚上好👋, 在属于自己的时间好好放松😌~","startTime":20,"endTime":24}]},
+  twikooEnvId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+  commentBarrageConfig:undefined,
+  music_page_default: "nav_music",
+  root: '/',
+  preloader: {"source":3},
+  friends_vue_info: undefined,
+  navMusic: true,
+  mainTone: {"mode":"api","api":"https://img2color-go.vercel.app/api?img=","cover_change":true},
+  authorStatus: {"skills":["🤖️ 数码科技爱好者","🔍 分享与热心帮助","🏠 智能家居小能手","🔨 设计开发一条龙","🤝 专修交互与设计","🏃 脚踏实地行动派","🧱 团队小组发动机","💢 壮汉人狠话不多"]},
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简","rightMenuMsgToTraditionalChinese":"转为繁体","rightMenuMsgToSimplifiedChinese":"转为简体"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":330},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    simplehomepage: true,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"copy":true,"copyrightEbable":false,"limitCount":50,"languages":{"author":"作者: Asaakii","link":"链接: ","source":"来源: Asaakiiの个人博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。","copySuccess":"复制成功，复制和转载请标注本文地址"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#425AEF","bgDark":"#1f1f1f","position":"top-center"},
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.min.js',
+      css: 'https://cdn.cbd.int/flickr-justified-gallery@2.2.0/dist/fjGallery.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  shortcutKey: undefined,
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  configTitle: 'Asaakiiの个人博客',
+  title: 'OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统',
+  postAI: '',
+  pageFillDescription: '记忆分层全景, 第一层：MEMORY.md 文件级持久化, 为什么选择 Markdown 文件？, 索引文件结构模式, 第二层：ContextEngine 核心接口与 Token 预算, assemble() 的优先级分配策略, 上下文压缩（Compaction）：标识符保留机制, 提示词约束规范, Dreaming 系统：记忆的夜间巩固整理, 记忆评分公式, 生产级记忆宿主：GBrain 的架构实践, Compiled Truth + Timeline 架构, Minions 任务队列：确定性优先于 LLM 推理, 总结在构建长周期运行的时上下文窗口始终是昂贵且有限的物理边界一个未经设计的在经历十几轮多文件交互后就会迅速因为上下文溢出而崩溃或者把最初的用户约束和架构规范遗忘殆尽的记忆绝对不是数据库里无节制追加的消息列表将记忆抽象为由下至上的三层结构第一层持久化记忆跨会话存活人类可读版本控制第二层每轮调用前在预算内动态组装最优上下文并执行压缩第三层管理会话生命周期状态机与断点恢复本文系统剖析这一架构的具体实现与进阶的睡眠巩固机制记忆分层全景存储与持久化索引文件人类可编辑跟踪外部宿主动态上下文引擎预算优先级分配带标识符保留的压缩系统三阶段夜间巩固整理会话运行时追加式事件流调用上下文超限夜间第一层文件级持久化很多系统倾向于在启动时连接或向量数据库而优先选用文件存储核心长期记忆为什么选择文件透明与可控开发者可以直接用编辑器打开查看发现记错了直接修改或删除友好伴随工程仓库一同提交支持版本追溯与分支回滚零外部依赖不依赖任何独立运行的数据库容器开箱即用天然原生对的层级结构和引用链接解析效果最好索引文件结构模式根索引文件保持极简偏好中文对话代码注释强制英文单测用架构分层设计原则禁区严禁到严禁修改作为轻量目录用户偏好常用技术栈与交互习惯系统架构规范核心包划分与依赖约束安全红线敏感文件与禁止执行的操作写入时机界定记忆系统只写入跨会话的长期事实用户显式纠错项目非显而易见的约定用户偏好绝对不存储源码内容用获取历史用获取或当前任务状态用跟踪第二层核心接口与预算负责在每一次请求前按照预算裁剪与拼装出最精炼的上下文的优先级分配策略面对严格的预算例如限制单次输入最多不能简单将历史记录从前往后全量拼接必须遵循严格的优先级梯队系统指令最高优先级必须完整保留长期记忆索引高优先级注入早期压缩摘要如果存在历史压缩段近期消息从最新一条往前反向拾取直至预算耗尽预算耗尽更早未压缩的消息被安全阻断优先级规则系统指令长期记忆早期压缩摘要最新对话轮次低优先级且未被摘要的历史消息在预算超载时优先被剥离上下文压缩标识符保留机制当活跃消息的总量触碰警戒线时如达到窗口上限的系统触发简单的摘要往往会把工程细节模糊化为泛泛之谈如此前分析了鉴权模块并修复了一些问题一旦变成这样就彻底丧失了后续代码编辑的能力提出了严格的标识符保留规则严格模式保留最近轮完整对话不压缩提示词约束规范在向模型请求压缩时强制要求保留代码级物理锚点你是一个精准的代码上下文摘要器请对以下对话历史进行提炼你必须遵守严格的标识符保留规则涉及的所有文件绝对路径或相对路径必须原样保留涉及的函数名变量名类名错误码和精确行号范围必须完整记录保留用户的明确决策选型结论和未完成的任务状态过滤掉工具输出的大段重复数据中间日志和无用试错示例格式已分析中的函数确认缺少过期时间校验已确认采用替代进行单元测试压缩完成后前序原始消息被安全归档上下文由该结构化摘要接管同时在压缩前自动执行一次将长期结论刷入系统记忆的夜间巩固整理人类大脑在睡眠阶段通过海马体与大脑皮层的协同完成记忆巩固与冗余剪枝的机制通过定时任务实现自主长期记忆维护浅睡眠扫描当日事件提取候选片段深睡眠概念合并冲突消解废弃过期信息阶段快速眼动跨主题建立关联图谱提炼产物日志更新记忆评分公式候选记忆片段通过以下加权评分公式决定是否被提升为跨项目永久记忆与工程核心架构的相关度跨轮次被提及或使用的频次在不同类型任务提问中的普适度近期新事实的衰减得分已被其他规则引用的收敛度包含的概念信息浓度只有经过验证且有据可查的高分片段才会被正式提升低分片段与已被解决的调试临时日志在深睡眠阶段自动退休生产级记忆宿主的架构实践当团队面对超大规模知识库例如超过个知识页实体时单一的文件会出现检索瓶颈的扩展后端采用了方案架构传统向量记忆直接追加导致前后事实冲突区分了当前认知与历史事实链条用户数据库选型偏好当前最新共识只读可整体替换主存储严格选用拒绝任何非关系型缓存替代主存不可变追加式证据链用户提及项目只接受用户要求移除依赖用户在中拒绝了提案在日常推理中直接读取精炼的当遇到争议或需要回溯决策原因时按需穿透查看证据链任务队列确定性优先于推理为了保障高可用放弃了不稳定易崩溃的异步临时进程采用基于的确定性任务队列处理夜间记忆整理且遵循一条核心原则能在确定性逻辑中解决的正则提取实体模式匹配关系语法结构链接绝不用进行猜测只有在发生深层次冲突消解与语义合并时才调用模型兼顾可靠性与执行成本总结的记忆架构给出了明确的工程范式区分上下文与记忆上下文是临时有限的推理空间记忆是跨生命周期的持久知识文本优先于黑盒用索引作为长期记忆底座透明可编辑且零依赖带保真度的压缩严格保护文件路径与符号避免压缩导致上下文瘫痪自主维护机制引入睡眠巩固解决记忆单向膨胀与退化问题下一篇我们将探讨复杂任务拆解的核心子进程隔离与多渠道路由',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2026-10-08 22:15:00',
+  postMainColor: '',
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18171d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f9fe')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 7 || hour >= 19
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script></head><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.getElementById('loading-box').classList.add("loaded");
+  },
+  initLoading: () => {
+    document.getElementById('loading-box').classList.remove("loaded")
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+setTimeout(function(){preloader.endLoading();},10000)
+
+if (true) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.10/progress_bar/progress_bar.css"/><script async="async" src="https://cdn.cbd.int/pace-js@1.2.4/pace.min.js" data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"></script><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><div id="nav-group"><span id="blog_name"><a id="site-name" href="/" accesskey="h"><div class="title">Asaakiiの个人博客</div><i class="anzhiyufont anzhiyu-icon-house-chimney"></i></a></span><div class="mask-name-container"><div id="name-container"><a id="page-name" href="javascript:anzhiyu.scrollToDest(0, 500)">PAGE_NAME</a></div></div><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div></div><div id="nav-right"><div class="nav-button" id="randomPost_button"><a class="site-page" onclick="toRandomPost()" title="随机前往一个文章" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-dice"></i></a></div><div class="nav-button" id="search-button"><a class="site-page social-icon search" href="javascript:void(0);" title="搜索🔍" accesskey="s"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span> 搜索</span></a></div><input id="center-console" type="checkbox"/><label class="widget" for="center-console" title="中控台" onclick="anzhiyu.switchConsole();"><i class="left"></i><i class="widget center"></i><i class="widget right"></i></label><div id="console"><div class="console-card-group-reward"><ul class="reward-all console-card"><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png" target="_blank"><img class="post-qr-code-img" alt="微信" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-weichat.png"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png" target="_blank"><img class="post-qr-code-img" alt="支付宝" src="https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/qrcode-alipay.png"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div><div class="console-card-group"><div class="console-card-group-left"><div class="console-card" id="card-newest-comments"><div class="card-content"><div class="author-content-item-tips">互动</div><span class="author-content-item-title"> 最新评论</span></div><div class="aside-list"><span>正在加载中...</span></div></div></div><div class="console-card-group-right"><div class="console-card tags"><div class="card-content"><div class="author-content-item-tips">兴趣点</div><span class="author-content-item-title">寻找你感兴趣的领域</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 1.05rem;">AI<sup>97</sup></a><a href="/tags/AI-Agent/" style="font-size: 1.05rem;">AI Agent<sup>20</sup></a><a href="/tags/Agent/" style="font-size: 1.05rem;">Agent<sup>99</sup></a><a href="/tags/Claude-Code/" style="font-size: 1.05rem;">Claude Code<sup>25</sup></a><a href="/tags/DeepSeek-Harness/" style="font-size: 1.05rem;">DeepSeek Harness<sup>16</sup></a><a href="/tags/LLM/" style="font-size: 1.05rem;">LLM<sup>26</sup></a><a href="/tags/LangGraph/" style="font-size: 1.05rem;">LangGraph<sup>10</sup></a><a href="/tags/OpenClaw/" style="font-size: 1.05rem;">OpenClaw<sup>16</sup></a><a href="/tags/Python/" style="font-size: 1.05rem;">Python<sup>11</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 1.05rem;">上下文工程<sup>16</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 1.05rem;">多智能体<sup>12</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 1.05rem;">工作流<sup>9</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 1.05rem;">工程化<sup>23</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 1.05rem;">架构<sup>25</sup></a><a href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" style="font-size: 1.05rem;">状态机<sup>12</sup></a></div></div><hr/></div></div><div class="console-card history"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-box-archiv"></i><span>文章</span></div><div class="card-archives"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/07/"><span class="card-archive-list-date">2026年07月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">16</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/06/"><span class="card-archive-list-date">2026年06月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">36</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/05/"><span class="card-archive-list-date">2026年05月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">29</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/04/"><span class="card-archive-list-date">2026年04月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">17</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/03/"><span class="card-archive-list-date">2026年03月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">20</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2026/02/"><span class="card-archive-list-date">2026年02月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">15</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2025/09/"><span class="card-archive-list-date">2025年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/09/"><span class="card-archive-list-date">2023年09月</span><div class="card-archive-list-count-group"><span class="card-archive-list-count">1</span><span>篇</span></div></a></li></ul></div><hr/></div></div></div><div class="button-group"><div class="console-btn-item"><a class="darkmode_switchbutton" title="显示模式切换" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-moon"></i></a></div><div class="console-btn-item" id="consoleHideAside" onclick="anzhiyu.hideAsideBtn()" title="边栏显示控制"><a class="asideSwitch"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></a></div><div class="console-btn-item" id="consoleMusic" onclick="anzhiyu.musicToggle()" title="音乐开关"><a class="music-switch"><i class="anzhiyufont anzhiyu-icon-music"></i></a></div></div><div class="console-mask" onclick="anzhiyu.hideConsole()" href="javascript:void(0);"></div></div><div class="nav-button" id="nav-totop"><a class="totopbtn" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i><span id="percent" onclick="anzhiyu.scrollToDest(0,500)">0</span></a></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);" title="切换"><i class="anzhiyufont anzhiyu-icon-bars"></i></a></div></div></div></nav><div id="post-info"><div id="post-firstinfo"><div class="meta-firstline"><a class="post-meta-original">原创</a><span class="post-meta-categories"><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i><i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/OpenClaw-Agent-%E6%A0%B8%E5%BF%83%E4%B8%8E%E5%AE%9E%E6%88%98/" itemprop="url">OpenClaw Agent 核心与实战</a></span><span class="article-meta tags"><a class="article-meta__tags" href="/tags/Agent/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Agent</span></a><a class="article-meta__tags" href="/tags/AI/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>AI</span></a><a class="article-meta__tags" href="/tags/OpenClaw/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>OpenClaw</span></a><a class="article-meta__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>上下文管理</span></a><a class="article-meta__tags" href="/tags/%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>记忆系统</span></a><a class="article-meta__tags" href="/tags/ContextEngine/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>ContextEngine</span></a><a class="article-meta__tags" href="/tags/Compaction/" tabindex="-1" itemprop="url"> <span> <i class="anzhiyufont anzhiyu-icon-hashtag"></i>Compaction</span></a></span></div></div><h1 class="post-title" itemprop="name headline">OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" itemprop="dateCreated datePublished" datetime="2026-05-18T02:00:00.000Z" title="发表于 2026-05-18 10:00:00">2026-05-18</time><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" itemprop="dateCreated datePublished" datetime="2026-10-08T14:15:00.000Z" title="更新于 2026-10-08 22:15:00">2026-10-08</time></span></div><div class="meta-secondline"><span class="post-meta-separator"></span><span class="post-meta-wordcount"><i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i><span class="post-meta-label" title="文章字数">字数总计:</span><span class="word-count" title="文章字数">2.5k</span><span class="post-meta-separator"></span><i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i><span class="post-meta-label" title="阅读时长">阅读时长:</span><span>9分钟</span></span><span class="post-meta-separator">       </span><span class="post-meta-position" title="作者IP属地为成都"><i class="anzhiyufont anzhiyu-icon-location-dot"></i>成都</span></div></div></div><section class="main-hero-waves-area waves-area"><svg class="waves-svg" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto"><defs><path id="gentle-wave" d="M -160 44 c 30 0 58 -18 88 -18 s 58 18 88 18 s 58 -18 88 -18 s 58 18 88 18 v 44 h -352 Z"></path></defs><g class="parallax"><use href="#gentle-wave" x="48" y="0"></use><use href="#gentle-wave" x="48" y="3"></use><use href="#gentle-wave" x="48" y="5"></use><use href="#gentle-wave" x="48" y="7"></use></g></svg></section><div id="post-top-cover"><img class="nolazyload" id="post-top-bg" src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-18-openclaw-agent-contextengine-cover.webp"></div></header><main id="blog-container"><div class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container" itemscope itemtype="https://blog.asaakii.com/posts/64305/"><header><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/" itemprop="url">技术笔记</a><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/OpenClaw-Agent-%E6%A0%B8%E5%BF%83%E4%B8%8E%E5%AE%9E%E6%88%98/" itemprop="url">OpenClaw Agent 核心与实战</a><a href="/tags/Agent/" tabindex="-1" itemprop="url">Agent</a><a href="/tags/AI/" tabindex="-1" itemprop="url">AI</a><a href="/tags/OpenClaw/" tabindex="-1" itemprop="url">OpenClaw</a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86/" tabindex="-1" itemprop="url">上下文管理</a><a href="/tags/%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F/" tabindex="-1" itemprop="url">记忆系统</a><a href="/tags/ContextEngine/" tabindex="-1" itemprop="url">ContextEngine</a><a href="/tags/Compaction/" tabindex="-1" itemprop="url">Compaction</a><h1 id="CrawlerTitle" itemprop="name headline">OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统</h1><span itemprop="author" itemscope itemtype="http://schema.org/Person">Asaakii</span><time itemprop="dateCreated datePublished" datetime="2026-05-18T02:00:00.000Z" title="发表于 2026-05-18 10:00:00">2026-05-18</time><time itemprop="dateCreated datePublished" datetime="2026-10-08T14:15:00.000Z" title="更新于 2026-10-08 22:15:00">2026-10-08</time></header><p>在构建长周期运行的 Agent 时，上下文窗口（Context Window）始终是昂贵且有限的物理边界。一个未经设计的 Agent 在经历十几轮多文件交互后，就会迅速因为上下文溢出而崩溃，或者把最初的用户约束和架构规范遗忘殆尽。</p>
+<p>Agent 的“记忆”绝对不是数据库里无节制追加的消息列表。OpenClaw 将记忆抽象为由下至上的三层结构：</p>
+<ol>
+<li><strong>第一层：持久化记忆（<code>MEMORY.md</code>）</strong> —— 跨会话存活、人类可读、Git 版本控制；</li>
+<li><strong>第二层：ContextEngine</strong> —— 每轮调用前在 Token 预算内动态组装最优上下文并执行压缩；</li>
+<li><strong>第三层：Session 管理</strong> —— 会话生命周期状态机与断点恢复。</li>
+</ol>
+<p>本文系统剖析这一架构的具体实现与进阶的 Dreaming（睡眠巩固）机制。</p>
+<hr>
+<h2 id="记忆分层全景"><a href="#记忆分层全景" class="headerlink" title="记忆分层全景"></a>记忆分层全景</h2><div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart TD
+    subgraph 存储与持久化
+        M1[&quot;MEMORY.md 索引文件&lt;br&gt;(人类可编辑 &#x2F; Git 跟踪)&quot;]
+        M2[&quot;外部宿主: GBrain&lt;br&gt;(Postgres + pgvector)&quot;]
+    end
+
+    subgraph 动态上下文引擎 ContextEngine
+        A[&quot;assemble(budget)&lt;br&gt;Token 预算优先级分配&quot;]
+        C[&quot;compact()&lt;br&gt;带标识符保留的 LLM 压缩&quot;]
+        D[&quot;Dreaming 系统&lt;br&gt;(三阶段夜间巩固整理)&quot;]
+    end
+
+    subgraph 会话运行时
+        S[&quot;Session Transcript&lt;br&gt;(追加式事件流)&quot;]
+        L[&quot;LLM API 调用上下文&quot;]
+    end
+
+    M1 --&gt; A
+    M2 --&gt; A
+    S --&gt; A
+    A --&gt; L
+    S --&gt;|超限| C
+    C --&gt; S
+    S --&gt;|夜间 cron| D
+    D --&gt; M1
+    D --&gt; M2
+  </pre></div>
+
+<hr>
+<h2 id="第一层：MEMORY-md-文件级持久化"><a href="#第一层：MEMORY-md-文件级持久化" class="headerlink" title="第一层：MEMORY.md 文件级持久化"></a>第一层：<code>MEMORY.md</code> 文件级持久化</h2><p>很多系统倾向于在启动时连接 Redis 或向量数据库，而 OpenClaw 优先选用 Markdown 文件存储核心长期记忆。</p>
+<h3 id="为什么选择-Markdown-文件？"><a href="#为什么选择-Markdown-文件？" class="headerlink" title="为什么选择 Markdown 文件？"></a>为什么选择 Markdown 文件？</h3><ol>
+<li><strong>透明与可控</strong>：开发者可以直接用编辑器打开查看，发现 Agent 记错了直接修改或删除；</li>
+<li><strong>Git 友好</strong>：伴随工程仓库一同提交，支持 <code>git diff</code>、版本追溯与分支回滚；</li>
+<li><strong>零外部依赖</strong>：不依赖任何独立运行的数据库容器，开箱即用；</li>
+<li><strong>LLM 天然原生</strong>：LLM 对 Markdown 的层级结构和引用链接解析效果最好。</li>
+</ol>
+<h3 id="索引文件结构模式"><a href="#索引文件结构模式" class="headerlink" title="索引文件结构模式"></a>索引文件结构模式</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.myclaw/memory/</span><br><span class="line">├── MEMORY.md              # 根索引文件，保持极简</span><br><span class="line">├── user_preferences.md    # 偏好：中文对话，代码注释强制英文，单测用 vitest</span><br><span class="line">├── project_arch.md        # 架构：pnpm monorepo，分层设计原则</span><br><span class="line">└── forbidden_rules.md     # 禁区：严禁 git push 到 remote，严禁修改 .env</span><br></pre></td></tr></table></figure>
+
+<p><code>MEMORY.md</code> 作为轻量目录：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># Agent Long-Term Memory Index</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> [<span class="string">用户偏好</span>](<span class="link">user_preferences.md</span>) - 常用技术栈与交互习惯</span><br><span class="line"><span class="bullet">-</span> [<span class="string">系统架构规范</span>](<span class="link">project_arch.md</span>) - 核心包划分与依赖约束</span><br><span class="line"><span class="bullet">-</span> [<span class="string">安全红线</span>](<span class="link">forbidden_rules.md</span>) - 敏感文件与禁止执行的操作</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>写入时机界定</strong>：<br>记忆系统只写入<strong>跨会话的长期事实</strong>（用户显式纠错、项目非显而易见的约定、用户偏好）；绝对不存储源码内容（用 Read 获取）、Git 历史（用 <code>git log</code> 获取）或当前任务状态（用 Task List 跟踪）。</p>
+</blockquote>
+<hr>
+<h2 id="第二层：ContextEngine-核心接口与-Token-预算"><a href="#第二层：ContextEngine-核心接口与-Token-预算" class="headerlink" title="第二层：ContextEngine 核心接口与 Token 预算"></a>第二层：ContextEngine 核心接口与 Token 预算</h2><p><code>ContextEngine</code> 负责在每一次 LLM 请求前，按照 Token 预算裁剪与拼装出最精炼的上下文：</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">interface</span> <span class="title class_">TokenBudget</span> &#123;</span><br><span class="line">  <span class="attr">maxTokens</span>: <span class="built_in">number</span></span><br><span class="line">  <span class="attr">reservedForOutput</span>: <span class="built_in">number</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">interface</span> <span class="title class_">ContextEngine</span> &#123;</span><br><span class="line">  <span class="title function_">bootstrap</span>(<span class="attr">config</span>: <span class="title class_">EngineConfig</span>): <span class="title class_">Promise</span>&lt;<span class="built_in">void</span>&gt;</span><br><span class="line">  <span class="title function_">ingest</span>(<span class="attr">event</span>: <span class="title class_">ContextEvent</span>): <span class="title class_">Promise</span>&lt;<span class="built_in">void</span>&gt;</span><br><span class="line">  <span class="title function_">assemble</span>(<span class="attr">budget</span>: <span class="title class_">TokenBudget</span>): <span class="title class_">Promise</span>&lt;<span class="title class_">Message</span>[]&gt;</span><br><span class="line">  <span class="title function_">compact</span>(): <span class="title class_">Promise</span>&lt;<span class="built_in">void</span>&gt;</span><br><span class="line">  <span class="title function_">maintain</span>(): <span class="title class_">Promise</span>&lt;<span class="built_in">void</span>&gt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="assemble-的优先级分配策略"><a href="#assemble-的优先级分配策略" class="headerlink" title="assemble() 的优先级分配策略"></a><code>assemble()</code> 的优先级分配策略</h3><p>面对严格的 Token 预算（例如限制单次输入最多 32,000 tokens），不能简单将历史记录从前往后全量拼接，必须遵循严格的优先级梯队：</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">class</span> <span class="title class_">DefaultContextEngine</span> <span class="keyword">implements</span> <span class="title class_">ContextEngine</span> &#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="attr">transcript</span>: <span class="title class_">Message</span>[] = []</span><br><span class="line">  <span class="keyword">private</span> <span class="attr">compressedSummary</span>: <span class="built_in">string</span> | <span class="literal">null</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">async</span> <span class="title function_">assemble</span>(<span class="attr">budget</span>: <span class="title class_">TokenBudget</span>): <span class="title class_">Promise</span>&lt;<span class="title class_">Message</span>[]&gt; &#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="attr">messages</span>: <span class="title class_">Message</span>[] = []</span><br><span class="line">    <span class="keyword">let</span> usedTokens = <span class="number">0</span></span><br><span class="line">    <span class="keyword">const</span> available = budget.<span class="property">maxTokens</span> - budget.<span class="property">reservedForOutput</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1. 系统指令（最高优先级，必须完整保留）</span></span><br><span class="line">    <span class="keyword">const</span> sysPrompt = <span class="variable language_">this</span>.<span class="title function_">buildSystemPrompt</span>()</span><br><span class="line">    messages.<span class="title function_">push</span>(&#123; <span class="attr">role</span>: <span class="string">&#x27;system&#x27;</span>, <span class="attr">content</span>: sysPrompt &#125;)</span><br><span class="line">    usedTokens += <span class="title function_">countTokens</span>(sysPrompt)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 长期记忆索引（高优先级，注入 MEMORY.md）</span></span><br><span class="line">    <span class="keyword">const</span> memory = <span class="keyword">await</span> <span class="variable language_">this</span>.<span class="title function_">readMemoryIndex</span>()</span><br><span class="line">    <span class="keyword">if</span> (memory) &#123;</span><br><span class="line">      messages[<span class="number">0</span>].<span class="property">content</span> += <span class="string">`\n\n# Long-term Memory\n<span class="subst">$&#123;memory&#125;</span>`</span></span><br><span class="line">      usedTokens += <span class="title function_">countTokens</span>(memory)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 早期压缩摘要（如果存在历史压缩段）</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="variable language_">this</span>.<span class="property">compressedSummary</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> <span class="attr">summaryMsg</span>: <span class="title class_">Message</span> = &#123;</span><br><span class="line">        <span class="attr">role</span>: <span class="string">&#x27;system&#x27;</span>,</span><br><span class="line">        <span class="attr">content</span>: <span class="string">`[Previous Context Summary]:\n<span class="subst">$&#123;<span class="variable language_">this</span>.compressedSummary&#125;</span>`</span></span><br><span class="line">      &#125;</span><br><span class="line">      messages.<span class="title function_">push</span>(summaryMsg)</span><br><span class="line">      usedTokens += <span class="title function_">countTokens</span>(summaryMsg.<span class="property">content</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 近期消息（从最新一条往前反向拾取，直至预算耗尽）</span></span><br><span class="line">    <span class="keyword">const</span> recentMessages = <span class="variable language_">this</span>.<span class="property">transcript</span>.<span class="title function_">slice</span>().<span class="title function_">reverse</span>()</span><br><span class="line">    <span class="keyword">const</span> <span class="attr">fitting</span>: <span class="title class_">Message</span>[] = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> msg <span class="keyword">of</span> recentMessages) &#123;</span><br><span class="line">      <span class="keyword">const</span> tokens = <span class="title function_">countTokens</span>(msg.<span class="property">content</span>)</span><br><span class="line">      <span class="keyword">if</span> (usedTokens + tokens &gt; available) &#123;</span><br><span class="line">        <span class="keyword">break</span> <span class="comment">// 预算耗尽，更早未压缩的消息被安全阻断</span></span><br><span class="line">      &#125;</span><br><span class="line">      fitting.<span class="title function_">unshift</span>(msg)</span><br><span class="line">      usedTokens += tokens</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    messages.<span class="title function_">push</span>(...fitting)</span><br><span class="line">    <span class="keyword">return</span> messages</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>优先级规则</strong>：<code>系统指令 &gt; MEMORY.md 长期记忆 &gt; 早期压缩摘要 &gt; 最新对话轮次</code>。低优先级且未被摘要的历史消息在预算超载时优先被剥离。</p>
+<hr>
+<h2 id="上下文压缩（Compaction）：标识符保留机制"><a href="#上下文压缩（Compaction）：标识符保留机制" class="headerlink" title="上下文压缩（Compaction）：标识符保留机制"></a>上下文压缩（Compaction）：标识符保留机制</h2><p>当活跃消息的 Token 总量触碰警戒线时（如达到窗口上限的 80%），系统触发 <code>compact()</code>。</p>
+<p>简单的 LLM 摘要往往会把工程细节模糊化为泛泛之谈（如：“此前分析了鉴权模块并修复了一些问题”）。一旦变成这样，Agent 就彻底丧失了后续代码编辑的能力。</p>
+<p>OpenClaw 提出了严格的<strong>标识符保留规则（Identifier Preservation）</strong>：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">compaction:</span></span><br><span class="line">  <span class="attr">identifierPreservation:</span> <span class="string">&quot;strict&quot;</span> <span class="comment"># 严格模式</span></span><br><span class="line">  <span class="attr">keepRecentTurns:</span> <span class="number">4</span>              <span class="comment"># 保留最近 4 轮完整对话不压缩</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="提示词约束规范"><a href="#提示词约束规范" class="headerlink" title="提示词约束规范"></a>提示词约束规范</h3><p>在向模型请求压缩时，强制要求保留代码级物理锚点：</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="variable constant_">COMPACTION_PROMPT</span> = <span class="string">`</span></span><br><span class="line"><span class="string">你是一个精准的代码上下文摘要器。请对以下对话历史进行提炼。</span></span><br><span class="line"><span class="string">你必须遵守严格的标识符保留规则（Strict Identifier Preservation）：</span></span><br><span class="line"><span class="string">1. 涉及的所有文件绝对路径或相对路径必须原样保留；</span></span><br><span class="line"><span class="string">2. 涉及的函数名、变量名、类名、错误码和精确行号范围必须完整记录；</span></span><br><span class="line"><span class="string">3. 保留用户的明确决策、选型结论和未完成的任务状态；</span></span><br><span class="line"><span class="string">4. 过滤掉工具输出的大段重复数据、中间日志和无用试错。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">示例格式：</span></span><br><span class="line"><span class="string">- [已分析] src/auth/jwt.ts:45-80 中的 verifyToken() 函数，确认缺少过期时间校验。</span></span><br><span class="line"><span class="string">- [已确认] 采用 vitest 替代 jest 进行单元测试。</span></span><br><span class="line"><span class="string">`</span></span><br></pre></td></tr></table></figure>
+
+<p>压缩完成后，前序原始消息被安全归档，上下文由该结构化摘要接管，同时在压缩前自动执行一次 <code>auto-flush</code>，将长期结论刷入 <code>MEMORY.md</code>。</p>
+<hr>
+<h2 id="Dreaming-系统：记忆的夜间巩固整理"><a href="#Dreaming-系统：记忆的夜间巩固整理" class="headerlink" title="Dreaming 系统：记忆的夜间巩固整理"></a>Dreaming 系统：记忆的夜间巩固整理</h2><p>人类大脑在睡眠阶段通过海马体与大脑皮层的协同完成记忆巩固与冗余剪枝。OpenClaw 的 Dreaming 机制通过定时任务实现自主长期记忆维护：</p>
+<div class="mermaid-wrap"><pre class="mermaid-src" hidden>
+  flowchart LR
+    A[&quot;Light Sleep&lt;br&gt;(浅睡眠: 扫描当日事件，提取候选片段)&quot;] --&gt; B[&quot;Deep Sleep&lt;br&gt;(深睡眠: 概念合并、冲突消解、废弃过期信息)&quot;]
+    B --&gt; C[&quot;REM 阶段&lt;br&gt;(快速眼动: 跨主题建立关联图谱，提炼 Compiled Truth)&quot;]
+    C --&gt; D[&quot;产物: DREAMS.md 日志&lt;br&gt;&amp; 更新 MEMORY.md&quot;]
+  </pre></div>
+
+<h3 id="记忆评分公式"><a href="#记忆评分公式" class="headerlink" title="记忆评分公式"></a>记忆评分公式</h3><p>候选记忆片段通过以下加权评分公式决定是否被提升为跨项目永久记忆：</p>
+<p>$$\text{Score} &#x3D; 0.30 \cdot R + 0.24 \cdot F + 0.15 \cdot QD + 0.15 \cdot Rec + 0.10 \cdot C + 0.06 \cdot CR$$</p>
+<ul>
+<li><strong>$R$ (Relevance)</strong>：与工程核心架构的相关度；</li>
+<li><strong>$F$ (Frequency)</strong>：跨轮次被提及或使用的频次；</li>
+<li><strong>$QD$ (Query Diversity)</strong>：在不同类型任务提问中的普适度；</li>
+<li><strong>$Rec$ (Recency)</strong>：近期新事实的衰减得分；</li>
+<li><strong>$C$ (Consolidation)</strong>：已被其他规则引用的收敛度；</li>
+<li><strong>$CR$ (Conceptual Richness)</strong>：包含的概念信息浓度。</li>
+</ul>
+<p>只有经过验证且有据可查（Grounded）的高分片段才会被正式提升，低分片段与已被解决的调试临时日志在深睡眠阶段自动退休（Retired）。</p>
+<hr>
+<h2 id="生产级记忆宿主：GBrain-的架构实践"><a href="#生产级记忆宿主：GBrain-的架构实践" class="headerlink" title="生产级记忆宿主：GBrain 的架构实践"></a>生产级记忆宿主：GBrain 的架构实践</h2><p>当团队面对超大规模知识库（例如超过 15,000 个知识页、4,000+ 实体）时，单一的 <code>MEMORY.md</code> 文件会出现检索瓶颈。OpenClaw 的扩展后端 GBrain 采用了 <strong>PostgreSQL + pgvector</strong> 方案：</p>
+<h3 id="Compiled-Truth-Timeline-架构"><a href="#Compiled-Truth-Timeline-架构" class="headerlink" title="Compiled Truth + Timeline 架构"></a>Compiled Truth + Timeline 架构</h3><p>传统向量记忆直接追加导致前后事实冲突，GBrain 区分了<strong>当前认知</strong>与<strong>历史事实链条</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Page: &quot;用户数据库选型偏好&quot;</span><br><span class="line">├── Compiled Truth (当前最新共识，只读/可整体替换):</span><br><span class="line">│   &quot;主存储严格选用 PostgreSQL 16，拒绝任何非关系型缓存替代主存。&quot;</span><br><span class="line">└── Timeline (不可变追加式证据链):</span><br><span class="line">    ├── 2026-03-10: 用户提及 &quot;项目只接受 Postgres&quot;</span><br><span class="line">    ├── 2026-04-02: 用户要求移除 MongoDB 依赖</span><br><span class="line">    └── 2026-05-15: 用户在 PR 中拒绝了 DynamoDB 提案</span><br></pre></td></tr></table></figure>
+
+<p>Agent 在日常推理中直接读取精炼的 <code>Compiled Truth</code>；当遇到争议或需要回溯决策原因时，按需穿透查看 <code>Timeline</code> 证据链。</p>
+<h3 id="Minions-任务队列：确定性优先于-LLM-推理"><a href="#Minions-任务队列：确定性优先于-LLM-推理" class="headerlink" title="Minions 任务队列：确定性优先于 LLM 推理"></a>Minions 任务队列：确定性优先于 LLM 推理</h3><p>为了保障高可用，GBrain 放弃了不稳定、易崩溃的异步 sub-agent 临时进程，采用基于 Postgres 的确定性 <strong>Minions 任务队列</strong> 处理夜间记忆整理，且遵循一条核心原则：</p>
+<blockquote>
+<p><strong>能在确定性逻辑中解决的（正则提取实体、模式匹配关系、语法结构链接），绝不用 LLM 进行猜测。</strong> 只有在发生深层次冲突消解与语义合并时才调用模型，兼顾可靠性与执行成本。</p>
+</blockquote>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>OpenClaw 的记忆架构给出了明确的工程范式：</p>
+<ol>
+<li><strong>区分上下文与记忆</strong>：上下文是临时有限的推理空间，记忆是跨生命周期的持久知识；</li>
+<li><strong>文本优先于黑盒</strong>：用 Markdown 索引作为长期记忆底座，透明、可编辑且零依赖；</li>
+<li><strong>带保真度的压缩</strong>：Compaction 严格保护文件路径与符号，避免压缩导致上下文瘫痪；</li>
+<li><strong>自主维护机制</strong>：引入 Dreaming 睡眠巩固，解决记忆单向膨胀与退化问题。</li>
+</ol>
+<p>下一篇我们将探讨复杂任务拆解的核心：<strong>Multi-Agent 子进程隔离与多渠道路由</strong>。</p>
+</article><div class="post-copyright"><div class="copyright-cc-box"><i class="anzhiyufont anzhiyu-icon-copyright"></i></div><div class="post-copyright__author_box"><a class="post-copyright__author_img" href="/" title="头像"><img class="post-copyright__author_img_back" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"><img class="post-copyright__author_img_front" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" title="头像" alt="头像"></a><div class="post-copyright__author_name">Asaakii</div><div class="post-copyright__author_desc">允许一切事情发生</div></div><div class="post-copyright__post__info"><a class="post-copyright__original" title="该文章为原创文章，注意版权协议" href="https://blog.asaakii.com/posts/64305/">原创</a><a class="post-copyright-title"><span onclick="rm.copyPageUrl('https://blog.asaakii.com/posts/64305/')">OpenClaw 05：ContextEngine 记忆架构、Compaction 与 Dreaming 系统</span></a></div><div class="post-tools" id="post-tools"><div class="post-tools-left"><div class="rewardLeftButton"></div><div class="shareRight"><div class="share-link mobile"><div class="share-qrcode"><div class="share-button" title="使用手机访问这篇文章"><i class="anzhiyufont anzhiyu-icon-qrcode"></i></div><div class="share-main"><div class="share-main-all"><div id="qrcode" title="https://blog.asaakii.com/posts/64305/"></div><div class="reward-dec">使用手机访问这篇文章</div></div></div></div></div><script>function copyCurrentPageUrl() {
+  var currentPageUrl = window.location.href;
+  var input = document.createElement("input");
+  input.setAttribute("value", currentPageUrl);
+  document.body.appendChild(input);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(input);
+}</script><div class="share-link copyurl"><div class="share-button" id="post-share-url" title="复制链接" onclick="copyCurrentPageUrl()"><i class="anzhiyufont anzhiyu-icon-link"></i></div></div></div></div></div><div class="post-copyright__notice"><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://blog.asaakii.com" target="_blank">Asaakiiの个人博客</a>！</span></div></div><div class="post-tools-right"><div class="tag_share"><div class="post-meta__box"><div class="post-meta__box__tag-list"><a class="post-meta__box__tags" href="/tags/Agent/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Agent<span class="tagsPageCount">99</span></a><a class="post-meta__box__tags" href="/tags/AI/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>AI<span class="tagsPageCount">97</span></a><a class="post-meta__box__tags" href="/tags/OpenClaw/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>OpenClaw<span class="tagsPageCount">16</span></a><a class="post-meta__box__tags" href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>上下文管理<span class="tagsPageCount">3</span></a><a class="post-meta__box__tags" href="/tags/%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>记忆系统<span class="tagsPageCount">2</span></a><a class="post-meta__box__tags" href="/tags/ContextEngine/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>ContextEngine<span class="tagsPageCount">1</span></a><a class="post-meta__box__tags" href="/tags/Compaction/"><span class="tags-punctuation"> <i class="anzhiyufont anzhiyu-icon-tag"></i></span>Compaction<span class="tagsPageCount">1</span></a></div></div></div><div class="post_share"><div class="social-share" data-image="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" data-sites="wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"/><script src="https://cdn.cbd.int/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer="defer"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/64304/"><img class="prev-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-17-openclaw-agent-mcp-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">OpenClaw 04：工具系统设计、MCP 协议与并行执行</div></div></a></div><div class="next-post pull-right"><a href="/posts/64306/"><img class="next-cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-19-openclaw-agent-multiagent-cover.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">OpenClaw 06：Multi-Agent 架构、子进程上下文隔离与多渠道路由</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up fa-fw" style="font-size: 1.5rem; margin-right: 4px"></i><span>喜欢这篇文章的人也看了</span></div><div class="relatedPosts-list"><div><a href="/posts/63844/" title="OpenClaw 怎样存储、检索和压缩 Agent 记忆"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-04-openclaw-memory-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-04</div><div class="title">OpenClaw 怎样存储、检索和压缩 Agent 记忆</div></div></a></div><div><a href="/posts/63952/" title="OpenClaw Skills 怎样决定加载优先级与共享范围"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-18-openclaw-skills-layers-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-18</div><div class="title">OpenClaw Skills 怎样决定加载优先级与共享范围</div></div></a></div><div><a href="/posts/63925/" title="OpenClaw 怎样隔离多 Agent 任务与权限"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-07-openclaw-multi-agent-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-07</div><div class="title">OpenClaw 怎样隔离多 Agent 任务与权限</div></div></a></div><div><a href="/posts/63820/" title="OpenClaw 技术架构深度解析"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-03-03-openclaw-architecture-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-03-03</div><div class="title">OpenClaw 技术架构深度解析</div></div></a></div><div><a href="/posts/64406/" title="Claude Code 06：Context Compact——三层压缩换无限会话"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-30-claude-code-contextcompact-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-30</div><div class="title">Claude Code 06：Context Compact——三层压缩换无限会话</div></div></a></div><div><a href="/posts/64303/" title="OpenClaw 03：RAG 检索增强工程实现与混合检索"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-05-16-openclaw-agent-rag-cover.webp" alt="cover"><div class="content is-center"><div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> 2026-05-16</div><div class="title">OpenClaw 03：RAG 检索增强工程实现与混合检索</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="anzhiyufont anzhiyu-icon-comments"></i><span> 评论</span></div><div class="comment-randomInfo"><a onclick="anzhiyu.addRandomCommentInfo()" href="javascript:void(0)">匿名评论</a><a href="/privacy" style="margin-left: 4px">隐私政策</a></div><div class="comment-tips" id="comment-tips"><span>✅ 你无需删除空行，直接评论以获取最佳展示效果</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div><div class="comment-barrage"></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-content"><div class="author-info__sayhi" id="author-info__sayhi" onclick="anzhiyu.changeSayHelloText()"></div><div class="author-info-avatar"><img class="avatar-img" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/avatar2.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-status"><img class="g-status" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://bu.dusays.com/2023/08/24/64e6ce9c507bb.png" alt="status"/></div></div><div class="author-info__description">大家有对我不满的地方都可以提出来，尽情发言，一会就给你们全删了！</div><div class="author-info__bottom-group"><a class="author-info__bottom-group-left" target="_blank" rel="noopener" href="https://github.com/Asaakii"><h1 class="author-info__name">Asaakii</h1><div class="author-info__desc">允许一切事情发生</div></a><div class="card-info-social-icons is-center"><a class="social-icon faa-parent animated-hover" href="https://github.com/Asaakii" target="_blank" title="Github"><i class="anzhiyufont anzhiyu-icon-github"></i></a><a class="social-icon faa-parent animated-hover" href="https://space.bilibili.com/434716159" target="_blank" title="BiliBili"><i class="anzhiyufont anzhiyu-icon-bilibili"></i></a><a class="social-icon faa-parent animated-hover" href="http://wpa.qq.com/msgrd?v=3&amp;uin=2787274801&amp;site=qq&amp;menu=yes" target="_blank" title="QQ"><i class="anzhiyufont anzhiyu-icon-qq"></i></a></div></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bars"></i><span>文章目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%B0%E5%BF%86%E5%88%86%E5%B1%82%E5%85%A8%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">记忆分层全景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%9AMEMORY-md-%E6%96%87%E4%BB%B6%E7%BA%A7%E6%8C%81%E4%B9%85%E5%8C%96"><span class="toc-number">2.</span> <span class="toc-text">第一层：MEMORY.md 文件级持久化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%89%E6%8B%A9-Markdown-%E6%96%87%E4%BB%B6%EF%BC%9F"><span class="toc-number">2.1.</span> <span class="toc-text">为什么选择 Markdown 文件？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.2.</span> <span class="toc-text">索引文件结构模式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9AContextEngine-%E6%A0%B8%E5%BF%83%E6%8E%A5%E5%8F%A3%E4%B8%8E-Token-%E9%A2%84%E7%AE%97"><span class="toc-number">3.</span> <span class="toc-text">第二层：ContextEngine 核心接口与 Token 预算</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#assemble-%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7%E5%88%86%E9%85%8D%E7%AD%96%E7%95%A5"><span class="toc-number">3.1.</span> <span class="toc-text">assemble() 的优先级分配策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8E%8B%E7%BC%A9%EF%BC%88Compaction%EF%BC%89%EF%BC%9A%E6%A0%87%E8%AF%86%E7%AC%A6%E4%BF%9D%E7%95%99%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">上下文压缩（Compaction）：标识符保留机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%E7%BA%A6%E6%9D%9F%E8%A7%84%E8%8C%83"><span class="toc-number">4.1.</span> <span class="toc-text">提示词约束规范</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Dreaming-%E7%B3%BB%E7%BB%9F%EF%BC%9A%E8%AE%B0%E5%BF%86%E7%9A%84%E5%A4%9C%E9%97%B4%E5%B7%A9%E5%9B%BA%E6%95%B4%E7%90%86"><span class="toc-number">5.</span> <span class="toc-text">Dreaming 系统：记忆的夜间巩固整理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%B0%E5%BF%86%E8%AF%84%E5%88%86%E5%85%AC%E5%BC%8F"><span class="toc-number">5.1.</span> <span class="toc-text">记忆评分公式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E4%BA%A7%E7%BA%A7%E8%AE%B0%E5%BF%86%E5%AE%BF%E4%B8%BB%EF%BC%9AGBrain-%E7%9A%84%E6%9E%B6%E6%9E%84%E5%AE%9E%E8%B7%B5"><span class="toc-number">6.</span> <span class="toc-text">生产级记忆宿主：GBrain 的架构实践</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Compiled-Truth-Timeline-%E6%9E%B6%E6%9E%84"><span class="toc-number">6.1.</span> <span class="toc-text">Compiled Truth + Timeline 架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Minions-%E4%BB%BB%E5%8A%A1%E9%98%9F%E5%88%97%EF%BC%9A%E7%A1%AE%E5%AE%9A%E6%80%A7%E4%BC%98%E5%85%88%E4%BA%8E-LLM-%E6%8E%A8%E7%90%86"><span class="toc-number">6.2.</span> <span class="toc-text">Minions 任务队列：确定性优先于 LLM 推理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">7.</span> <span class="toc-text">总结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="anzhiyufont anzhiyu-icon-history"></i><span>最近发布</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-29-aftersales-agent-loop-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样把企业售后 Agent 做成可验收的工单闭环"/></a><div class="content"><a class="title" href="/posts/66400/" title="怎样把企业售后 Agent 做成可验收的工单闭环">怎样把企业售后 Agent 做成可验收的工单闭环</a><time datetime="2026-07-29T02:30:00.000Z" title="发表于 2026-07-29 10:30:00">2026-07-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-27-verified-agent-graph-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="怎样手写一个可验证的 Agent 图工作流"/></a><div class="content"><a class="title" href="/posts/66200/" title="怎样手写一个可验证的 Agent 图工作流">怎样手写一个可验证的 Agent 图工作流</a><time datetime="2026-07-27T12:30:00.000Z" title="发表于 2026-07-27 20:30:00">2026-07-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/large-scale-ai-training-gtc-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kimi 怎样训练大规模 AI 系统"/></a><div class="content"><a class="title" href="/posts/66100/" title="Kimi 怎样训练大规模 AI 系统">Kimi 怎样训练大规模 AI 系统</a><time datetime="2026-07-18T12:30:00.000Z" title="发表于 2026-07-18 20:30:00">2026-07-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-17-agent-framework-subagents-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派"/></a><div class="content"><a class="title" href="/posts/65900/" title="从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派">从零构建 Agent 框架（三）让子 Agent 隔离上下文并完成委派</a><time datetime="2026-07-17T12:30:00.000Z" title="发表于 2026-07-17 20:30:00">2026-07-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="this.onerror=null,this.src=&quot;/img/404.jpg&quot;" data-lazy-src="https://img-asaakii-top.oss-cn-shanghai.aliyuncs.com/img/2026-07-16-grok-build-context-cover.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Grok Build 如何用 Agent 循环压缩上下文"/></a><div class="content"><a class="title" href="/posts/66000/" title="Grok Build 如何用 Agent 循环压缩上下文">Grok Build 如何用 Agent 循环压缩上下文</a><time datetime="2026-07-16T12:30:00.000Z" title="发表于 2026-07-16 20:30:00">2026-07-16</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"></div><div id="footer-bar"><div class="footer-bar-links"><div class="footer-bar-left"><div id="footer-bar-tips"><div class="copyright">&copy;2021 - 2026 By <a class="footer-bar-link" href="/" title="Asaakii" target="_blank">Asaakii</a></div></div><div id="footer-type-tips"></div></div><div class="footer-bar-right"><a class="footer-bar-link" target="_blank" rel="noopener" href="https://github.com/anzhiyu-c/hexo-theme-anzhiyu" title="主题">主题</a></div></div></div></footer></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="sidebar-site-data site-data is-center"><a href="/archives/" title="archive"><div class="headline">文章</div><div class="length-num">135</div></a><a href="/tags/" title="tag"><div class="headline">标签</div><div class="length-num">283</div></a><a href="/categories/" title="category"><div class="headline">分类</div><div class="length-num">22</div></a></div><span class="sidebar-menu-item-title">功能</span><div class="sidebar-menu-item"><a class="darkmode_switchbutton menu-child" href="javascript:void(0);" title="显示模式"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span>显示模式</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 文章</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/archives/"><i class="anzhiyufont anzhiyu-icon-box-archive faa-tada" style="font-size: 0.9em;"></i><span> 隧道</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/categories/"><i class="anzhiyufont anzhiyu-icon-shapes faa-tada" style="font-size: 0.9em;"></i><span> 分类</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags faa-tada" style="font-size: 0.9em;"></i><span> 标签</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/secret/"><i class="anzhiyufont anzhiyu-icon-moon faa-tada" style="font-size: 0.9em;"></i><span> 隐藏文章</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 友链</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/link/"><i class="anzhiyufont anzhiyu-icon-link faa-tada" style="font-size: 0.9em;"></i><span> 友人帐</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/comments/"><i class="anzhiyufont anzhiyu-icon-envelope faa-tada" style="font-size: 0.9em;"></i><span> 留言板</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 我的</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/music/"><i class="anzhiyufont anzhiyu-icon-music faa-tada" style="font-size: 0.9em;"></i><span> 音乐馆</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/album/"><i class="anzhiyufont anzhiyu-icon-images faa-tada" style="font-size: 0.9em;"></i><span> 相册集</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/movies/"><i class="anzhiyufont anzhiyu-icon-fan faa-tada" style="font-size: 0.9em;"></i><span> 电影院</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/equipment/"><i class="anzhiyufont anzhiyu-icon-dice-d20 faa-tada" style="font-size: 0.9em;"></i><span> 我的装备</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/travel/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 旅途轨迹</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 关于</span></a><ul class="menus_item_child"><li><a class="site-page child faa-parent animated-hover" href="/about/"><i class="anzhiyufont anzhiyu-icon-paper-plane faa-tada" style="font-size: 0.9em;"></i><span> 关于本人</span></a></li><li><a class="site-page child faa-parent animated-hover" href="/essay/"><i class="anzhiyufont anzhiyu-icon-lightbulb faa-tada" style="font-size: 0.9em;"></i><span> 闲言碎语</span></a></li><li><a class="site-page child faa-parent animated-hover" href="javascript:toRandomPost()"><i class="anzhiyufont anzhiyu-icon-shoe-prints1 faa-tada" style="font-size: 0.9em;"></i><span> 随便逛逛</span></a></li></ul></div></div><span class="sidebar-menu-item-title">标签</span><div class="card-tags"><div class="item-headline"></div><div class="card-tag-cloud"><a href="/tags/AI/" style="font-size: 0.88rem;">AI<sup>97</sup></a><a href="/tags/AI-Agent/" style="font-size: 0.88rem;">AI Agent<sup>20</sup></a><a href="/tags/Agent/" style="font-size: 0.88rem;">Agent<sup>99</sup></a><a href="/tags/Claude-Code/" style="font-size: 0.88rem;">Claude Code<sup>25</sup></a><a href="/tags/DeepSeek-Harness/" style="font-size: 0.88rem;">DeepSeek Harness<sup>16</sup></a><a href="/tags/LLM/" style="font-size: 0.88rem;">LLM<sup>26</sup></a><a href="/tags/LangGraph/" style="font-size: 0.88rem;">LangGraph<sup>10</sup></a><a href="/tags/OpenClaw/" style="font-size: 0.88rem;">OpenClaw<sup>16</sup></a><a href="/tags/Python/" style="font-size: 0.88rem;">Python<sup>11</sup></a><a href="/tags/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B/" style="font-size: 0.88rem;">上下文工程<sup>16</sup></a><a href="/tags/%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93/" style="font-size: 0.88rem;">多智能体<sup>12</sup></a><a href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/" style="font-size: 0.88rem;">工作流<sup>9</sup></a><a href="/tags/%E5%B7%A5%E7%A8%8B%E5%8C%96/" style="font-size: 0.88rem;">工程化<sup>23</sup></a><a href="/tags/%E6%9E%B6%E6%9E%84/" style="font-size: 0.88rem;">架构<sup>25</sup></a><a href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" style="font-size: 0.88rem;">状态机<sup>12</sup></a></div></div><hr/></div></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="anzhiyufont anzhiyu-icon-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="anzhiyufont anzhiyu-icon-arrows-left-right"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="anzhiyufont anzhiyu-icon-gear"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="anzhiyufont anzhiyu-icon-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="anzhiyufont anzhiyu-icon-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></button></div></div><div id="nav-music"><a id="nav-music-hoverTips" onclick="anzhiyu.musicToggle()" accesskey="m">播放音乐</a><div id="console-music-bg"></div><meting-js id="2246956537" server="netease" type="playlist" mutex="true" preload="none" theme="var(--anzhiyu-main)" data-lrctype="0" order="random" volume="0.7"></meting-js></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="anzhiyufont anzhiyu-icon-xmark"></i></button></nav><div class="is-center" id="loading-database"><i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div id="rightMenu"><div class="rightMenu-group rightMenu-small"><div class="rightMenu-item" id="menu-backward"><i class="anzhiyufont anzhiyu-icon-arrow-left"></i></div><div class="rightMenu-item" id="menu-forward"><i class="anzhiyufont anzhiyu-icon-arrow-right"></i></div><div class="rightMenu-item" id="menu-refresh"><i class="anzhiyufont anzhiyu-icon-arrow-rotate-right" style="font-size: 1rem;"></i></div><div class="rightMenu-item" id="menu-top"><i class="anzhiyufont anzhiyu-icon-arrow-up"></i></div></div><div class="rightMenu-group rightMenu-line rightMenuPlugin"><div class="rightMenu-item" id="menu-copytext"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制选中文本</span></div><div class="rightMenu-item" id="menu-pastetext"><i class="anzhiyufont anzhiyu-icon-paste"></i><span>粘贴文本</span></div><a class="rightMenu-item" id="menu-commenttext"><i class="anzhiyufont anzhiyu-icon-comment-medical"></i><span>引用到评论</span></a><div class="rightMenu-item" id="menu-newwindow"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开</span></div><div class="rightMenu-item" id="menu-copylink"><i class="anzhiyufont anzhiyu-icon-link"></i><span>复制链接地址</span></div><div class="rightMenu-item" id="menu-copyimg"><i class="anzhiyufont anzhiyu-icon-images"></i><span>复制此图片</span></div><div class="rightMenu-item" id="menu-downloadimg"><i class="anzhiyufont anzhiyu-icon-download"></i><span>下载此图片</span></div><div class="rightMenu-item" id="menu-newwindowimg"><i class="anzhiyufont anzhiyu-icon-window-restore"></i><span>新窗口打开图片</span></div><div class="rightMenu-item" id="menu-search"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>站内搜索</span></div><div class="rightMenu-item" id="menu-searchBaidu"><i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i><span>百度搜索</span></div><div class="rightMenu-item" id="menu-music-toggle"><i class="anzhiyufont anzhiyu-icon-play"></i><span>播放音乐</span></div><div class="rightMenu-item" id="menu-music-back"><i class="anzhiyufont anzhiyu-icon-backward"></i><span>切换到上一首</span></div><div class="rightMenu-item" id="menu-music-forward"><i class="anzhiyufont anzhiyu-icon-forward"></i><span>切换到下一首</span></div><div class="rightMenu-item" id="menu-music-playlist" onclick="window.open(&quot;https://music.163.com/#/playlist?id=2246956537&amp;creatorId=1471801654&quot;, &quot;_blank&quot;);" style="display: none;"><i class="anzhiyufont anzhiyu-icon-radio"></i><span>查看所有歌曲</span></div><div class="rightMenu-item" id="menu-music-copyMusicName"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制歌名</span></div></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item menu-link" id="menu-randomPost"><i class="anzhiyufont anzhiyu-icon-shuffle"></i><span>随便逛逛</span></a><a class="rightMenu-item menu-link" href="/categories/"><i class="anzhiyufont anzhiyu-icon-cube"></i><span>博客分类</span></a><a class="rightMenu-item menu-link" href="/tags/"><i class="anzhiyufont anzhiyu-icon-tags"></i><span>文章标签</span></a></div><div class="rightMenu-group rightMenu-line rightMenuOther"><a class="rightMenu-item" id="menu-copy" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-copy"></i><span>复制地址</span></a><a class="rightMenu-item" id="menu-commentBarrage" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-message"></i><span class="menu-commentBarrage-text">关闭热评</span></a><a class="rightMenu-item" id="menu-darkmode" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-circle-half-stroke"></i><span class="menu-darkmode-text">深色模式</span></a><a class="rightMenu-item" id="menu-translate" href="javascript:void(0);"><i class="anzhiyufont anzhiyu-icon-language"></i><span>轉為繁體</span></a></div></div><div id="rightmenu-mask"></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.cbd.int/@fancyapps/ui@6.1.6/dist/fancybox/fancybox.umd.js"></script><script src="https://cdn.cbd.int/instant.page@5.2.0/instantpage.js" type="module"></script><script src="https://cdn.cbd.int/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.cbd.int/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.cbd.int/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script>var meting_api = "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r";
+</script><script>// 消除控制台打印
+var HoldLog = console.log;
+console.log = function () {};
+let now1 = new Date();
+queueMicrotask(() => {
+  const Log = function () {
+    HoldLog.apply(console, arguments);
+  }; //在恢复前输出日志
+  const grt = new Date("10/05/2021 00:00:00"); //此处修改你的建站时间或者网站上线时间
+  now1.setTime(now1.getTime() + 250);
+  const days = (now1 - grt) / 1000 / 60 / 60 / 24;
+  const dnum = Math.floor(days);
+  const ascll = [
+    `欢迎来到 Asaakii 的博客!`,
+    `生活明朗, 万物可爱`,
+    `
+
+       █████╗ ███████╗ █████╗  █████╗ ██╗  ██╗██╗██╗
+      ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║██║
+      ███████║███████╗███████║███████║█████╔╝ ██║██║
+      ██╔══██║╚════██║██╔══██║██╔══██║██╔═██╗ ██║██║
+      ██║  ██║███████║██║  ██║██║  ██║██║  ██╗██║██║
+      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝
+
+        `,
+    "已上线",
+    dnum,
+    "天",
+    "©2021 By Asaakii V1.6.14",
+  ];
+  const ascll2 = [`NCC2-036`, `调用前置摄像头拍照成功，识别为【小笨蛋】.`, `Photo captured: `, `🤪`];
+
+  setTimeout(
+    Log.bind(
+      console,
+      `\n%c${ascll[0]} %c ${ascll[1]} %c ${ascll[2]} %c${ascll[3]}%c ${ascll[4]}%c ${ascll[5]}\n\n%c ${ascll[6]}\n`,
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      "color:#425AEF",
+      "",
+      "color:#425AEF",
+      ""
+    )
+  );
+  setTimeout(
+    Log.bind(
+      console,
+      `%c ${ascll2[0]} %c ${ascll2[1]} %c \n${ascll2[2]} %c\n${ascll2[3]}\n`,
+      "color:white; background-color:#4fd953",
+      "",
+      "",
+      'background:url("https://npm.elemecdn.com/anzhiyu-blog@1.1.6/img/post/common/tinggge.gif") no-repeat;font-size:450%'
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c WELCOME %c 你好，小笨蛋.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(
+      console,
+      "%c ⚡ Powered by Asaakii %c 你正在访问 Asaakii 的博客.",
+      "color:white; background-color:#f0ad4e",
+      ""
+    )
+  );
+
+  setTimeout(Log.bind(console, "%c W23-12 %c 你已打开控制台.", "color:white; background-color:#4f90d9", ""));
+
+  setTimeout(
+    console.warn.bind(console, "%c S013-782 %c 你现在正处于监控中.", "color:white; background-color:#d9534f", "")
+  );
+});</script><script async src="/anzhiyu/random.js"></script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaid.length === 0) return
+  const runMermaid = () => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    Array.from($mermaid).forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+      const mermaidID = 'mermaid-' + index
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+
+      const renderV10 = () => {
+        renderFn.then(({svg}) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svg)
+        })
+      }
+
+      const renderV9 = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      typeof renderFn === 'string' ? renderV9(renderFn) : renderV10()
+    })
+  }
+
+  const loadMermaid = () => {
+    window.loadMermaid ? runMermaid() : getScript('https://cdn.cbd.int/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaid)
+  }
+
+  anzhiyu.addGlobalFn('themeChange', runMermaid, 'mermaid')
+
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      onCommentLoaded: () => {
+        anzhiyu.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(runFn,0)
+    else getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runFn)
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const runFn = () => {
+    init();
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  if ('Twikoo' === 'Twikoo' || !true) {
+    if (true) anzhiyu.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else {
+      loadTwikoo()
+    }
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script><input type="hidden" name="page-type" id="page-type" value="post"></div><script>window.addEventListener('load', () => {
+  const changeContent = (content) => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const getComment = () => {
+    const runTwikoo = () => {
+      twikoo.getRecentComments({
+        envId: 'https://asaakii-twikoo.netlify.app/.netlify/functions/twikoo',
+        region: '',
+        pageSize: 6,
+        includeReply: true
+      }).then(function (res) {
+        const twikooArray = res.map(e => {
+          return {
+            'content': changeContent(e.comment),
+            'avatar': e.avatar,
+            'nick': e.nick,
+            'url': e.url + '#' + e.id,
+            'date': new Date(e.created).toISOString()
+          }
+        })
+
+        saveToLocal.set('twikoo-newest-comments', JSON.stringify(twikooArray), 10/(60*24))
+        generateHtml(twikooArray)
+      }).catch(function (err) {
+        const $dom = document.querySelector('#card-newest-comments .aside-list')
+        $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+      })
+    }
+
+    if (typeof twikoo === 'object') {
+      runTwikoo()
+    } else {
+      getScript('https://cdn.cbd.int/twikoo@1.7.9/dist/twikoo.all.min.js').then(runTwikoo)
+    }
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'data-lazy-src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'><div class='name'><span>${array[i].nick} </span></div></a>`
+        }
+        
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <time datetime="${array[i].date}">${anzhiyu.diffDate(array[i].date, true)}</time></div>
+        </div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('twikoo-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script>var visitorMail = "";
+</script><script defer data-pjax src="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/waterfall/waterfall.js"></script><script defer src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/qrcodejs/1.0.0/qrcode.min.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.1.9/icon/ali_iconfont_css.css"><script>(function(){var OFFSET={busuanzi_site_uv:1280,busuanzi_site_pv:8642};function patch(){Object.keys(OFFSET).forEach(function(id){var el=document.getElementById(id);if(!el||el.dataset.busuanziOffset)return;var n=parseInt(el.innerText.replace(/[^\d]/g,""),10);if(isNaN(n))return;el.innerText=(n+OFFSET[id]).toLocaleString("en-US");el.dataset.busuanziOffset="1"})}function watch(){var t=setInterval(patch,300);setTimeout(function(){clearInterval(t)},20000)}watch();document.addEventListener("pjax:complete",watch)})();</script><link rel="stylesheet" href="https://cdn.cbd.int/anzhiyu-theme-static@1.0.0/aplayer/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.cbd.int/anzhiyu-blog-static@1.0.1/js/APlayer.min.js"></script><script src="https://cdn.cbd.int/hexo-anzhiyu-music@1.0.1/assets/js/Meting2.min.js"></script><script src="https://cdn.cbd.int/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:type\"]","meta[property=\"og:site_name\"]","meta[property=\"og:description\"]","head > title","head > link[rel=\"shortcut icon\"]","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+  // removeEventListener scroll 
+  anzhiyu.removeGlobalFnEvent('pjax')
+  anzhiyu.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404')
+  }
+})</script><script async data-pjax src="https://cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js"></script><script charset="UTF-8" src="https://cdn.cbd.int/anzhiyu-theme-static@1.1.5/accesskey/accesskey.js"></script></div><div id="popup-window"><div class="popup-window-title">通知</div><div class="popup-window-divider"></div><div class="popup-window-content"><div class="popup-tip">你好呀</div><div class="popup-link"><i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i></div></div></div></body></html>
